@@ -25,6 +25,7 @@ enum class MetadataFieldType {
     EMAIL,
     COUNTRY,
     ENUM,
+    MULTILINE_TEXT,
 }
 
 enum class MetadataSource {

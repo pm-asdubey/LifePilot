@@ -2,20 +2,34 @@
   "objectType": "utilities",
   "displayName": "Utility Account",
   "domain": "home",
-  "icon": "ElectricalServices",
+  "icon": "Bolt",
   "description": "Electricity, gas, water, or internet utility account",
-  "metadataFields": [
-    {"fieldId": "utility_type","label": "Utility Type","type": "ENUM","required": true,"enumValues": ["ELECTRICITY","GAS","WATER","INTERNET","PHONE","COUNCIL_TAX","TV_LICENSE"]},
-    {"fieldId": "provider","label": "Provider","type": "TEXT","required": true,"placeholder": "British Gas, etc."},
-    {"fieldId": "account_number","label": "Account Number","type": "TEXT","required": false,"placeholder": "Account number"},
-    {"fieldId": "contract_start","label": "Contract Start","type": "DATE","required": false,"placeholder": "YYYY-MM-DD"},
-    {"fieldId": "contract_end","label": "Contract End","type": "DATE","required": false,"placeholder": "YYYY-MM-DD"},
-    {"fieldId": "monthly_cost","label": "Monthly Cost","type": "NUMBER","required": false,"placeholder": "65.00"},
-    {"fieldId": "tariff","label": "Tariff / Plan","type": "TEXT","required": false,"placeholder": "Fixed rate 12M"}
+  "schemaVersion": 1,
+  "fields": [
+    {"fieldId": "utility_type","displayName": "Utility Type","fieldType": "ENUM","required": true,"editable": true,"searchable": false,"aiExtractable": false,"validationRules": [],"enumValues": ["ELECTRICITY","GAS","WATER","INTERNET","PHONE","COUNCIL_TAX","TV_LICENSE"]},
+    {"fieldId": "provider","displayName": "Provider","fieldType": "TEXT","required": true,"editable": true,"searchable": true,"aiExtractable": true,"validationRules": [],"placeholder": "British Gas, etc."},
+    {"fieldId": "account_number","displayName": "Account Number","fieldType": "TEXT","required": false,"editable": true,"searchable": false,"aiExtractable": true,"validationRules": [],"placeholder": "Account number"},
+    {"fieldId": "contract_start","displayName": "Contract Start","fieldType": "DATE","required": false,"editable": true,"searchable": false,"aiExtractable": true,"validationRules": [],"placeholder": "YYYY-MM-DD"},
+    {"fieldId": "contract_end","displayName": "Contract End","fieldType": "DATE","required": false,"editable": true,"searchable": false,"aiExtractable": true,"validationRules": [],"placeholder": "YYYY-MM-DD"},
+    {"fieldId": "monthly_cost","displayName": "Monthly Cost","fieldType": "NUMBER","required": false,"editable": true,"searchable": false,"aiExtractable": true,"validationRules": [],"placeholder": "65.00"},
+    {"fieldId": "tariff","displayName": "Tariff / Plan","fieldType": "TEXT","required": false,"editable": true,"searchable": false,"aiExtractable": false,"validationRules": [],"placeholder": "Fixed rate 12M"}
   ],
-  "lifecycle": {"states": ["ACTIVE","SWITCHING","ENDED"],"initialState": "ACTIVE"},
+  "lifecycle": {
+    "states": [
+      {"stateId": "ACTIVE","displayName": "Active"},
+      {"stateId": "SWITCHING","displayName": "Switching Provider"},
+      {"stateId": "ENDED","displayName": "Ended","isFinal": true}
+    ],
+    "transitions": [
+      {"fromState": "ACTIVE","toState": "SWITCHING","trigger": "SWITCH_INITIATED","label": "Switching"},
+      {"fromState": "SWITCHING","toState": "ACTIVE","trigger": "SWITCH_COMPLETE","label": "Switched"},
+      {"fromState": "ACTIVE","toState": "ENDED","trigger": "ENDED","label": "Ended"}
+    ],
+    "initialState": "ACTIVE"
+  },
   "reminderRules": [
-    {"ruleId": "contract_end_reminder","name": "Contract Renewal","triggerField": "contract_end","offsetDays": -30,"priority": "NORMAL","messageTemplate": "Utility contract ends in 30 days. Consider reviewing your tariff."}
+    {"ruleId": "contract_end_reminder","title": "Contract Renewal","triggerField": "contract_end","offsetDays": -30,"priority": "NORMAL","messageTemplate": "Utility contract ends in 30 days. Consider reviewing your tariff."}
   ],
-  "aiExtractionConfig": {"extractableFields": ["utility_type","provider","account_number","contract_end","monthly_cost"],"confidenceThreshold": 0.8}
+  "searchConfig": {"primaryFields": ["provider","account_number"],"fullTextFields": ["provider"],"filterableFields": ["utility_type"]},
+  "aiConfig": {"extractableFields": ["utility_type","provider","account_number","contract_end","monthly_cost"],"classificationHints": ["utility","bill","electricity","gas","water","broadband"]}
 }

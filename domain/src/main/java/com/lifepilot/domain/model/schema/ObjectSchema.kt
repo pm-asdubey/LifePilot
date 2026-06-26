@@ -20,15 +20,16 @@ data class ObjectSchema(
 @Serializable
 data class MetadataFieldDefinition(
     val fieldId: String,
-    val displayName: String,
+    val displayName: String = "",
     val fieldType: String,
-    val required: Boolean,
-    val editable: Boolean,
-    val searchable: Boolean,
-    val aiExtractable: Boolean,
-    val validationRules: List<ValidationRule>,
+    val required: Boolean = false,
+    val editable: Boolean = true,
+    val searchable: Boolean = true,
+    val aiExtractable: Boolean = true,
+    val validationRules: List<ValidationRule> = emptyList(),
     val enumValues: List<String> = emptyList(),
     val hint: String? = null,
+    val placeholder: String? = null,
 )
 
 @Serializable
@@ -79,8 +80,8 @@ data class SearchConfig(
 
 @Serializable
 data class AiExtractionConfig(
-    val extractableFields: List<String>,
-    val classificationHints: List<String>,
+    val extractableFields: List<String> = emptyList(),
+    val classificationHints: List<String> = emptyList(),
 )
 
 typealias ObjectDefinition = ObjectSchema
