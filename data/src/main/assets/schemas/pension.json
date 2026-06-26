@@ -1,0 +1,114 @@
+{
+  "objectType": "pension",
+  "displayName": "Pension",
+  "domain": "Finance",
+  "icon": "Savings",
+  "schemaVersion": 1,
+  "fields": [
+    {
+      "fieldId": "provider_name",
+      "displayName": "Provider Name",
+      "fieldType": "TEXT",
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "scheme_name",
+      "displayName": "Scheme Name",
+      "fieldType": "TEXT",
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "policy_number",
+      "displayName": "Policy / Membership Number",
+      "fieldType": "TEXT",
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "pension_type",
+      "displayName": "Pension Type",
+      "fieldType": "TEXT",
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "e.g. Defined Contribution, Defined Benefit, SIPP"
+    },
+    {
+      "fieldId": "start_date",
+      "displayName": "Start Date",
+      "fieldType": "DATE",
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "retirement_age",
+      "displayName": "Target Retirement Age",
+      "fieldType": "NUMBER",
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": []
+    },
+    {
+      "fieldId": "projected_value",
+      "displayName": "Projected Value at Retirement",
+      "fieldType": "CURRENCY",
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": []
+    },
+    {
+      "fieldId": "current_value",
+      "displayName": "Current Pot Value",
+      "fieldType": "CURRENCY",
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": []
+    },
+    {
+      "fieldId": "employer_contribution",
+      "displayName": "Employer Contribution (%)",
+      "fieldType": "NUMBER",
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": []
+    },
+    {
+      "fieldId": "employee_contribution",
+      "displayName": "Employee Contribution (%)",
+      "fieldType": "NUMBER",
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": []
+    }
+  ],
+  "lifecycle": {
+    "initialState": "ACTIVE",
+    "states": [
+      { "stateId": "ACTIVE", "displayName": "Active" },
+      { "stateId": "DEFERRED", "displayName": "Deferred" },
+      { "stateId": "IN_DRAWDOWN", "displayName": "In Drawdown" },
+      { "stateId": "CLOSED", "displayName": "Closed" }
+    ]
+  },
+  "aiConfig": {
+    "extractableFields": ["provider_name", "scheme_name", "policy_number", "pension_type", "start_date"],
+    "classificationHints": ["pension", "retirement", "drawdown", "SIPP", "defined benefit", "defined contribution"]
+  },
+  "reminderRules": []
+}

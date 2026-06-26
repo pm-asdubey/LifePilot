@@ -61,6 +61,22 @@ class TaskGenerator @Inject constructor(
             TaskTemplate("Upload investment statement", "DOCUMENT", 14),
             TaskTemplate("Record current value and maturity date", "METADATA", 5),
         ),
+        "travel" to listOf(
+            TaskTemplate("Upload travel documents (visa, booking)", "DOCUMENT", 7),
+            TaskTemplate("Record departure date and destination", "METADATA", 1),
+        ),
+        "will" to listOf(
+            TaskTemplate("Upload signed will document", "DOCUMENT", 7),
+            TaskTemplate("Record solicitor and executor details", "METADATA", 3),
+            TaskTemplate("Record physical storage location of original", "METADATA", 5),
+        ),
+        "pension" to listOf(
+            TaskTemplate("Upload pension statement", "DOCUMENT", 14),
+            TaskTemplate("Record policy number and provider", "METADATA", 3),
+        ),
+        "utilities" to listOf(
+            TaskTemplate("Record account number and contract end date", "METADATA", 3),
+        ),
     )
 
     suspend fun generateObjectCreationTasks(obj: LifeObject) {

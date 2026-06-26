@@ -1,0 +1,85 @@
+{
+  "objectType": "will",
+  "displayName": "Will & Testament",
+  "domain": "Legal",
+  "icon": "Gavel",
+  "schemaVersion": 1,
+  "fields": [
+    {
+      "fieldId": "solicitor_name",
+      "displayName": "Solicitor Name",
+      "fieldType": "TEXT",
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "date_signed",
+      "displayName": "Date Signed",
+      "fieldType": "DATE",
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "last_reviewed",
+      "displayName": "Last Reviewed",
+      "fieldType": "DATE",
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "executor_name",
+      "displayName": "Executor Name",
+      "fieldType": "TEXT",
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "beneficiaries",
+      "displayName": "Beneficiaries",
+      "fieldType": "MULTILINE_TEXT",
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": []
+    },
+    {
+      "fieldId": "stored_location",
+      "displayName": "Physical Storage Location",
+      "fieldType": "TEXT",
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": []
+    }
+  ],
+  "lifecycle": {
+    "initialState": "DRAFT",
+    "states": [
+      { "stateId": "DRAFT", "displayName": "Draft" },
+      { "stateId": "SIGNED", "displayName": "Signed" },
+      { "stateId": "OUTDATED", "displayName": "Outdated" }
+    ]
+  },
+  "aiConfig": {
+    "extractableFields": ["solicitor_name", "date_signed", "executor_name"],
+    "classificationHints": ["will", "testament", "probate", "executor", "beneficiary"]
+  },
+  "reminderRules": [
+    {
+      "ruleId": "will_review_reminder",
+      "displayName": "Annual Review",
+      "triggerField": "last_reviewed",
+      "daysBeforeTrigger": -365,
+      "priority": "MEDIUM",
+      "message": "Your will was last reviewed over a year ago. Consider reviewing it."
+    }
+  ]
+}

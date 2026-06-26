@@ -15,6 +15,9 @@ interface DocumentDao {
     fun observeDocumentsByObject(objectId: String): Flow<List<DocumentEntity>>
 
     @Query("SELECT * FROM documents WHERE document_id = :documentId")
+    fun observeDocumentById(documentId: String): Flow<DocumentEntity?>
+
+    @Query("SELECT * FROM documents WHERE document_id = :documentId")
     suspend fun getDocumentById(documentId: String): DocumentEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

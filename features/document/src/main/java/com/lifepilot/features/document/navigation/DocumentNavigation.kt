@@ -7,6 +7,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.lifepilot.features.document.ui.DocumentViewerScreen
 
+fun NavController.navigateToDocument(documentId: String) {
+    navigate("document/$documentId")
+}
+
 fun NavGraphBuilder.documentViewerScreen(navController: NavController) {
     composable(
         route = "document/{documentId}",

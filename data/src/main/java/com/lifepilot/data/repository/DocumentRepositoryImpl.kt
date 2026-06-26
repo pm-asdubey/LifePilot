@@ -31,6 +31,14 @@ class DocumentRepositoryImpl @Inject constructor(
             }
         }
 
+    override fun observeDocumentById(documentId: String): Flow<Document?> =
+        documentDao.observeDocumentById(documentId).map { entity ->
+            entity?.let {
+                val versions = documentDao.getVersionsForDocument(entity.documentId)
+                entity.toDomain(versions)
+            }
+        }
+
     override suspend fun getDocumentById(documentId: String): Document? {
         val entity = documentDao.getDocumentById(documentId) ?: return null
         val versions = documentDao.getVersionsForDocument(documentId)
