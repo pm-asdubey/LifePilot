@@ -1,6 +1,7 @@
 package com.lifepilot.features.settings.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
@@ -274,6 +276,80 @@ fun SettingsScreen(
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                    }
+                }
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(Spacing.lg))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(Spacing.md))
+                SectionHeader(title = "DATA & BACKUP")
+                Spacer(modifier = Modifier.height(Spacing.sm))
+            }
+
+            item {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    ),
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = Spacing.md),
+                ) {
+                    Column(modifier = Modifier.padding(Spacing.md)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.ChevronRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp),
+                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Export Data",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
+                                Text(
+                                    text = "Create a backup of all your objects and metadata",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                        if (uiState.isExporting) {
+                            Spacer(modifier = Modifier.height(Spacing.sm))
+                            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                        }
+                        if (uiState.exportResult != null) {
+                            val result = uiState.exportResult!!
+                            Spacer(modifier = Modifier.height(Spacing.sm))
+                            Text(
+                                text = "Export complete: ${result.objectCount} objects, ${result.documentCount} documents, ${result.taskCount} tasks",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                        if (uiState.exportError != null) {
+                            Spacer(modifier = Modifier.height(Spacing.sm))
+                            Text(
+                                text = "Export failed: ${uiState.exportError}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(Spacing.sm))
+                        TextButton(
+                            onClick = viewModel::exportData,
+                            enabled = !uiState.isExporting && uiState.activeProfile != null,
+                        ) {
+                            Text("Export")
+                        }
                     }
                 }
             }

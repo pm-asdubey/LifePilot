@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.lifepilot.data.repository.PreferenceManager
 import com.lifepilot.domain.model.Profile
 import com.lifepilot.domain.repository.ProfileRepository
+import com.lifepilot.domain.usecase.ExportBundle
+import com.lifepilot.domain.usecase.ExportDataUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,12 +28,16 @@ data class SettingsUiState(
     val aiApiKey: String = "",
     val aiModel: String = "",
     val showAiConfig: Boolean = false,
+    val isExporting: Boolean = false,
+    val exportResult: ExportBundle? = null,
+    val exportError: String? = null,
 )
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
     private val preferenceManager: PreferenceManager,
+    private val exportDataUseCase: ExportDataUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -136,5 +142,24 @@ class SettingsViewModel @Inject constructor(
                 .onFailure { Timber.e(it, "Failed to clear AI config") }
             _uiState.update { it.copy(aiProvider = "", aiApiKey = "", aiModel = "") }
         }
+    }
+
+    fun exportData() {
+        val profileId = _uiState.value.activeProfile?.profileId ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isExporting = true, exportError = null) }
+            exportDataUseCase(profileId)
+                .onSuccess { bundle ->
+                    _uiState.update { it.copy(isExporting = false, exportResult = bundle) }
+                }
+                .onFailure { e ->
+                    Timber.e(e, "Export failed")
+                    _uiState.update { it.copy(isExporting = false, exportError = e.message) }
+                }
+        }
+    }
+
+    fun clearExportResult() {
+        _uiState.update { it.copy(exportResult = null, exportError = null) }
     }
 }
