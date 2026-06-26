@@ -12,6 +12,7 @@ import androidx.navigation.navArgument
 import com.lifepilot.features.document.upload.DocumentUploadSheet
 import com.lifepilot.features.object.metadata.ui.MetadataEditScreen
 import com.lifepilot.features.object.ui.ObjectDetailScreen
+import com.lifepilot.features.object.verification.ui.MetadataVerificationScreen
 
 fun NavGraphBuilder.objectDetailScreen(navController: NavController) {
     composable(
@@ -51,6 +52,19 @@ fun NavGraphBuilder.objectDetailScreen(navController: NavController) {
     ) {
         MetadataEditScreen(
             onNavigateBack = { navController.popBackStack() },
+        )
+    }
+
+    composable(
+        route = "object/{objectId}/verify/{versionId}",
+        arguments = listOf(
+            navArgument("objectId") { type = NavType.StringType },
+            navArgument("versionId") { type = NavType.StringType },
+        ),
+    ) {
+        MetadataVerificationScreen(
+            onVerified = { navController.popBackStack() },
+            onDismiss = { navController.popBackStack() },
         )
     }
 }
