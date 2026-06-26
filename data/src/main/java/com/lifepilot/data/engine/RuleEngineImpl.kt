@@ -59,7 +59,7 @@ class RuleEngineImpl @Inject constructor(
             objectId = objectId,
             reminderType = rule.ruleId,
             triggerDate = triggerInstant,
-            priority = ReminderPriority.valueOf(rule.priority),
+            priority = runCatching { ReminderPriority.valueOf(rule.priority) }.getOrDefault(ReminderPriority.MEDIUM),
             status = ReminderStatus.SCHEDULED,
             title = rule.title,
             message = rule.messageTemplate,

@@ -29,7 +29,7 @@
     "initialState": "ACTIVE"
   },
   "reminderRules": [
-    {"ruleId": "renewal_reminder","title": "Renewal Reminder","triggerField": "renewal_date","offsetDays": -7,"priority": "NORMAL","messageTemplate": "Subscription renewal approaching"}
+    {"ruleId": "renewal_reminder","title": "Renewal Reminder","triggerField": "renewal_date","offsetDays": -7,"priority": "MEDIUM","messageTemplate": "Subscription renewal approaching"}
   ],
   "searchConfig": {"primaryFields": ["service_name","plan_name"],"fullTextFields": ["service_name"],"filterableFields": ["billing_cycle","status"]},
   "aiConfig": {"extractableFields": ["service_name","billing_cycle","amount","renewal_date"],"classificationHints": ["subscription","renewal","billing"]}

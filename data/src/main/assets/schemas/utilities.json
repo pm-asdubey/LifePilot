@@ -28,7 +28,7 @@
     "initialState": "ACTIVE"
   },
   "reminderRules": [
-    {"ruleId": "contract_end_reminder","title": "Contract Renewal","triggerField": "contract_end","offsetDays": -30,"priority": "NORMAL","messageTemplate": "Utility contract ends in 30 days. Consider reviewing your tariff."}
+    {"ruleId": "contract_end_reminder","title": "Contract Renewal","triggerField": "contract_end","offsetDays": -30,"priority": "MEDIUM","messageTemplate": "Utility contract ends in 30 days. Consider reviewing your tariff."}
   ],
   "searchConfig": {"primaryFields": ["provider","account_number"],"fullTextFields": ["provider"],"filterableFields": ["utility_type"]},
   "aiConfig": {"extractableFields": ["utility_type","provider","account_number","contract_end","monthly_cost"],"classificationHints": ["utility","bill","electricity","gas","water","broadband"]}

@@ -79,10 +79,10 @@ class TaskGenerator @Inject constructor(
                     objectId = obj.objectId,
                     title = template.title,
                     description = "Created automatically when ${obj.title} was added",
-                    priority = if (template.dueDays <= 3) "HIGH" else "NORMAL",
+                    priority = if (template.dueDays <= 3) "HIGH" else "MEDIUM",
                     dueDate = dueDate.toEpochMilli(),
                     status = "PENDING",
-                    source = "SYSTEM",
+                    source = "RULE_ENGINE",
                     completedAt = null,
                 )
             )

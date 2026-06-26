@@ -4,6 +4,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lifepilot.domain.model.MetadataEntry
+import com.lifepilot.domain.model.MetadataFieldType
+import com.lifepilot.domain.model.MetadataSource
 import com.lifepilot.domain.repository.DocumentRepository
 import com.lifepilot.domain.repository.MetadataRepository
 import com.lifepilot.domain.repository.ObjectRepository
@@ -126,11 +128,14 @@ class MetadataVerificationViewModel @Inject constructor(
                         objectId = objectId,
                         fieldId = suggestion.fieldId,
                         value = suggestion.editedValue,
+                        fieldType = MetadataFieldType.TEXT,
+                        source = MetadataSource.AI_EXTRACTED,
+                        confidence = suggestion.confidence,
                         version = 1,
                         updatedAt = Instant.now(),
                     )
                 }
-                metadataRepository.upsertMetadataBatch(objectId, entries)
+                metadataRepository.upsertMetadataBatch(entries)
                 _state.update { it.copy(isSaving = false, saved = true) }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to save verified metadata")

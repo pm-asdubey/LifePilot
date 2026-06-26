@@ -33,7 +33,7 @@
   },
   "reminderRules": [
     {"ruleId": "visa_expiry_reminder","title": "Visa Expiry","triggerField": "visa_expiry","offsetDays": -60,"priority": "HIGH","messageTemplate": "Travel visa expires in 60 days"},
-    {"ruleId": "departure_reminder","title": "Departure","triggerField": "departure_date","offsetDays": -3,"priority": "NORMAL","messageTemplate": "Upcoming departure in 3 days"}
+    {"ruleId": "departure_reminder","title": "Departure","triggerField": "departure_date","offsetDays": -3,"priority": "MEDIUM","messageTemplate": "Upcoming departure in 3 days"}
   ],
   "searchConfig": {"primaryFields": ["destination","booking_reference","airline"],"fullTextFields": ["destination","airline","booking_reference"],"filterableFields": ["travel_type","visa_required"]},
   "aiConfig": {"extractableFields": ["destination","departure_date","return_date","booking_reference","airline"],"classificationHints": ["travel","flight","visa","booking","itinerary"]}

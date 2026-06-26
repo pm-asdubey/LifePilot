@@ -31,7 +31,7 @@
   "reminderRules": [
     {"ruleId": "insurance_reminder","title": "Insurance Renewal","triggerField": "insurance_expiry","offsetDays": -30,"priority": "HIGH","messageTemplate": "Vehicle insurance expires in 30 days"},
     {"ruleId": "mot_reminder","title": "MOT Due","triggerField": "mot_due","offsetDays": -30,"priority": "HIGH","messageTemplate": "Vehicle MOT due in 30 days"},
-    {"ruleId": "road_tax_reminder","title": "Road Tax Due","triggerField": "tax_due","offsetDays": -14,"priority": "NORMAL","messageTemplate": "Road tax renewal due in 14 days"}
+    {"ruleId": "road_tax_reminder","title": "Road Tax Due","triggerField": "tax_due","offsetDays": -14,"priority": "MEDIUM","messageTemplate": "Road tax renewal due in 14 days"}
   ],
   "searchConfig": {"primaryFields": ["make","model","registration_number"],"fullTextFields": ["make","model","registration_number"],"filterableFields": ["fuel_type"]},
   "aiConfig": {"extractableFields": ["make","model","year","registration_number","vin"],"classificationHints": ["vehicle","car","registration","insurance"]}
