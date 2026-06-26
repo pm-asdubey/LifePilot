@@ -1,5 +1,6 @@
 package com.lifepilot.data.engine
 
+import com.lifepilot.data.task.TaskGenerator
 import com.lifepilot.domain.engine.AttentionItem
 import com.lifepilot.domain.engine.AttentionPriority
 import com.lifepilot.domain.engine.LifeStateEngine
@@ -12,11 +13,9 @@ import com.lifepilot.domain.repository.ReminderRepository
 import com.lifepilot.domain.repository.TimelineRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import timber.log.Timber
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -27,6 +26,7 @@ class LifeStateEngineImpl @Inject constructor(
     private val timelineRepository: TimelineRepository,
     private val reminderRepository: ReminderRepository,
     private val ruleEngine: RuleEngineImpl,
+    private val taskGenerator: TaskGenerator,
 ) : LifeStateEngine {
 
     override suspend fun processDocumentIngestion(
@@ -52,6 +52,14 @@ class LifeStateEngineImpl @Inject constructor(
         payload: String,
     ) {
         Timber.d("Processing event $eventType for object $objectId")
+
+        if (eventType == "OBJECT_CREATED") {
+            val obj = objectRepository.getObjectById(objectId)
+            if (obj != null) {
+                taskGenerator.generateObjectCreationTasks(obj)
+            }
+        }
+
         evaluateRules(objectId)
     }
 

@@ -1,10 +1,10 @@
 package com.lifepilot.domain.usecase
 
+import com.lifepilot.domain.engine.LifeStateEngine
 import com.lifepilot.domain.engine.SchemaEngine
 import com.lifepilot.domain.model.EventSource
 import com.lifepilot.domain.model.LifeObject
 import com.lifepilot.domain.model.ObjectStatus
-import com.lifepilot.domain.model.TimelineEntry
 import com.lifepilot.domain.model.schema.AiExtractionConfig
 import com.lifepilot.domain.model.schema.LifecycleDefinition
 import com.lifepilot.domain.model.schema.ObjectSchema
@@ -28,6 +28,7 @@ class CreateObjectUseCaseTest {
     private val eventRepository: EventRepository = mockk()
     private val timelineRepository: TimelineRepository = mockk()
     private val schemaEngine: SchemaEngine = mockk()
+    private val lifeStateEngine: LifeStateEngine = mockk()
 
     private lateinit var useCase: CreateObjectUseCase
 
@@ -65,6 +66,7 @@ class CreateObjectUseCaseTest {
             eventRepository = eventRepository,
             timelineRepository = timelineRepository,
             schemaEngine = schemaEngine,
+            lifeStateEngine = lifeStateEngine,
         )
     }
 
@@ -89,9 +91,14 @@ class CreateObjectUseCaseTest {
                 confidence = null,
             )
         } returns mockk()
+        coEvery { timelineRepository.addTimelineEntry(any()) } returns mockk()
         coEvery {
-            timelineRepository.addTimelineEntry(any())
-        } returns mockk()
+            lifeStateEngine.processObjectEvent(
+                objectId = "test-object-id",
+                eventType = "OBJECT_CREATED",
+                payload = any(),
+            )
+        } returns Unit
 
         val result = useCase(
             profileId = "profile-1",
@@ -121,6 +128,13 @@ class CreateObjectUseCaseTest {
             )
         }
         coVerify(exactly = 1) { timelineRepository.addTimelineEntry(any()) }
+        coVerify(exactly = 1) {
+            lifeStateEngine.processObjectEvent(
+                objectId = "test-object-id",
+                eventType = "OBJECT_CREATED",
+                payload = any(),
+            )
+        }
     }
 
     @Test

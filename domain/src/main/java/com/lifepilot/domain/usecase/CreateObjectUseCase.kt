@@ -1,13 +1,14 @@
 package com.lifepilot.domain.usecase
 
+import com.lifepilot.domain.engine.LifeStateEngine
 import com.lifepilot.domain.engine.SchemaEngine
+import com.lifepilot.domain.model.EventSource
 import com.lifepilot.domain.model.LifeObject
+import com.lifepilot.domain.model.TimelineEntry
+import com.lifepilot.domain.model.TimelineSourceType
 import com.lifepilot.domain.repository.EventRepository
 import com.lifepilot.domain.repository.ObjectRepository
 import com.lifepilot.domain.repository.TimelineRepository
-import com.lifepilot.domain.model.EventSource
-import com.lifepilot.domain.model.TimelineEntry
-import com.lifepilot.domain.model.TimelineSourceType
 import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
@@ -17,6 +18,7 @@ class CreateObjectUseCase @Inject constructor(
     private val eventRepository: EventRepository,
     private val timelineRepository: TimelineRepository,
     private val schemaEngine: SchemaEngine,
+    private val lifeStateEngine: LifeStateEngine,
 ) {
     suspend operator fun invoke(
         profileId: String,
@@ -54,6 +56,12 @@ class CreateObjectUseCase @Inject constructor(
                 objectId = lifeObject.objectId,
                 objectType = objectType,
             )
+        )
+
+        lifeStateEngine.processObjectEvent(
+            objectId = lifeObject.objectId,
+            eventType = "OBJECT_CREATED",
+            payload = """{"objectType":"$objectType"}""",
         )
 
         lifeObject
