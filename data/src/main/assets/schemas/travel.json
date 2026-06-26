@@ -1,0 +1,23 @@
+{
+  "objectType": "travel",
+  "displayName": "Travel",
+  "domain": "travel",
+  "icon": "Flight",
+  "description": "Trip, visa, or travel document",
+  "metadataFields": [
+    {"fieldId": "destination","label": "Destination","type": "TEXT","required": true,"placeholder": "London, UK"},
+    {"fieldId": "travel_type","label": "Travel Type","type": "ENUM","required": true,"enumValues": ["HOLIDAY","BUSINESS","RELOCATION","MEDICAL","EDUCATION"]},
+    {"fieldId": "departure_date","label": "Departure Date","type": "DATE","required": false,"placeholder": "YYYY-MM-DD"},
+    {"fieldId": "return_date","label": "Return Date","type": "DATE","required": false,"placeholder": "YYYY-MM-DD"},
+    {"fieldId": "visa_required","label": "Visa Required","type": "ENUM","required": false,"enumValues": ["YES","NO","NOT_SURE"]},
+    {"fieldId": "visa_expiry","label": "Visa Expiry","type": "DATE","required": false,"placeholder": "YYYY-MM-DD"},
+    {"fieldId": "booking_reference","label": "Booking Reference","type": "TEXT","required": false,"placeholder": "ABC123"},
+    {"fieldId": "airline","label": "Airline / Carrier","type": "TEXT","required": false,"placeholder": "British Airways"}
+  ],
+  "lifecycle": {"states": ["PLANNING","BOOKED","IN_PROGRESS","COMPLETED","CANCELLED"],"initialState": "PLANNING"},
+  "reminderRules": [
+    {"ruleId": "visa_expiry_reminder","name": "Visa Expiry","triggerField": "visa_expiry","offsetDays": -60,"priority": "HIGH","messageTemplate": "Travel visa expires in 60 days"},
+    {"ruleId": "departure_reminder","name": "Departure","triggerField": "departure_date","offsetDays": -3,"priority": "NORMAL","messageTemplate": "Upcoming departure in 3 days"}
+  ],
+  "aiExtractionConfig": {"extractableFields": ["destination","departure_date","return_date","booking_reference","airline"],"confidenceThreshold": 0.8}
+}

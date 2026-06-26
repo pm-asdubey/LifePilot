@@ -11,9 +11,11 @@ import com.lifepilot.data.repository.SearchRepositoryImpl
 import com.lifepilot.data.repository.TaskRepositoryImpl
 import com.lifepilot.data.repository.TimelineRepositoryImpl
 import com.lifepilot.data.engine.LifeStateEngineImpl
+import com.lifepilot.data.ocr.MlKitOcrService
 import com.lifepilot.data.schema.SchemaEngineImpl
 import com.lifepilot.domain.engine.LifeStateEngine
 import com.lifepilot.domain.engine.SchemaEngine
+import com.lifepilot.domain.ocr.OcrService
 import com.lifepilot.domain.repository.DocumentRepository
 import com.lifepilot.domain.repository.EventRepository
 import com.lifepilot.domain.repository.RelationshipRepository
@@ -81,4 +83,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindLifeStateEngine(impl: LifeStateEngineImpl): LifeStateEngine
+
+    @Binds
+    @Singleton
+    abstract fun bindOcrService(impl: MlKitOcrService): OcrService
 }

@@ -34,4 +34,7 @@ interface DocumentDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertDocumentVersion(version: DocumentVersionEntity)
+
+    @Query("UPDATE document_versions SET ocr_text = :text WHERE version_id = :versionId")
+    suspend fun updateVersionOcrText(versionId: String, text: String)
 }

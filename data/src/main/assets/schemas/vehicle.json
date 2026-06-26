@@ -1,122 +1,25 @@
 {
-  "objectType": "Vehicle",
-  "domain": "Vehicle",
+  "objectType": "vehicle",
   "displayName": "Vehicle",
-  "icon": "directions_car",
-  "description": "Vehicle record",
-  "schemaVersion": 1,
-  "fields": [
-    {
-      "fieldId": "vehicleName",
-      "displayName": "Vehicle Name",
-      "fieldType": "TEXT",
-      "required": true,
-      "editable": true,
-      "searchable": true,
-      "aiExtractable": true,
-      "validationRules": [
-        { "ruleType": "REQUIRED", "message": "Vehicle name is required" }
-      ]
-    },
-    {
-      "fieldId": "registrationNumber",
-      "displayName": "Registration Number",
-      "fieldType": "TEXT",
-      "required": false,
-      "editable": true,
-      "searchable": true,
-      "aiExtractable": true,
-      "validationRules": []
-    },
-    {
-      "fieldId": "make",
-      "displayName": "Make",
-      "fieldType": "TEXT",
-      "required": false,
-      "editable": true,
-      "searchable": false,
-      "aiExtractable": true,
-      "validationRules": []
-    },
-    {
-      "fieldId": "model",
-      "displayName": "Model",
-      "fieldType": "TEXT",
-      "required": false,
-      "editable": true,
-      "searchable": false,
-      "aiExtractable": true,
-      "validationRules": []
-    },
-    {
-      "fieldId": "year",
-      "displayName": "Year",
-      "fieldType": "NUMBER",
-      "required": false,
-      "editable": true,
-      "searchable": false,
-      "aiExtractable": true,
-      "validationRules": []
-    },
-    {
-      "fieldId": "insuranceExpiryDate",
-      "displayName": "Insurance Expiry",
-      "fieldType": "DATE",
-      "required": false,
-      "editable": true,
-      "searchable": false,
-      "aiExtractable": true,
-      "validationRules": []
-    },
-    {
-      "fieldId": "pucExpiryDate",
-      "displayName": "PUC Expiry",
-      "fieldType": "DATE",
-      "required": false,
-      "editable": true,
-      "searchable": false,
-      "aiExtractable": true,
-      "validationRules": []
-    }
+  "domain": "transport",
+  "icon": "DirectionsCar",
+  "description": "Car, motorcycle, or other registered vehicle",
+  "metadataFields": [
+    {"fieldId": "make","label": "Make","type": "TEXT","required": true,"placeholder": "Toyota, Honda, etc."},
+    {"fieldId": "model","label": "Model","type": "TEXT","required": true,"placeholder": "Corolla, Civic, etc."},
+    {"fieldId": "year","label": "Year","type": "NUMBER","required": true,"placeholder": "2020"},
+    {"fieldId": "registration_number","label": "Registration Number","type": "TEXT","required": false,"placeholder": "AB12 CDE"},
+    {"fieldId": "vin","label": "VIN","type": "TEXT","required": false,"placeholder": "17-character VIN"},
+    {"fieldId": "fuel_type","label": "Fuel Type","type": "ENUM","required": false,"enumValues": ["PETROL","DIESEL","ELECTRIC","HYBRID","LPG"]},
+    {"fieldId": "insurance_expiry","label": "Insurance Expiry","type": "DATE","required": false,"placeholder": "YYYY-MM-DD"},
+    {"fieldId": "mot_due","label": "MOT / Roadworthy Due","type": "DATE","required": false,"placeholder": "YYYY-MM-DD"},
+    {"fieldId": "tax_due","label": "Road Tax Due","type": "DATE","required": false,"placeholder": "YYYY-MM-DD"}
   ],
-  "lifecycle": {
-    "states": [
-      { "stateId": "ACTIVE", "displayName": "Active" },
-      { "stateId": "RENEWAL_DUE", "displayName": "Renewal Due" },
-      { "stateId": "SOLD", "displayName": "Sold", "isFinal": true }
-    ],
-    "transitions": [
-      { "fromState": "ACTIVE", "toState": "RENEWAL_DUE", "trigger": "INSURANCE_EXPIRING", "label": "Insurance Due" },
-      { "fromState": "RENEWAL_DUE", "toState": "ACTIVE", "trigger": "RENEWED", "label": "Renewed" },
-      { "fromState": "ACTIVE", "toState": "SOLD", "trigger": "SOLD", "label": "Sold" }
-    ],
-    "initialState": "ACTIVE"
-  },
+  "lifecycle": {"states": ["OWNED","SOLD","SCRAPPED"],"initialState": "OWNED"},
   "reminderRules": [
-    {
-      "ruleId": "vehicle_insurance_30d",
-      "triggerField": "insuranceExpiryDate",
-      "offsetDays": -30,
-      "priority": "HIGH",
-      "title": "Vehicle Insurance Expiring",
-      "messageTemplate": "Your vehicle insurance expires in 30 days. Renew now."
-    },
-    {
-      "ruleId": "vehicle_puc_15d",
-      "triggerField": "pucExpiryDate",
-      "offsetDays": -15,
-      "priority": "MEDIUM",
-      "title": "PUC Certificate Expiring",
-      "messageTemplate": "Your vehicle PUC certificate expires in 15 days."
-    }
+    {"ruleId": "insurance_reminder","name": "Insurance Renewal","triggerField": "insurance_expiry","offsetDays": -30,"priority": "HIGH","messageTemplate": "Vehicle insurance expires in 30 days"},
+    {"ruleId": "mot_reminder","name": "MOT Due","triggerField": "mot_due","offsetDays": -30,"priority": "HIGH","messageTemplate": "Vehicle MOT due in 30 days"},
+    {"ruleId": "road_tax_reminder","name": "Road Tax Due","triggerField": "tax_due","offsetDays": -14,"priority": "NORMAL","messageTemplate": "Road tax renewal due in 14 days"}
   ],
-  "searchConfig": {
-    "primaryFields": ["vehicleName", "registrationNumber"],
-    "fullTextFields": ["vehicleName", "make", "model"],
-    "filterableFields": []
-  },
-  "aiConfig": {
-    "extractableFields": ["vehicleName", "registrationNumber", "make", "model", "year", "insuranceExpiryDate", "pucExpiryDate"],
-    "classificationHints": ["RC book", "registration certificate", "insurance certificate", "PUC certificate"]
-  }
+  "aiExtractionConfig": {"extractableFields": ["make","model","year","registration_number","vin"],"confidenceThreshold": 0.85}
 }
