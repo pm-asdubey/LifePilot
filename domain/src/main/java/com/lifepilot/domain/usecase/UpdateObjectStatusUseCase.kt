@@ -1,0 +1,49 @@
+package com.lifepilot.domain.usecase
+
+import com.lifepilot.domain.model.EventSource
+import com.lifepilot.domain.model.ObjectStatus
+import com.lifepilot.domain.model.TimelineEntry
+import com.lifepilot.domain.model.TimelineSourceType
+import com.lifepilot.domain.repository.EventRepository
+import com.lifepilot.domain.repository.ObjectRepository
+import com.lifepilot.domain.repository.TimelineRepository
+import java.time.Instant
+import java.util.UUID
+import javax.inject.Inject
+
+class UpdateObjectStatusUseCase @Inject constructor(
+    private val objectRepository: ObjectRepository,
+    private val eventRepository: EventRepository,
+    private val timelineRepository: TimelineRepository,
+) {
+    suspend operator fun invoke(objectId: String, newStatus: ObjectStatus): Result<Unit> = runCatching {
+        val obj = objectRepository.getObjectById(objectId)
+            ?: error("Object not found: $objectId")
+
+        val previousStatus = obj.status
+        objectRepository.updateObjectStatus(objectId, newStatus)
+
+        eventRepository.recordEvent(
+            objectId = objectId,
+            eventType = "STATUS_CHANGED",
+            payload = mapOf(
+                "from" to previousStatus.name,
+                "to" to newStatus.name,
+            ),
+            source = EventSource.USER,
+            confidence = null,
+        )
+
+        timelineRepository.addTimelineEntry(
+            TimelineEntry(
+                timelineId = UUID.randomUUID().toString(),
+                objectId = objectId,
+                eventId = null,
+                title = "Status updated to ${newStatus.name.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() }}",
+                summary = "${obj.title} status changed from ${previousStatus.name} to ${newStatus.name}",
+                timestamp = Instant.now(),
+                sourceType = TimelineSourceType.USER_ACTION,
+            )
+        )
+    }
+}

@@ -3,11 +3,14 @@ package com.lifepilot.features.object.viewmodel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lifepilot.domain.model.ObjectStatus
 import com.lifepilot.domain.repository.DocumentRepository
 import com.lifepilot.domain.repository.ObjectRepository
 import com.lifepilot.domain.repository.ReminderRepository
 import com.lifepilot.domain.repository.TaskRepository
 import com.lifepilot.domain.repository.TimelineRepository
+import com.lifepilot.domain.usecase.ArchiveObjectUseCase
+import com.lifepilot.domain.usecase.UpdateObjectStatusUseCase
 import com.lifepilot.features.object.state.ObjectDetailTab
 import com.lifepilot.features.object.state.ObjectDetailUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -31,6 +34,8 @@ class ObjectDetailViewModel @Inject constructor(
     private val taskRepository: TaskRepository,
     private val reminderRepository: ReminderRepository,
     private val timelineRepository: TimelineRepository,
+    private val archiveObjectUseCase: ArchiveObjectUseCase,
+    private val updateObjectStatusUseCase: UpdateObjectStatusUseCase,
 ) : ViewModel() {
 
     private val objectId: String = checkNotNull(savedStateHandle["objectId"])
@@ -73,5 +78,23 @@ class ObjectDetailViewModel @Inject constructor(
 
     fun selectTab(tab: ObjectDetailTab) {
         _uiState.update { it.copy(selectedTab = tab) }
+    }
+
+    fun archiveObject() {
+        viewModelScope.launch {
+            archiveObjectUseCase(objectId).onFailure { e ->
+                Timber.e(e, "Failed to archive object")
+                _uiState.update { it.copy(error = "Failed to archive: ${e.message}") }
+            }
+        }
+    }
+
+    fun updateStatus(status: ObjectStatus) {
+        viewModelScope.launch {
+            updateObjectStatusUseCase(objectId, status).onFailure { e ->
+                Timber.e(e, "Failed to update status")
+                _uiState.update { it.copy(error = "Failed to update status: ${e.message}") }
+            }
+        }
     }
 }

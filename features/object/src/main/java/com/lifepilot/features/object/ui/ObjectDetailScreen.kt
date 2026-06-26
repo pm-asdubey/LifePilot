@@ -15,6 +15,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -64,10 +67,12 @@ fun ObjectDetailScreen(
     onNavigateToDocument: (String) -> Unit,
     onUploadDocument: (String) -> Unit,
     onEditMetadata: (String) -> Unit = {},
+    onArchived: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ObjectDetailViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var showMenu by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -96,6 +101,29 @@ fun ObjectDetailScreen(
                                 imageVector = Icons.Filled.Edit,
                                 contentDescription = "Edit Details",
                             )
+                        }
+                    }
+                    if (uiState.lifeObject != null) {
+                        Box {
+                            IconButton(onClick = { showMenu = true }) {
+                                Icon(
+                                    imageVector = Icons.Filled.MoreVert,
+                                    contentDescription = "More options",
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = showMenu,
+                                onDismissRequest = { showMenu = false },
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Archive") },
+                                    onClick = {
+                                        showMenu = false
+                                        viewModel.archiveObject()
+                                        onArchived()
+                                    }
+                                )
+                            }
                         }
                     }
                 },
@@ -265,7 +293,11 @@ private fun OverviewTab(
                             .padding(horizontal = Spacing.md, vertical = Spacing.sm),
                     ) {
                         Text(
-                            text = entry.fieldId.replace(Regex("([A-Z])"), " $1").trim(),
+                            text = entry.fieldId
+                                .replace("_", " ")
+                                .replace(Regex("([A-Z])"), " $1")
+                                .trim()
+                                .replaceFirstChar { it.uppercase() },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.weight(0.4f),
@@ -378,16 +410,59 @@ private fun TasksTab(
     tasks: List<com.lifepilot.domain.model.Task>,
     modifier: Modifier = Modifier,
 ) {
-    LazyColumn(
-        modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(Spacing.md),
-    ) {
-        items(tasks, key = { it.taskId }) { task ->
-            Text(
-                text = task.title,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(vertical = Spacing.sm),
-            )
+    if (tasks.isEmpty()) {
+        EmptyState(
+            icon = Icons.Outlined.Description,
+            title = "No tasks",
+            description = "Tasks are generated automatically when you add objects.",
+            modifier = modifier.fillMaxSize(),
+        )
+    } else {
+        LazyColumn(
+            modifier = modifier.fillMaxSize(),
+            contentPadding = PaddingValues(Spacing.md),
+        ) {
+            items(tasks, key = { it.taskId }) { task ->
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = Spacing.xs),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(Spacing.md),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = task.title,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            if (task.dueDate != null) {
+                                Text(
+                                    text = "Due: ${task.dueDate.format(java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy"))}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                        val priorityColor = when (task.priority.name) {
+                            "HIGH" -> MaterialTheme.colorScheme.error
+                            "MEDIUM" -> MaterialTheme.colorScheme.tertiary
+                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                        StatusChip(
+                            label = task.priority.name,
+                            color = priorityColor,
+                        )
+                    }
+                }
+            }
         }
     }
 }
