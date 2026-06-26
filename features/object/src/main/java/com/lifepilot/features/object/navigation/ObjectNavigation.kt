@@ -10,6 +10,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.lifepilot.features.document.upload.DocumentUploadSheet
+import com.lifepilot.features.object.metadata.ui.MetadataEditScreen
 import com.lifepilot.features.object.ui.ObjectDetailScreen
 
 fun NavGraphBuilder.objectDetailScreen(navController: NavController) {
@@ -27,6 +28,9 @@ fun NavGraphBuilder.objectDetailScreen(navController: NavController) {
             onUploadDocument = { objectId ->
                 uploadTargetObjectId = objectId
             },
+            onEditMetadata = { objectId ->
+                navController.navigate("object/$objectId/edit")
+            },
         )
 
         val targetId = uploadTargetObjectId
@@ -39,5 +43,14 @@ fun NavGraphBuilder.objectDetailScreen(navController: NavController) {
                 },
             )
         }
+    }
+
+    composable(
+        route = "object/{objectId}/edit",
+        arguments = listOf(navArgument("objectId") { type = NavType.StringType }),
+    ) {
+        MetadataEditScreen(
+            onNavigateBack = { navController.popBackStack() },
+        )
     }
 }

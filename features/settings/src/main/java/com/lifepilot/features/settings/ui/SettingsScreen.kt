@@ -15,10 +15,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -32,6 +35,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.lifepilot.designsystem.components.SectionHeader
@@ -59,14 +63,51 @@ fun SettingsScreen(
                 )
             },
             confirmButton = {
-                TextButton(onClick = viewModel::createProfile) {
-                    Text("Create")
-                }
+                TextButton(onClick = viewModel::createProfile) { Text("Create") }
             },
             dismissButton = {
-                TextButton(onClick = viewModel::hideCreateProfile) {
-                    Text("Cancel")
+                TextButton(onClick = viewModel::hideCreateProfile) { Text("Cancel") }
+            },
+        )
+    }
+
+    if (uiState.showAiConfig) {
+        AlertDialog(
+            onDismissRequest = viewModel::hideAiConfig,
+            title = { Text("AI Provider") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = uiState.aiProvider,
+                        onValueChange = viewModel::onAiProviderChange,
+                        label = { Text("Provider (anthropic / openai / gemini)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(modifier = Modifier.height(Spacing.sm))
+                    OutlinedTextField(
+                        value = uiState.aiApiKey,
+                        onValueChange = viewModel::onAiApiKeyChange,
+                        label = { Text("API Key") },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(modifier = Modifier.height(Spacing.sm))
+                    OutlinedTextField(
+                        value = uiState.aiModel,
+                        onValueChange = viewModel::onAiModelChange,
+                        label = { Text("Model (e.g. claude-sonnet-4-6)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
+            },
+            confirmButton = {
+                TextButton(onClick = viewModel::saveAiConfig) { Text("Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::clearAiConfig) { Text("Clear") }
             },
         )
     }
@@ -76,7 +117,7 @@ fun SettingsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Profile",
+                        text = "Settings",
                         style = MaterialTheme.typography.titleLarge,
                     )
                 },
@@ -101,6 +142,7 @@ fun SettingsScreen(
                 )
                 Spacer(modifier = Modifier.height(Spacing.sm))
             }
+
             items(uiState.profiles, key = { it.profileId }) { profile ->
                 Card(
                     colors = CardDefaults.cardColors(
@@ -171,15 +213,72 @@ fun SettingsScreen(
                         Text(
                             text = "No profiles yet",
                             style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
                         )
-                        Spacer(modifier = Modifier.height(Spacing.sm))
                         TextButton(onClick = viewModel::showCreateProfile) {
                             Text("Create your first profile")
                         }
                     }
                 }
             }
+
+            item {
+                Spacer(modifier = Modifier.height(Spacing.lg))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(Spacing.md))
+                SectionHeader(title = "AI CONFIGURATION")
+                Spacer(modifier = Modifier.height(Spacing.sm))
+            }
+
+            item {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    ),
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = Spacing.md)
+                        .clickable { viewModel.showAiConfig() },
+                ) {
+                    Row(
+                        modifier = Modifier.padding(Spacing.md),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.AutoAwesome,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp),
+                        )
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = Spacing.md),
+                        ) {
+                            Text(
+                                text = "AI Provider",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                text = if (uiState.aiProvider.isNotBlank())
+                                    "${uiState.aiProvider} • ${uiState.aiModel.ifBlank { "default model" }}"
+                                else
+                                    "Not configured — tap to set up",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Icon(
+                            imageVector = Icons.Outlined.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+
+            item { Spacer(modifier = Modifier.height(Spacing.xxl)) }
         }
     }
 }

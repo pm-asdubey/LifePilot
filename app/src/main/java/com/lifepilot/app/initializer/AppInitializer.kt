@@ -1,5 +1,6 @@
 package com.lifepilot.app.initializer
 
+import com.lifepilot.data.notification.NotificationHelper
 import com.lifepilot.data.repository.PreferenceManager
 import com.lifepilot.data.worker.WorkManagerScheduler
 import com.lifepilot.domain.engine.SchemaEngine
@@ -19,10 +20,12 @@ class AppInitializer @Inject constructor(
     private val profileRepository: ProfileRepository,
     private val preferenceManager: PreferenceManager,
     private val workManagerScheduler: WorkManagerScheduler,
+    private val notificationHelper: NotificationHelper,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     fun initialize() {
+        notificationHelper.createNotificationChannels()
         workManagerScheduler.scheduleReminderEvaluation()
 
         scope.launch {

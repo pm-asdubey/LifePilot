@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -62,6 +63,7 @@ fun ObjectDetailScreen(
     onNavigateBack: () -> Unit,
     onNavigateToDocument: (String) -> Unit,
     onUploadDocument: (String) -> Unit,
+    onEditMetadata: (String) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ObjectDetailViewModel = hiltViewModel(),
 ) {
@@ -83,6 +85,18 @@ fun ObjectDetailScreen(
                             imageVector = Icons.Filled.ArrowBack,
                             contentDescription = "Back",
                         )
+                    }
+                },
+                actions = {
+                    if (uiState.lifeObject != null && uiState.selectedTab == ObjectDetailTab.OVERVIEW) {
+                        IconButton(
+                            onClick = { onEditMetadata(uiState.lifeObject!!.objectId) }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Edit,
+                                contentDescription = "Edit Details",
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
