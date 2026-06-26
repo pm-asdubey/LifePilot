@@ -33,6 +33,7 @@ android {
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.2")
     implementation(project(":domain"))
+    implementation(project(":data"))
     implementation(project(":designsystem"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.navigation.compose)

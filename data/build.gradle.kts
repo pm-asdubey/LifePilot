@@ -53,6 +53,8 @@ dependencies {
     implementation(libs.hilt.work)
     ksp(libs.hilt.work.compiler)
 
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging)
     implementation(libs.timber)
 
     testImplementation(libs.bundles.testing.unit)

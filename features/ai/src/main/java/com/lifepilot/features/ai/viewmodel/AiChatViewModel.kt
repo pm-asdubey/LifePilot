@@ -2,10 +2,13 @@ package com.lifepilot.features.ai.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lifepilot.data.ai.AiProviderFactory
+import com.lifepilot.domain.ai.AiCompletionResult
+import com.lifepilot.domain.ai.AiMessage
+import com.lifepilot.domain.ai.AiMessageRole
 import com.lifepilot.domain.engine.SchemaEngine
 import com.lifepilot.domain.repository.ObjectRepository
 import com.lifepilot.domain.repository.ProfileRepository
-import com.lifepilot.domain.repository.TimelineRepository
 import com.lifepilot.features.ai.state.AiChatState
 import com.lifepilot.features.ai.state.ChatMessage
 import com.lifepilot.features.ai.state.MessageRole
@@ -26,14 +29,11 @@ class AiChatViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
     private val objectRepository: ObjectRepository,
     private val schemaEngine: SchemaEngine,
+    private val aiProviderFactory: AiProviderFactory,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AiChatState())
     val state: StateFlow<AiChatState> = _state.asStateFlow()
-
-    init {
-        _state.update { it.copy(isConfigured = false) }
-    }
 
     fun onInputChange(text: String) {
         _state.update { it.copy(inputText = text) }
@@ -60,82 +60,84 @@ class AiChatViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                val context = buildLifeContext()
-                val response = buildOfflineResponse(text, context)
+                val systemPrompt = buildSystemPrompt()
+                val history = _state.value.messages
+                    .dropLast(1)
+                    .map { msg ->
+                        AiMessage(
+                            role = when (msg.role) {
+                                MessageRole.USER -> AiMessageRole.USER
+                                MessageRole.ASSISTANT -> AiMessageRole.ASSISTANT
+                                MessageRole.SYSTEM -> AiMessageRole.SYSTEM
+                            },
+                            content = msg.content,
+                        )
+                    }
+
+                val provider = aiProviderFactory.getProvider()
+                val result = provider.complete(
+                    systemPrompt = systemPrompt,
+                    userMessage = text,
+                    conversationHistory = history,
+                )
+
+                val responseContent = when (result) {
+                    is AiCompletionResult.Success -> result.content
+                    is AiCompletionResult.Error -> "Error: ${result.message}"
+                    is AiCompletionResult.Unavailable ->
+                        "AI provider not configured. Go to Settings → AI Provider to set it up."
+                }
+
+                val isConfigured = result is AiCompletionResult.Success &&
+                    provider.name != "offline"
 
                 val assistantMessage = ChatMessage(
                     id = UUID.randomUUID().toString(),
                     role = MessageRole.ASSISTANT,
-                    content = response,
+                    content = responseContent,
                 )
                 _state.update { state ->
                     state.copy(
                         messages = state.messages + assistantMessage,
                         isLoading = false,
+                        isConfigured = isConfigured,
                     )
                 }
             } catch (e: Exception) {
                 Timber.e(e, "AI query failed")
-                _state.update { it.copy(isLoading = false, error = "Unable to process request.") }
+                _state.update { it.copy(isLoading = false, error = "Request failed: ${e.message}") }
             }
         }
     }
 
-    private suspend fun buildLifeContext(): String {
+    private suspend fun buildSystemPrompt(): String {
         val profile = profileRepository.observeActiveProfile()
             .catch { }
             .firstOrNull()
-            ?: return "No profile loaded."
 
-        val objects = objectRepository.observeObjectsByProfile(profile.profileId)
-            .catch { }
-            .firstOrNull()
-            ?: emptyList()
+        val objects = profile?.let {
+            objectRepository.observeObjectsByProfile(it.profileId)
+                .catch { }
+                .firstOrNull()
+                ?: emptyList()
+        } ?: emptyList()
 
         return buildString {
-            appendLine("Profile: ${profile.displayName}")
-            appendLine("Objects (${objects.size}):")
-            objects.forEach { obj ->
-                appendLine("  - ${obj.title} [${obj.objectType}] status=${obj.status}")
+            appendLine("You are the LifePilot AI assistant. You help users manage their administrative life.")
+            appendLine("You have access to the user's life data below. Answer based on this data.")
+            appendLine("Be concise, practical, and focused on actionable insights.")
+            appendLine()
+            appendLine("USER LIFE DATA:")
+            if (profile != null) {
+                appendLine("Profile: ${profile.displayName}")
             }
-        }
-    }
-
-    private fun buildOfflineResponse(query: String, context: String): String {
-        val lower = query.lowercase()
-        return when {
-            lower.contains("how many") && lower.contains("object") ->
-                extractObjectCountAnswer(context)
-            lower.contains("passport") ->
-                extractObjectAnswer(context, "passport")
-            lower.contains("insurance") ->
-                extractObjectAnswer(context, "insurance")
-            lower.contains("job") || lower.contains("work") ->
-                extractObjectAnswer(context, "job")
-            lower.contains("property") || lower.contains("home") ->
-                extractObjectAnswer(context, "property")
-            lower.contains("vehicle") || lower.contains("car") ->
-                extractObjectAnswer(context, "vehicle")
-            lower.contains("what") && lower.contains("have") ->
-                "Based on your life data:\n\n$context"
-            else ->
-                "I can help you find information about your objects, reminders, and life documents. " +
-                    "To get real AI-powered answers, configure your AI provider in Settings.\n\n" +
-                    "Current life data summary:\n$context"
-        }
-    }
-
-    private fun extractObjectCountAnswer(context: String): String {
-        val count = context.lines().count { it.trimStart().startsWith("-") }
-        return "You have $count objects in your life database."
-    }
-
-    private fun extractObjectAnswer(context: String, type: String): String {
-        val lines = context.lines().filter { it.lowercase().contains(type) }
-        return if (lines.isEmpty()) {
-            "I couldn't find any $type records in your data. You can add one from the Library screen."
-        } else {
-            "Here's what I found about your ${type}(s):\n${lines.joinToString("\n")}"
+            appendLine("Objects (${objects.size} total):")
+            objects.forEach { obj ->
+                appendLine("  - ${obj.title} [${obj.objectType}, domain=${obj.domain}, status=${obj.status}]")
+            }
+            if (objects.isEmpty()) {
+                appendLine("  (No objects yet)")
+            }
         }
     }
 
