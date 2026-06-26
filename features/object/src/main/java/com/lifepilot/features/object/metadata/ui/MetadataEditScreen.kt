@@ -140,7 +140,7 @@ private fun MetadataFieldInput(
                 label = {
                     Text(if (field.required) "${field.displayName} *" else field.displayName)
                 },
-                placeholder = field.hint?.let { { Text(it) } },
+                placeholder = (field.placeholder ?: field.hint)?.let { { Text(it) } },
                 singleLine = field.fieldType != "MULTILINE_TEXT",
                 minLines = if (field.fieldType == "MULTILINE_TEXT") 3 else 1,
                 maxLines = if (field.fieldType == "MULTILINE_TEXT") 5 else 1,
