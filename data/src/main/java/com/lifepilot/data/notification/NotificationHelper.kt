@@ -48,11 +48,16 @@ class NotificationHelper @Inject constructor(
         Timber.d("Notification channels created")
     }
 
-    fun showReminderNotification(reminder: Reminder, notificationId: Int) {
+    fun showReminderNotification(
+        reminderId: String,
+        title: String,
+        message: String,
+        objectId: String?,
+        priority: ReminderPriority = ReminderPriority.MEDIUM,
+    ) {
         try {
-            val priority = when (reminder.priority) {
-                ReminderPriority.CRITICAL, ReminderPriority.HIGH ->
-                    NotificationCompat.PRIORITY_HIGH
+            val notifPriority = when (priority) {
+                ReminderPriority.CRITICAL, ReminderPriority.HIGH -> NotificationCompat.PRIORITY_HIGH
                 else -> NotificationCompat.PRIORITY_DEFAULT
             }
 
@@ -60,8 +65,10 @@ class NotificationHelper @Inject constructor(
                 .getLaunchIntentForPackage(context.packageName)
                 ?.apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    reminder.objectId?.let { putExtra("objectId", it) }
+                    objectId?.let { putExtra("objectId", it) }
                 }
+
+            val notificationId = reminderId.hashCode()
 
             val pendingIntent = launchIntent?.let {
                 PendingIntent.getActivity(
@@ -74,18 +81,29 @@ class NotificationHelper @Inject constructor(
 
             val notification = NotificationCompat.Builder(context, CHANNEL_REMINDERS)
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
-                .setContentTitle(reminder.title)
-                .setContentText(reminder.message)
-                .setPriority(priority)
+                .setContentTitle(title)
+                .setContentText(message)
+                .setPriority(notifPriority)
                 .setAutoCancel(true)
                 .setContentIntent(pendingIntent)
                 .build()
 
             NotificationManagerCompat.from(context).notify(notificationId, notification)
+            Timber.d("Notification fired: $title")
         } catch (e: SecurityException) {
             Timber.w(e, "No notification permission")
         } catch (e: Exception) {
-            Timber.e(e, "Error showing notification")
+            Timber.e(e, "Error showing notification for reminder $reminderId")
         }
+    }
+
+    fun showReminderNotification(reminder: Reminder) {
+        showReminderNotification(
+            reminderId = reminder.reminderId,
+            title = reminder.title,
+            message = reminder.message ?: reminder.title,
+            objectId = reminder.objectId,
+            priority = reminder.priority,
+        )
     }
 }
