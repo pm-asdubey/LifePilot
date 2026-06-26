@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
@@ -65,11 +66,7 @@ class SearchViewModel @Inject constructor(
                     try {
                         val profile = profileRepository.observeActiveProfile()
                             .catch { }
-                            .let { flow ->
-                                var result: com.lifepilot.domain.model.Profile? = null
-                                flow.collect { result = it }
-                                result
-                            }
+                            .firstOrNull()
                         val profileId = profile?.profileId ?: return@collect
                         val results = searchRepository.search(query, profileId)
                         _uiState.update { it.copy(results = results, isSearching = false) }
@@ -90,11 +87,7 @@ class SearchViewModel @Inject constructor(
         viewModelScope.launch {
             val profile = profileRepository.observeActiveProfile()
                 .catch { }
-                .let { flow ->
-                    var result: com.lifepilot.domain.model.Profile? = null
-                    flow.collect { result = it }
-                    result
-                }
+                .firstOrNull()
             profile?.let { searchRepository.saveRecentSearch(query, it.profileId) }
         }
     }

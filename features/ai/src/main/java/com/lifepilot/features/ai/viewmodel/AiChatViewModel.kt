@@ -6,9 +6,11 @@ import com.lifepilot.data.ai.AiProviderFactory
 import com.lifepilot.domain.ai.AiCompletionResult
 import com.lifepilot.domain.ai.AiMessage
 import com.lifepilot.domain.ai.AiMessageRole
-import com.lifepilot.domain.engine.SchemaEngine
+import com.lifepilot.domain.repository.MetadataRepository
 import com.lifepilot.domain.repository.ObjectRepository
 import com.lifepilot.domain.repository.ProfileRepository
+import com.lifepilot.domain.repository.ReminderRepository
+import com.lifepilot.domain.repository.TaskRepository
 import com.lifepilot.features.ai.state.AiChatState
 import com.lifepilot.features.ai.state.ChatMessage
 import com.lifepilot.features.ai.state.MessageRole
@@ -28,7 +30,9 @@ import javax.inject.Inject
 class AiChatViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
     private val objectRepository: ObjectRepository,
-    private val schemaEngine: SchemaEngine,
+    private val metadataRepository: MetadataRepository,
+    private val taskRepository: TaskRepository,
+    private val reminderRepository: ReminderRepository,
     private val aiProviderFactory: AiProviderFactory,
 ) : ViewModel() {
 
@@ -122,21 +126,44 @@ class AiChatViewModel @Inject constructor(
                 ?: emptyList()
         } ?: emptyList()
 
+        val pendingTasks = profile?.let {
+            taskRepository.observePendingTasks(it.profileId)
+                .catch { }
+                .firstOrNull()
+                ?: emptyList()
+        } ?: emptyList()
+
         return buildString {
             appendLine("You are the LifePilot AI assistant. You help users manage their administrative life.")
-            appendLine("You have access to the user's life data below. Answer based on this data.")
+            appendLine("You have access to the user's structured life data below. Answer questions based ONLY on this data.")
             appendLine("Be concise, practical, and focused on actionable insights.")
+            appendLine("Today's date: ${java.time.LocalDate.now()}")
             appendLine()
             appendLine("USER LIFE DATA:")
             if (profile != null) {
                 appendLine("Profile: ${profile.displayName}")
             }
+            appendLine()
             appendLine("Objects (${objects.size} total):")
             objects.forEach { obj ->
-                appendLine("  - ${obj.title} [${obj.objectType}, domain=${obj.domain}, status=${obj.status}]")
+                appendLine("  - ${obj.title} [type=${obj.objectType}, domain=${obj.domain}, status=${obj.status}]")
+                val metadata = runCatching {
+                    metadataRepository.getMetadataByObject(obj.objectId)
+                }.getOrElse { emptyList() }
+                if (metadata.isNotEmpty()) {
+                    metadata.take(5).forEach { entry ->
+                        appendLine("    ${entry.fieldId}: ${entry.value}")
+                    }
+                }
             }
             if (objects.isEmpty()) {
-                appendLine("  (No objects yet)")
+                appendLine("  (No objects yet. Ask the user to add their first object.)")
+            }
+            appendLine()
+            appendLine("Pending tasks (${pendingTasks.size}):")
+            pendingTasks.take(10).forEach { task ->
+                val due = task.dueDate?.toString() ?: "no due date"
+                appendLine("  - ${task.title} [priority=${task.priority}, due=$due]")
             }
         }
     }
