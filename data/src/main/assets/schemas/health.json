@@ -1,0 +1,71 @@
+{
+  "objectType": "health",
+  "domain": "Health",
+  "displayName": "Health Record",
+  "icon": "favorite",
+  "description": "Medical records, prescriptions, and health documents",
+  "schemaVersion": 1,
+  "fields": [
+    {
+      "fieldId": "record_type",
+      "displayName": "Record Type",
+      "fieldType": "ENUM",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [],
+      "enumValues": ["PRESCRIPTION", "TEST_RESULT", "DIAGNOSIS", "VACCINATION", "SURGERY", "CONSULTATION", "OTHER"]
+    },
+    {
+      "fieldId": "provider",
+      "displayName": "Healthcare Provider",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "date",
+      "displayName": "Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "notes",
+      "displayName": "Notes",
+      "fieldType": "MULTILINE_TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": []
+    }
+  ],
+  "lifecycle": {
+    "initialState": "active",
+    "states": [
+      {"stateId": "active", "displayName": "Active"},
+      {"stateId": "archived", "displayName": "Archived", "isFinal": true}
+    ],
+    "transitions": [
+      {"fromState": "active", "toState": "archived", "trigger": "ARCHIVE", "label": "Archive"}
+    ]
+  },
+  "reminderRules": [],
+  "searchConfig": {
+    "primaryFields": ["record_type", "provider"],
+    "fullTextFields": ["record_type", "provider", "notes"],
+    "filterableFields": ["record_type"]
+  },
+  "aiConfig": {
+    "extractableFields": ["record_type", "provider", "date", "notes"],
+    "classificationHints": ["prescription", "diagnosis", "test result", "lab", "medical", "doctor", "hospital", "vaccination"]
+  }
+}

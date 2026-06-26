@@ -40,6 +40,7 @@ dependencies {
 
     implementation(project(":domain"))
     implementation(project(":designsystem"))
+    implementation(project(":features:object"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.navigation.compose)

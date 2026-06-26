@@ -21,12 +21,33 @@ class SearchRepositoryImpl @Inject constructor(
 
     override suspend fun search(query: String, profileId: String): List<SearchResult> {
         if (query.isBlank()) return emptyList()
-        val lowerQuery = query.lowercase()
 
-        val objects = objectDao.observeObjectsByProfile(profileId)
-        val results = mutableListOf<SearchResult>()
+        val objectResults = objectDao.searchObjects(profileId, query).map { entity ->
+            SearchResult(
+                resultId = entity.objectId,
+                entityType = SearchEntityType.OBJECT,
+                title = entity.title,
+                subtitle = entity.description,
+                objectType = entity.objectType,
+                domain = entity.domain,
+                score = computeScore(query, entity.title, entity.description),
+            )
+        }
 
-        return results
+        return objectResults.sortedByDescending { it.score }
+    }
+
+    private fun computeScore(query: String, title: String, description: String?): Float {
+        val q = query.lowercase()
+        val t = title.lowercase()
+        val d = description?.lowercase() ?: ""
+        return when {
+            t == q -> 1.0f
+            t.startsWith(q) -> 0.9f
+            t.contains(q) -> 0.7f
+            d.contains(q) -> 0.5f
+            else -> 0.3f
+        }
     }
 
     override fun observeRecentSearches(profileId: String): Flow<List<String>> =
@@ -45,11 +66,7 @@ class SearchRepositoryImpl @Inject constructor(
         recentSearchesFlow.value = recentSearchesMap.toMap()
     }
 
-    override suspend fun indexObject(objectId: String) {
-        // FTS indexing will be implemented in a future milestone
-    }
+    override suspend fun indexObject(objectId: String) {}
 
-    override suspend fun removeFromIndex(objectId: String) {
-        // FTS indexing will be implemented in a future milestone
-    }
+    override suspend fun removeFromIndex(objectId: String) {}
 }

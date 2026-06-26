@@ -52,6 +52,17 @@ interface ObjectDao {
         GROUP BY domain
     """)
     fun observeDomainCounts(profileId: String): Flow<List<DomainCount>>
+
+    @Query("""
+        SELECT * FROM objects
+        WHERE profile_id = :profileId AND deleted = 0
+        AND (LOWER(title) LIKE '%' || LOWER(:query) || '%'
+          OR LOWER(description) LIKE '%' || LOWER(:query) || '%'
+          OR LOWER(object_type) LIKE '%' || LOWER(:query) || '%')
+        ORDER BY updated_at DESC
+        LIMIT 50
+    """)
+    suspend fun searchObjects(profileId: String, query: String): List<ObjectEntity>
 }
 
 data class DomainCount(

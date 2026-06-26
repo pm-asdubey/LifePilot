@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "com.lifepilot.features.document"
+    namespace = "com.lifepilot.features.ai"
     compileSdk = 35
 
     defaultConfig { minSdk = 26 }
@@ -23,6 +23,7 @@ android {
         freeCompilerArgs += listOf(
             "-opt-in=kotlin.RequiresOptIn",
             "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+            "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
         )
     }
 
@@ -39,7 +40,6 @@ dependencies {
     implementation(libs.bundles.lifecycle)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
-    implementation(libs.coil.compose)
-    implementation(libs.androidx.activity.compose)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.timber)
 }

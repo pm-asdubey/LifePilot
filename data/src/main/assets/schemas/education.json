@@ -1,0 +1,102 @@
+{
+  "objectType": "education",
+  "domain": "Education",
+  "displayName": "Education Record",
+  "icon": "school",
+  "description": "Academic qualifications, certificates, and degrees",
+  "schemaVersion": 1,
+  "fields": [
+    {
+      "fieldId": "institution",
+      "displayName": "Institution",
+      "fieldType": "TEXT",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [{"ruleType": "min_length", "parameter": "2", "message": "Institution name required"}]
+    },
+    {
+      "fieldId": "degree",
+      "displayName": "Degree / Qualification",
+      "fieldType": "TEXT",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "field_of_study",
+      "displayName": "Field of Study",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "start_date",
+      "displayName": "Start Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "end_date",
+      "displayName": "End / Graduation Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "grade",
+      "displayName": "Grade / GPA",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "certificate_number",
+      "displayName": "Certificate / Transcript Number",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    }
+  ],
+  "lifecycle": {
+    "initialState": "active",
+    "states": [
+      {"stateId": "active", "displayName": "Active"},
+      {"stateId": "completed", "displayName": "Completed"},
+      {"stateId": "archived", "displayName": "Archived", "isFinal": true}
+    ],
+    "transitions": [
+      {"fromState": "active", "toState": "completed", "trigger": "GRADUATED", "label": "Mark as Completed"},
+      {"fromState": "completed", "toState": "archived", "trigger": "ARCHIVE", "label": "Archive"}
+    ]
+  },
+  "reminderRules": [],
+  "searchConfig": {
+    "primaryFields": ["institution", "degree"],
+    "fullTextFields": ["institution", "degree", "field_of_study"],
+    "filterableFields": ["field_of_study"]
+  },
+  "aiConfig": {
+    "extractableFields": ["institution", "degree", "field_of_study", "start_date", "end_date", "grade", "certificate_number"],
+    "classificationHints": ["degree", "diploma", "transcript", "certificate", "graduation"]
+  }
+}

@@ -9,7 +9,9 @@ import com.lifepilot.data.repository.ReminderRepositoryImpl
 import com.lifepilot.data.repository.SearchRepositoryImpl
 import com.lifepilot.data.repository.TaskRepositoryImpl
 import com.lifepilot.data.repository.TimelineRepositoryImpl
+import com.lifepilot.data.engine.LifeStateEngineImpl
 import com.lifepilot.data.schema.SchemaEngineImpl
+import com.lifepilot.domain.engine.LifeStateEngine
 import com.lifepilot.domain.engine.SchemaEngine
 import com.lifepilot.domain.repository.DocumentRepository
 import com.lifepilot.domain.repository.EventRepository
@@ -69,4 +71,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindSchemaEngine(impl: SchemaEngineImpl): SchemaEngine
+
+    @Binds
+    @Singleton
+    abstract fun bindLifeStateEngine(impl: LifeStateEngineImpl): LifeStateEngine
 }

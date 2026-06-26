@@ -1,10 +1,12 @@
 package com.lifepilot.app.navigation
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryBooks
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.LibraryBooks
 import androidx.compose.material.icons.outlined.Person
@@ -35,6 +37,12 @@ enum class TopLevelDestination(
         label = "Search",
         selectedIcon = Icons.Filled.Search,
         unselectedIcon = Icons.Outlined.Search,
+    ),
+    AI(
+        route = "ai",
+        label = "Ask AI",
+        selectedIcon = Icons.Filled.AutoAwesome,
+        unselectedIcon = Icons.Outlined.AutoAwesome,
     ),
     SETTINGS(
         route = "settings",

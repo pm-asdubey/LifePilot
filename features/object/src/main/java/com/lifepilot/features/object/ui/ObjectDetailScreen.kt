@@ -12,12 +12,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -31,9 +33,13 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.lifepilot.designsystem.components.EmptyState
 import com.lifepilot.designsystem.components.StatusChip
@@ -49,14 +55,13 @@ import com.lifepilot.domain.model.ObjectStatus
 import com.lifepilot.domain.model.TimelineEntry
 import com.lifepilot.features.object.state.ObjectDetailTab
 import com.lifepilot.features.object.viewmodel.ObjectDetailViewModel
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ObjectDetailScreen(
     onNavigateBack: () -> Unit,
     onNavigateToDocument: (String) -> Unit,
+    onUploadDocument: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ObjectDetailViewModel = hiltViewModel(),
 ) {
@@ -84,6 +89,19 @@ fun ObjectDetailScreen(
                     containerColor = MaterialTheme.colorScheme.background,
                 ),
             )
+        },
+        floatingActionButton = {
+            if (uiState.selectedTab == ObjectDetailTab.DOCUMENTS && uiState.lifeObject != null) {
+                FloatingActionButton(
+                    onClick = { onUploadDocument(uiState.lifeObject!!.objectId) },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = "Upload Document",
+                    )
+                }
+            }
         },
         modifier = modifier,
     ) { innerPadding ->
@@ -117,7 +135,6 @@ fun ObjectDetailScreen(
                 .fillMaxSize()
                 .padding(innerPadding),
         ) {
-            // Status header
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -142,7 +159,6 @@ fun ObjectDetailScreen(
                 )
             }
 
-            // Tabs
             val tabs = ObjectDetailTab.entries
             val selectedIndex = tabs.indexOf(uiState.selectedTab)
             ScrollableTabRow(
@@ -250,6 +266,15 @@ private fun OverviewTab(
                 }
             }
         }
+        if (description == null && metadata.isEmpty()) {
+            item {
+                EmptyState(
+                    icon = Icons.Outlined.Description,
+                    title = "No details yet",
+                    description = "Upload documents to extract metadata automatically.",
+                )
+            }
+        }
     }
 }
 
@@ -263,7 +288,7 @@ private fun DocumentsTab(
         EmptyState(
             icon = Icons.Outlined.Description,
             title = "No documents",
-            description = "Upload documents to this object.",
+            description = "Tap the + button to upload a document.",
             modifier = modifier.fillMaxSize(),
         )
     } else {
@@ -325,8 +350,8 @@ private fun TimelineTab(
                 title = entry.title,
                 summary = entry.summary,
                 dateLabel = entry.timestamp
-                    .atZone(ZoneId.systemDefault())
-                    .format(DateTimeFormatter.ofPattern("MMM d, yyyy HH:mm")),
+                    .atZone(java.time.ZoneId.systemDefault())
+                    .format(java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy HH:mm")),
                 isLast = index == timeline.lastIndex,
                 onClick = {},
             )
@@ -352,4 +377,3 @@ private fun TasksTab(
         }
     }
 }
-

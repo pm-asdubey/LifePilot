@@ -1,6 +1,7 @@
 package com.lifepilot.app.initializer
 
 import com.lifepilot.data.repository.PreferenceManager
+import com.lifepilot.data.worker.WorkManagerScheduler
 import com.lifepilot.domain.engine.SchemaEngine
 import com.lifepilot.domain.repository.ProfileRepository
 import kotlinx.coroutines.CoroutineScope
@@ -17,10 +18,13 @@ class AppInitializer @Inject constructor(
     private val schemaEngine: SchemaEngine,
     private val profileRepository: ProfileRepository,
     private val preferenceManager: PreferenceManager,
+    private val workManagerScheduler: WorkManagerScheduler,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     fun initialize() {
+        workManagerScheduler.scheduleReminderEvaluation()
+
         scope.launch {
             try {
                 schemaEngine.loadSchemas()

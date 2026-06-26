@@ -1,0 +1,110 @@
+{
+  "objectType": "loan",
+  "domain": "Finance",
+  "displayName": "Loan",
+  "icon": "payments",
+  "description": "Home loans, personal loans, and other credit facilities",
+  "schemaVersion": 1,
+  "fields": [
+    {
+      "fieldId": "lender",
+      "displayName": "Lender / Bank",
+      "fieldType": "TEXT",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [{"ruleType": "min_length", "parameter": "2", "message": "Lender name required"}]
+    },
+    {
+      "fieldId": "loan_type",
+      "displayName": "Loan Type",
+      "fieldType": "ENUM",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [],
+      "enumValues": ["HOME", "PERSONAL", "VEHICLE", "EDUCATION", "BUSINESS", "CREDIT_CARD", "OTHER"]
+    },
+    {
+      "fieldId": "loan_amount",
+      "displayName": "Loan Amount",
+      "fieldType": "NUMBER",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "interest_rate",
+      "displayName": "Interest Rate (%)",
+      "fieldType": "NUMBER",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "start_date",
+      "displayName": "Start Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "end_date",
+      "displayName": "End / Maturity Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "emi_due_day",
+      "displayName": "EMI Due Day (1–31)",
+      "fieldType": "NUMBER",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [{"ruleType": "range", "parameter": "1,31", "message": "Must be 1–31"}]
+    }
+  ],
+  "lifecycle": {
+    "initialState": "active",
+    "states": [
+      {"stateId": "active", "displayName": "Active"},
+      {"stateId": "closed", "displayName": "Closed", "isFinal": true}
+    ],
+    "transitions": [
+      {"fromState": "active", "toState": "closed", "trigger": "REPAID", "label": "Mark as Repaid"}
+    ]
+  },
+  "reminderRules": [
+    {
+      "ruleId": "loan_maturity_reminder",
+      "triggerField": "end_date",
+      "offsetDays": -60,
+      "priority": "HIGH",
+      "title": "Loan Maturity Approaching",
+      "messageTemplate": "Your loan will mature in 60 days. Review repayment options."
+    }
+  ],
+  "searchConfig": {
+    "primaryFields": ["lender", "loan_type"],
+    "fullTextFields": ["lender", "loan_type"],
+    "filterableFields": ["loan_type"]
+  },
+  "aiConfig": {
+    "extractableFields": ["lender", "loan_type", "loan_amount", "interest_rate", "start_date", "end_date", "emi_due_day"],
+    "classificationHints": ["loan agreement", "repayment schedule", "EMI", "mortgage", "credit", "outstanding"]
+  }
+}
