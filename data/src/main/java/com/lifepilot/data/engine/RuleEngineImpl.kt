@@ -45,7 +45,7 @@ class RuleEngineImpl @Inject constructor(
     ) {
         val fieldValue = metadataValues[rule.triggerField] ?: return
         val triggerDate = parseDate(fieldValue) ?: return
-        val reminderDate = triggerDate.plusDays(rule.effectiveOffsetDays.toLong())
+        val reminderDate = triggerDate.plusDays(rule.offsetDays.toLong())
 
         if (reminderDate.isBefore(LocalDate.now())) return
 
@@ -62,7 +62,7 @@ class RuleEngineImpl @Inject constructor(
             priority = runCatching { ReminderPriority.valueOf(rule.priority) }.getOrDefault(ReminderPriority.MEDIUM),
             status = ReminderStatus.SCHEDULED,
             title = rule.effectiveTitle,
-            message = rule.effectiveMessage,
+            message = rule.messageTemplate,
         )
         reminderRepository.createReminder(reminder)
         Timber.d("Created reminder ${rule.ruleId} for object $objectId, triggers $reminderDate")

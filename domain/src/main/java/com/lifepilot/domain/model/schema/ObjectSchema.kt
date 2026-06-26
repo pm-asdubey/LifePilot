@@ -75,15 +75,11 @@ data class ReminderRule(
     val displayName: String = "",
     val triggerField: String,
     val offsetDays: Int = 0,
-    val daysBeforeTrigger: Int = 0,
     val priority: String = "MEDIUM",
     val title: String = "",
     val messageTemplate: String = "",
-    val message: String = "",
 ) {
-    val effectiveOffsetDays: Int get() = if (offsetDays != 0) offsetDays else -daysBeforeTrigger
     val effectiveTitle: String get() = title.ifBlank { displayName }
-    val effectiveMessage: String get() = messageTemplate.ifBlank { message }
 }
 
 @Serializable

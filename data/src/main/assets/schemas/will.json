@@ -77,9 +77,9 @@
       "ruleId": "will_review_reminder",
       "displayName": "Annual Review",
       "triggerField": "last_reviewed",
-      "daysBeforeTrigger": -365,
+      "offsetDays": 365,
       "priority": "MEDIUM",
-      "message": "Your will was last reviewed over a year ago. Consider reviewing it."
+      "messageTemplate": "Your will was last reviewed over a year ago. Consider reviewing it."
     }
   ]
 }
