@@ -8,6 +8,7 @@ import com.lifepilot.data.database.dao.EventDao
 import com.lifepilot.data.database.dao.MetadataDao
 import com.lifepilot.data.database.dao.ObjectDao
 import com.lifepilot.data.database.dao.ProfileDao
+import com.lifepilot.data.database.dao.RelationshipDao
 import com.lifepilot.data.database.dao.ReminderDao
 import com.lifepilot.data.database.dao.TaskDao
 import com.lifepilot.data.database.dao.TimelineDao
@@ -54,4 +55,7 @@ object DatabaseModule {
 
     @Provides
     fun provideTimelineDao(db: LifePilotDatabase): TimelineDao = db.timelineDao()
+
+    @Provides
+    fun provideRelationshipDao(db: LifePilotDatabase): RelationshipDao = db.relationshipDao()
 }

@@ -7,6 +7,7 @@ import com.lifepilot.data.database.dao.EventDao
 import com.lifepilot.data.database.dao.MetadataDao
 import com.lifepilot.data.database.dao.ObjectDao
 import com.lifepilot.data.database.dao.ProfileDao
+import com.lifepilot.data.database.dao.RelationshipDao
 import com.lifepilot.data.database.dao.ReminderDao
 import com.lifepilot.data.database.dao.TaskDao
 import com.lifepilot.data.database.dao.TimelineDao
@@ -46,6 +47,7 @@ abstract class LifePilotDatabase : RoomDatabase() {
     abstract fun taskDao(): TaskDao
     abstract fun reminderDao(): ReminderDao
     abstract fun timelineDao(): TimelineDao
+    abstract fun relationshipDao(): RelationshipDao
 
     companion object {
         const val DATABASE_NAME = "lifepilot.db"

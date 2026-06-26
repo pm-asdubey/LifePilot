@@ -24,17 +24,17 @@ class SearchRepositoryImpl @Inject constructor(
 
         val objectResults = objectDao.searchObjects(profileId, query).map { entity ->
             SearchResult(
-                resultId = entity.objectId,
+                entityId = entity.objectId,
                 entityType = SearchEntityType.OBJECT,
                 title = entity.title,
                 subtitle = entity.description,
                 objectType = entity.objectType,
                 domain = entity.domain,
-                score = computeScore(query, entity.title, entity.description),
+                relevanceScore = computeScore(query, entity.title, entity.description),
             )
         }
 
-        return objectResults.sortedByDescending { it.score }
+        return objectResults.sortedByDescending { it.relevanceScore }
     }
 
     private fun computeScore(query: String, title: String, description: String?): Float {

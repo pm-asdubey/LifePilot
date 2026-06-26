@@ -2,6 +2,7 @@ package com.lifepilot.data.di
 
 import com.lifepilot.data.repository.DocumentRepositoryImpl
 import com.lifepilot.data.repository.EventRepositoryImpl
+import com.lifepilot.data.repository.RelationshipRepositoryImpl
 import com.lifepilot.data.repository.MetadataRepositoryImpl
 import com.lifepilot.data.repository.ObjectRepositoryImpl
 import com.lifepilot.data.repository.ProfileRepositoryImpl
@@ -15,6 +16,7 @@ import com.lifepilot.domain.engine.LifeStateEngine
 import com.lifepilot.domain.engine.SchemaEngine
 import com.lifepilot.domain.repository.DocumentRepository
 import com.lifepilot.domain.repository.EventRepository
+import com.lifepilot.domain.repository.RelationshipRepository
 import com.lifepilot.domain.repository.MetadataRepository
 import com.lifepilot.domain.repository.ObjectRepository
 import com.lifepilot.domain.repository.ProfileRepository
@@ -67,6 +69,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindSearchRepository(impl: SearchRepositoryImpl): SearchRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindRelationshipRepository(impl: RelationshipRepositoryImpl): RelationshipRepository
 
     @Binds
     @Singleton
