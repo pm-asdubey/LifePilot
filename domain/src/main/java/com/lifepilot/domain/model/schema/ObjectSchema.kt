@@ -7,14 +7,22 @@ data class ObjectSchema(
     val objectType: String,
     val domain: String,
     val displayName: String,
-    val icon: String,
-    val description: String,
-    val schemaVersion: Int,
-    val fields: List<MetadataFieldDefinition>,
-    val lifecycle: LifecycleDefinition,
-    val reminderRules: List<ReminderRule>,
-    val searchConfig: SearchConfig,
-    val aiConfig: AiExtractionConfig,
+    val icon: String = "FolderOpen",
+    val description: String = "",
+    val schemaVersion: Int = 1,
+    val fields: List<MetadataFieldDefinition> = emptyList(),
+    val lifecycle: LifecycleDefinition = LifecycleDefinition(
+        states = listOf(LifecycleState("ACTIVE", "Active")),
+        transitions = emptyList(),
+        initialState = "ACTIVE",
+    ),
+    val reminderRules: List<ReminderRule> = emptyList(),
+    val searchConfig: SearchConfig = SearchConfig(
+        primaryFields = emptyList(),
+        fullTextFields = emptyList(),
+        filterableFields = emptyList(),
+    ),
+    val aiConfig: AiExtractionConfig = AiExtractionConfig(),
 )
 
 @Serializable
@@ -64,12 +72,19 @@ data class LifecycleTransition(
 @Serializable
 data class ReminderRule(
     val ruleId: String,
+    val displayName: String = "",
     val triggerField: String,
-    val offsetDays: Int,
-    val priority: String,
-    val title: String,
-    val messageTemplate: String,
-)
+    val offsetDays: Int = 0,
+    val daysBeforeTrigger: Int = 0,
+    val priority: String = "MEDIUM",
+    val title: String = "",
+    val messageTemplate: String = "",
+    val message: String = "",
+) {
+    val effectiveOffsetDays: Int get() = if (offsetDays != 0) offsetDays else -daysBeforeTrigger
+    val effectiveTitle: String get() = title.ifBlank { displayName }
+    val effectiveMessage: String get() = messageTemplate.ifBlank { message }
+}
 
 @Serializable
 data class SearchConfig(
