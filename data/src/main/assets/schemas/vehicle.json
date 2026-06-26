@@ -1,0 +1,122 @@
+{
+  "objectType": "Vehicle",
+  "domain": "Vehicle",
+  "displayName": "Vehicle",
+  "icon": "directions_car",
+  "description": "Vehicle record",
+  "schemaVersion": 1,
+  "fields": [
+    {
+      "fieldId": "vehicleName",
+      "displayName": "Vehicle Name",
+      "fieldType": "TEXT",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [
+        { "ruleType": "REQUIRED", "message": "Vehicle name is required" }
+      ]
+    },
+    {
+      "fieldId": "registrationNumber",
+      "displayName": "Registration Number",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "make",
+      "displayName": "Make",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "model",
+      "displayName": "Model",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "year",
+      "displayName": "Year",
+      "fieldType": "NUMBER",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "insuranceExpiryDate",
+      "displayName": "Insurance Expiry",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "pucExpiryDate",
+      "displayName": "PUC Expiry",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    }
+  ],
+  "lifecycle": {
+    "states": [
+      { "stateId": "ACTIVE", "displayName": "Active" },
+      { "stateId": "RENEWAL_DUE", "displayName": "Renewal Due" },
+      { "stateId": "SOLD", "displayName": "Sold", "isFinal": true }
+    ],
+    "transitions": [
+      { "fromState": "ACTIVE", "toState": "RENEWAL_DUE", "trigger": "INSURANCE_EXPIRING", "label": "Insurance Due" },
+      { "fromState": "RENEWAL_DUE", "toState": "ACTIVE", "trigger": "RENEWED", "label": "Renewed" },
+      { "fromState": "ACTIVE", "toState": "SOLD", "trigger": "SOLD", "label": "Sold" }
+    ],
+    "initialState": "ACTIVE"
+  },
+  "reminderRules": [
+    {
+      "ruleId": "vehicle_insurance_30d",
+      "triggerField": "insuranceExpiryDate",
+      "offsetDays": -30,
+      "priority": "HIGH",
+      "title": "Vehicle Insurance Expiring",
+      "messageTemplate": "Your vehicle insurance expires in 30 days. Renew now."
+    },
+    {
+      "ruleId": "vehicle_puc_15d",
+      "triggerField": "pucExpiryDate",
+      "offsetDays": -15,
+      "priority": "MEDIUM",
+      "title": "PUC Certificate Expiring",
+      "messageTemplate": "Your vehicle PUC certificate expires in 15 days."
+    }
+  ],
+  "searchConfig": {
+    "primaryFields": ["vehicleName", "registrationNumber"],
+    "fullTextFields": ["vehicleName", "make", "model"],
+    "filterableFields": []
+  },
+  "aiConfig": {
+    "extractableFields": ["vehicleName", "registrationNumber", "make", "model", "year", "insuranceExpiryDate", "pucExpiryDate"],
+    "classificationHints": ["RC book", "registration certificate", "insurance certificate", "PUC certificate"]
+  }
+}

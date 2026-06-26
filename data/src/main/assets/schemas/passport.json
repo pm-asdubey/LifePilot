@@ -1,0 +1,134 @@
+{
+  "objectType": "Passport",
+  "domain": "Identity",
+  "displayName": "Passport",
+  "icon": "badge",
+  "description": "International travel document",
+  "schemaVersion": 1,
+  "fields": [
+    {
+      "fieldId": "passportNumber",
+      "displayName": "Passport Number",
+      "fieldType": "TEXT",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [
+        { "ruleType": "REQUIRED", "message": "Passport number is required" },
+        { "ruleType": "MAX_LENGTH", "parameter": "20", "message": "Passport number too long" }
+      ]
+    },
+    {
+      "fieldId": "fullName",
+      "displayName": "Full Name",
+      "fieldType": "TEXT",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [
+        { "ruleType": "REQUIRED", "message": "Full name is required" }
+      ]
+    },
+    {
+      "fieldId": "nationality",
+      "displayName": "Nationality",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "dateOfBirth",
+      "displayName": "Date of Birth",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "issueDate",
+      "displayName": "Issue Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "expiryDate",
+      "displayName": "Expiry Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "issuingCountry",
+      "displayName": "Issuing Country",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    }
+  ],
+  "lifecycle": {
+    "states": [
+      { "stateId": "ACTIVE", "displayName": "Active" },
+      { "stateId": "RENEWAL_DUE", "displayName": "Renewal Due" },
+      { "stateId": "EXPIRED", "displayName": "Expired", "isFinal": false },
+      { "stateId": "ARCHIVED", "displayName": "Archived", "isFinal": true }
+    ],
+    "transitions": [
+      { "fromState": "ACTIVE", "toState": "RENEWAL_DUE", "trigger": "EXPIRY_APPROACHING", "label": "Expiry Approaching" },
+      { "fromState": "RENEWAL_DUE", "toState": "EXPIRED", "trigger": "EXPIRED", "label": "Expired" },
+      { "fromState": "EXPIRED", "toState": "ACTIVE", "trigger": "RENEWED", "label": "Renewed" }
+    ],
+    "initialState": "ACTIVE"
+  },
+  "reminderRules": [
+    {
+      "ruleId": "passport_expiry_12m",
+      "triggerField": "expiryDate",
+      "offsetDays": -365,
+      "priority": "MEDIUM",
+      "title": "Passport Expiring Soon",
+      "messageTemplate": "Your passport expires in 12 months. Consider renewing it."
+    },
+    {
+      "ruleId": "passport_expiry_6m",
+      "triggerField": "expiryDate",
+      "offsetDays": -180,
+      "priority": "HIGH",
+      "title": "Passport Expiring in 6 Months",
+      "messageTemplate": "Your passport expires in 6 months. Renew now."
+    },
+    {
+      "ruleId": "passport_expiry_3m",
+      "triggerField": "expiryDate",
+      "offsetDays": -90,
+      "priority": "CRITICAL",
+      "title": "Passport Expiring in 3 Months",
+      "messageTemplate": "Your passport expires in 3 months. Renew urgently."
+    }
+  ],
+  "searchConfig": {
+    "primaryFields": ["passportNumber", "fullName"],
+    "fullTextFields": ["fullName"],
+    "filterableFields": ["nationality", "issuingCountry"]
+  },
+  "aiConfig": {
+    "extractableFields": ["passportNumber", "fullName", "nationality", "dateOfBirth", "issueDate", "expiryDate", "issuingCountry"],
+    "classificationHints": ["passport", "travel document", "international", "MRZ"]
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "objectType": "Property",
+  "domain": "Property",
+  "displayName": "Property",
+  "icon": "home",
+  "description": "Real estate property",
+  "schemaVersion": 1,
+  "fields": [
+    {
+      "fieldId": "propertyName",
+      "displayName": "Property Name",
+      "fieldType": "TEXT",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [
+        { "ruleType": "REQUIRED", "message": "Property name is required" }
+      ]
+    },
+    {
+      "fieldId": "address",
+      "displayName": "Address",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "propertyType",
+      "displayName": "Property Type",
+      "fieldType": "ENUM",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "enumValues": ["APARTMENT", "HOUSE", "LAND", "COMMERCIAL", "OTHER"],
+      "validationRules": []
+    },
+    {
+      "fieldId": "purchaseDate",
+      "displayName": "Purchase Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "purchasePrice",
+      "displayName": "Purchase Price",
+      "fieldType": "CURRENCY",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": []
+    },
+    {
+      "fieldId": "registrationNumber",
+      "displayName": "Registration Number",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": []
+    }
+  ],
+  "lifecycle": {
+    "states": [
+      { "stateId": "ACTIVE", "displayName": "Owned" },
+      { "stateId": "SOLD", "displayName": "Sold", "isFinal": true }
+    ],
+    "transitions": [
+      { "fromState": "ACTIVE", "toState": "SOLD", "trigger": "SOLD", "label": "Property Sold" }
+    ],
+    "initialState": "ACTIVE"
+  },
+  "reminderRules": [],
+  "searchConfig": {
+    "primaryFields": ["propertyName", "address"],
+    "fullTextFields": ["propertyName", "address"],
+    "filterableFields": ["propertyType"]
+  },
+  "aiConfig": {
+    "extractableFields": ["propertyName", "address", "propertyType", "purchaseDate", "registrationNumber"],
+    "classificationHints": ["sale deed", "property registration", "house deed", "land record"]
+  }
+}

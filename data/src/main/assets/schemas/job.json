@@ -1,0 +1,105 @@
+{
+  "objectType": "Job",
+  "domain": "Career",
+  "displayName": "Job",
+  "icon": "work",
+  "description": "Employment record",
+  "schemaVersion": 1,
+  "fields": [
+    {
+      "fieldId": "companyName",
+      "displayName": "Company Name",
+      "fieldType": "TEXT",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [
+        { "ruleType": "REQUIRED", "message": "Company name is required" }
+      ]
+    },
+    {
+      "fieldId": "jobTitle",
+      "displayName": "Job Title",
+      "fieldType": "TEXT",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [
+        { "ruleType": "REQUIRED", "message": "Job title is required" }
+      ]
+    },
+    {
+      "fieldId": "joiningDate",
+      "displayName": "Joining Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "endDate",
+      "displayName": "End Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "salary",
+      "displayName": "Salary",
+      "fieldType": "CURRENCY",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": []
+    },
+    {
+      "fieldId": "location",
+      "displayName": "Location",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "employmentType",
+      "displayName": "Employment Type",
+      "fieldType": "ENUM",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "enumValues": ["FULL_TIME", "PART_TIME", "CONTRACT", "FREELANCE", "INTERN"],
+      "validationRules": []
+    }
+  ],
+  "lifecycle": {
+    "states": [
+      { "stateId": "ACTIVE", "displayName": "Current" },
+      { "stateId": "ARCHIVED", "displayName": "Past", "isFinal": true }
+    ],
+    "transitions": [
+      { "fromState": "ACTIVE", "toState": "ARCHIVED", "trigger": "ENDED", "label": "Job Ended" }
+    ],
+    "initialState": "ACTIVE"
+  },
+  "reminderRules": [],
+  "searchConfig": {
+    "primaryFields": ["companyName", "jobTitle"],
+    "fullTextFields": ["companyName", "jobTitle"],
+    "filterableFields": ["employmentType", "location"]
+  },
+  "aiConfig": {
+    "extractableFields": ["companyName", "jobTitle", "joiningDate", "endDate", "location", "employmentType"],
+    "classificationHints": ["offer letter", "employment contract", "appointment letter", "salary slip"]
+  }
+}

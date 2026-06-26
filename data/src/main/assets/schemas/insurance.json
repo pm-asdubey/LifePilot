@@ -1,0 +1,134 @@
+{
+  "objectType": "Insurance",
+  "domain": "Finance",
+  "displayName": "Insurance",
+  "icon": "shield",
+  "description": "Insurance policy",
+  "schemaVersion": 1,
+  "fields": [
+    {
+      "fieldId": "policyName",
+      "displayName": "Policy Name",
+      "fieldType": "TEXT",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [
+        { "ruleType": "REQUIRED", "message": "Policy name is required" }
+      ]
+    },
+    {
+      "fieldId": "policyNumber",
+      "displayName": "Policy Number",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "insurer",
+      "displayName": "Insurance Company",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "insuranceType",
+      "displayName": "Insurance Type",
+      "fieldType": "ENUM",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "enumValues": ["HEALTH", "LIFE", "VEHICLE", "HOME", "TRAVEL", "OTHER"],
+      "validationRules": []
+    },
+    {
+      "fieldId": "startDate",
+      "displayName": "Start Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "expiryDate",
+      "displayName": "Expiry Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "premiumAmount",
+      "displayName": "Premium Amount",
+      "fieldType": "CURRENCY",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": []
+    },
+    {
+      "fieldId": "sumInsured",
+      "displayName": "Sum Insured",
+      "fieldType": "CURRENCY",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    }
+  ],
+  "lifecycle": {
+    "states": [
+      { "stateId": "ACTIVE", "displayName": "Active" },
+      { "stateId": "RENEWAL_DUE", "displayName": "Renewal Due" },
+      { "stateId": "EXPIRED", "displayName": "Expired" },
+      { "stateId": "ARCHIVED", "displayName": "Archived", "isFinal": true }
+    ],
+    "transitions": [
+      { "fromState": "ACTIVE", "toState": "RENEWAL_DUE", "trigger": "EXPIRY_APPROACHING", "label": "Renewal Due" },
+      { "fromState": "RENEWAL_DUE", "toState": "EXPIRED", "trigger": "EXPIRED", "label": "Expired" },
+      { "fromState": "RENEWAL_DUE", "toState": "ACTIVE", "trigger": "RENEWED", "label": "Renewed" }
+    ],
+    "initialState": "ACTIVE"
+  },
+  "reminderRules": [
+    {
+      "ruleId": "insurance_expiry_30d",
+      "triggerField": "expiryDate",
+      "offsetDays": -30,
+      "priority": "HIGH",
+      "title": "Insurance Policy Expiring",
+      "messageTemplate": "Your insurance policy expires in 30 days. Renew to maintain coverage."
+    },
+    {
+      "ruleId": "insurance_expiry_7d",
+      "triggerField": "expiryDate",
+      "offsetDays": -7,
+      "priority": "CRITICAL",
+      "title": "Insurance Policy Expiring in 7 Days",
+      "messageTemplate": "Your insurance policy expires in 7 days. Renew immediately."
+    }
+  ],
+  "searchConfig": {
+    "primaryFields": ["policyName", "policyNumber", "insurer"],
+    "fullTextFields": ["policyName", "insurer"],
+    "filterableFields": ["insuranceType"]
+  },
+  "aiConfig": {
+    "extractableFields": ["policyName", "policyNumber", "insurer", "insuranceType", "startDate", "expiryDate", "sumInsured"],
+    "classificationHints": ["insurance policy", "premium receipt", "policy schedule", "renewal notice"]
+  }
+}
