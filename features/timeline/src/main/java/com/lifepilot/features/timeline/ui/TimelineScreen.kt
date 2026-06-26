@@ -1,15 +1,21 @@
 package com.lifepilot.features.timeline.ui
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Timeline
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -77,30 +83,67 @@ fun TimelineScreen(
             return@Scaffold
         }
 
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            contentPadding = PaddingValues(
-                horizontal = Spacing.sm,
-                vertical = Spacing.md,
-            ),
         ) {
-            itemsIndexed(
-                items = uiState.entries,
-                key = { _, entry -> entry.timelineId },
-            ) { index, entry ->
-                TimelineCard(
-                    title = entry.title,
-                    summary = entry.summary,
-                    dateLabel = entry.timestamp
-                        .atZone(ZoneId.systemDefault())
-                        .format(DateTimeFormatter.ofPattern("MMM d, yyyy")),
-                    isLast = index == uiState.entries.lastIndex,
-                    onClick = {
-                        entry.objectId?.let { onNavigateToObject(it) }
-                    },
-                )
+            if (uiState.availableSourceTypes.isNotEmpty()) {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = Spacing.md),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    item {
+                        FilterChip(
+                            selected = uiState.selectedSourceType == null,
+                            onClick = { viewModel.selectFilter(null) },
+                            label = { Text("All (${uiState.entries.size})") },
+                        )
+                    }
+                    items(uiState.availableSourceTypes) { sourceType ->
+                        val count = uiState.entries.count { it.sourceType.name == sourceType }
+                        FilterChip(
+                            selected = uiState.selectedSourceType == sourceType,
+                            onClick = { viewModel.selectFilter(sourceType) },
+                            label = {
+                                Text(
+                                    sourceType
+                                        .replace("_", " ")
+                                        .lowercase()
+                                        .replaceFirstChar { it.uppercase() } + " ($count)"
+                                )
+                            },
+                        )
+                    }
+                }
+            }
+
+            val displayEntries = uiState.filteredEntries.ifEmpty { uiState.entries }
+
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    horizontal = Spacing.sm,
+                    vertical = Spacing.md,
+                ),
+            ) {
+                itemsIndexed(
+                    items = displayEntries,
+                    key = { _, entry -> entry.timelineId },
+                ) { index, entry ->
+                    TimelineCard(
+                        title = entry.title,
+                        summary = entry.summary,
+                        dateLabel = entry.timestamp
+                            .atZone(ZoneId.systemDefault())
+                            .format(DateTimeFormatter.ofPattern("MMM d, yyyy HH:mm")),
+                        isLast = index == displayEntries.lastIndex,
+                        onClick = {
+                            entry.objectId?.let { onNavigateToObject(it) }
+                        },
+                    )
+                }
             }
         }
     }
