@@ -19,4 +19,6 @@ enum class TimelineSourceType {
     TASK,
     REMINDER,
     METADATA_CHANGE,
+    USER_ACTION,
+    SYSTEM,
 }

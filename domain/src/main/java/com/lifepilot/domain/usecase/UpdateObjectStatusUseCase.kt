@@ -23,7 +23,7 @@ class UpdateObjectStatusUseCase @Inject constructor(
         val previousStatus = obj.status
         objectRepository.updateObjectStatus(objectId, newStatus)
 
-        eventRepository.recordEvent(
+        val event = eventRepository.recordEvent(
             objectId = objectId,
             eventType = "STATUS_CHANGED",
             payload = """{"from":"${previousStatus.name}","to":"${newStatus.name}"}""",
@@ -31,15 +31,21 @@ class UpdateObjectStatusUseCase @Inject constructor(
             confidence = null,
         )
 
+        val displayStatus = newStatus.name
+            .replace("_", " ")
+            .lowercase()
+            .replaceFirstChar { it.uppercase() }
+
         timelineRepository.addTimelineEntry(
             TimelineEntry(
                 timelineId = UUID.randomUUID().toString(),
-                objectId = objectId,
-                eventId = null,
-                title = "Status updated to ${newStatus.name.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() }}",
-                summary = "${obj.title} status changed from ${previousStatus.name} to ${newStatus.name}",
-                timestamp = Instant.now(),
+                sourceId = event.eventId,
                 sourceType = TimelineSourceType.USER_ACTION,
+                timestamp = Instant.now(),
+                title = "Status updated to $displayStatus",
+                summary = "${obj.title} status changed from ${previousStatus.name} to ${newStatus.name}",
+                objectId = objectId,
+                objectType = obj.objectType,
             )
         )
     }

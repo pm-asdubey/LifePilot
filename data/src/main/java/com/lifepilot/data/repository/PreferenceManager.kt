@@ -3,6 +3,7 @@ package com.lifepilot.data.repository
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -23,8 +24,10 @@ class PreferenceManager @Inject constructor(
     private val aiProviderKey = stringPreferencesKey("ai_provider")
     private val aiApiKeyKey = stringPreferencesKey("ai_api_key")
     private val aiModelKey = stringPreferencesKey("ai_model")
+    private val biometricLockKey = booleanPreferencesKey("biometric_lock_enabled")
 
     val activeProfileId: Flow<String?> = context.dataStore.data.map { it[activeProfileIdKey] }
+    val biometricLockEnabled: Flow<Boolean> = context.dataStore.data.map { it[biometricLockKey] ?: false }
     val aiProvider: Flow<String?> = context.dataStore.data.map { it[aiProviderKey] }
     val aiApiKey: Flow<String?> = context.dataStore.data.map { it[aiApiKeyKey] }
     val aiModel: Flow<String?> = context.dataStore.data.map { it[aiModelKey] }
@@ -45,6 +48,14 @@ class PreferenceManager @Inject constructor(
 
     suspend fun setAiModel(model: String) {
         context.dataStore.edit { it[aiModelKey] = model }
+    }
+
+    fun isBiometricLockEnabled(): Boolean = kotlinx.coroutines.runBlocking {
+        biometricLockEnabled.firstOrNull() ?: false
+    }
+
+    suspend fun setBiometricLockEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[biometricLockKey] = enabled }
     }
 
     suspend fun clearAiConfig() {

@@ -11,16 +11,26 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.lifepilot.app.navigation.LifePilotNavHost
+import com.lifepilot.app.security.BiometricLockScreen
+import com.lifepilot.data.security.BiometricAuthManager
 import com.lifepilot.designsystem.theme.LifePilotTheme
 import dagger.hilt.android.AndroidEntryPoint
 import timber.log.Timber
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var biometricAuthManager: BiometricAuthManager
 
     private val requestNotificationPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -35,7 +45,14 @@ class MainActivity : ComponentActivity() {
         requestNotificationPermissionIfNeeded()
 
         setContent {
-            LifePilotApp()
+            LifePilotApp(biometricAuthManager = biometricAuthManager)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (biometricAuthManager.isBiometricLockEnabled()) {
+            biometricAuthManager.resetAuthState()
         }
     }
 
@@ -50,10 +67,20 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun LifePilotApp() {
+private fun LifePilotApp(biometricAuthManager: BiometricAuthManager) {
     LifePilotTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
-            LifePilotNavHost()
+            val lockEnabled = biometricAuthManager.isBiometricLockEnabled()
+            var isAuthenticated by remember { mutableStateOf(!lockEnabled) }
+
+            if (!isAuthenticated) {
+                BiometricLockScreen(
+                    biometricAuthManager = biometricAuthManager,
+                    onAuthenticated = { isAuthenticated = true },
+                )
+            } else {
+                LifePilotNavHost()
+            }
         }
     }
 }

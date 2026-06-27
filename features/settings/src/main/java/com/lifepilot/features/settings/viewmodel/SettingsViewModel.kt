@@ -31,6 +31,7 @@ data class SettingsUiState(
     val isExporting: Boolean = false,
     val exportResult: ExportBundle? = null,
     val exportError: String? = null,
+    val biometricLockEnabled: Boolean = false,
 )
 
 @HiltViewModel
@@ -55,19 +56,37 @@ class SettingsViewModel @Inject constructor(
                 preferenceManager.aiApiKey,
                 preferenceManager.aiModel,
             ) { profiles, provider, apiKey, model ->
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        profiles = profiles,
-                        activeProfile = profiles.find { p -> p.isPrimary },
-                        aiProvider = provider ?: "",
-                        aiApiKey = apiKey ?: "",
-                        aiModel = model ?: "",
-                    )
-                }
+                Triple(profiles, Triple(provider, apiKey, model), null)
             }
                 .catch { e -> Timber.e(e, "Error loading settings") }
-                .collect {}
+                .collect { (profiles, aiConfig, _) ->
+                    val (provider, apiKey, model) = aiConfig
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            profiles = profiles,
+                            activeProfile = profiles.find { p -> p.isPrimary },
+                            aiProvider = provider ?: "",
+                            aiApiKey = apiKey ?: "",
+                            aiModel = model ?: "",
+                        )
+                    }
+                }
+        }
+
+        viewModelScope.launch {
+            preferenceManager.biometricLockEnabled
+                .catch { e -> Timber.e(e, "Error observing biometric setting") }
+                .collect { enabled ->
+                    _uiState.update { it.copy(biometricLockEnabled = enabled) }
+                }
+        }
+    }
+
+    fun toggleBiometricLock(enabled: Boolean) {
+        viewModelScope.launch {
+            runCatching { preferenceManager.setBiometricLockEnabled(enabled) }
+                .onFailure { Timber.e(it, "Failed to toggle biometric lock") }
         }
     }
 
