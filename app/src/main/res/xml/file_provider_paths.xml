@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Camera captures stored in app's external files directory -->
+    <external-files-path
+        name="camera_captures"
+        path="camera_captures/" />
+    <!-- Internal files for documents copied from content:// URIs -->
+    <files-path
+        name="documents"
+        path="documents/" />
+</paths>
