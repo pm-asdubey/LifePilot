@@ -1,7 +1,7 @@
 {
   "objectType": "utilities",
   "displayName": "Utility Account",
-  "domain": "home",
+  "domain": "Home",
   "icon": "Bolt",
   "description": "Electricity, gas, water, or internet utility account",
   "schemaVersion": 1,

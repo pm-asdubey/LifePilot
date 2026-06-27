@@ -1,7 +1,7 @@
 {
   "objectType": "investment",
   "displayName": "Investment",
-  "domain": "finance",
+  "domain": "Finance",
   "icon": "TrendingUp",
   "description": "Stocks, mutual funds, pension, or other investment",
   "schemaVersion": 1,

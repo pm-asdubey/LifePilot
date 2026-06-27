@@ -1,7 +1,7 @@
 {
   "objectType": "subscription",
   "displayName": "Subscription",
-  "domain": "finance",
+  "domain": "Finance",
   "icon": "Subscriptions",
   "description": "Software, streaming, or service subscriptions",
   "schemaVersion": 1,

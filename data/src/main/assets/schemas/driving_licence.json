@@ -1,0 +1,136 @@
+{
+  "objectType": "driving_licence",
+  "domain": "Identity",
+  "displayName": "Driving Licence",
+  "icon": "DriveEta",
+  "description": "Motor vehicle driving licence",
+  "schemaVersion": 1,
+  "fields": [
+    {
+      "fieldId": "licenceNumber",
+      "displayName": "Licence Number",
+      "fieldType": "TEXT",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [
+        { "ruleType": "REQUIRED", "message": "Licence number is required" }
+      ]
+    },
+    {
+      "fieldId": "fullName",
+      "displayName": "Full Name",
+      "fieldType": "TEXT",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [
+        { "ruleType": "REQUIRED", "message": "Full name is required" }
+      ]
+    },
+    {
+      "fieldId": "dateOfBirth",
+      "displayName": "Date of Birth",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "issueDate",
+      "displayName": "Issue Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "expiryDate",
+      "displayName": "Expiry Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "issuingAuthority",
+      "displayName": "Issuing Authority",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    },
+    {
+      "fieldId": "licenceCategories",
+      "displayName": "Licence Categories",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "placeholder": "e.g. B, C, D",
+      "validationRules": []
+    },
+    {
+      "fieldId": "address",
+      "displayName": "Address on Licence",
+      "fieldType": "MULTILINE_TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": []
+    }
+  ],
+  "lifecycle": {
+    "states": [
+      { "stateId": "ACTIVE", "displayName": "Active" },
+      { "stateId": "RENEWAL_DUE", "displayName": "Renewal Due" },
+      { "stateId": "EXPIRED", "displayName": "Expired", "isFinal": false },
+      { "stateId": "ARCHIVED", "displayName": "Archived", "isFinal": true }
+    ],
+    "transitions": [
+      { "fromState": "ACTIVE", "toState": "RENEWAL_DUE", "trigger": "EXPIRY_APPROACHING", "label": "Expiry Approaching" },
+      { "fromState": "RENEWAL_DUE", "toState": "EXPIRED", "trigger": "EXPIRED", "label": "Expired" },
+      { "fromState": "EXPIRED", "toState": "ACTIVE", "trigger": "RENEWED", "label": "Renewed" }
+    ],
+    "initialState": "ACTIVE"
+  },
+  "reminderRules": [
+    {
+      "ruleId": "dl_expiry_90d",
+      "triggerField": "expiryDate",
+      "offsetDays": -90,
+      "priority": "HIGH",
+      "title": "Driving Licence Expiring Soon",
+      "messageTemplate": "Your driving licence expires in 3 months. Renew it to keep driving legally."
+    },
+    {
+      "ruleId": "dl_expiry_30d",
+      "triggerField": "expiryDate",
+      "offsetDays": -30,
+      "priority": "CRITICAL",
+      "title": "Driving Licence Expires in 30 Days",
+      "messageTemplate": "Your driving licence expires in 30 days. Renew immediately."
+    }
+  ],
+  "searchConfig": {
+    "primaryFields": ["licenceNumber", "fullName"],
+    "fullTextFields": ["fullName", "address"],
+    "filterableFields": ["issuingAuthority", "licenceCategories"]
+  },
+  "aiConfig": {
+    "extractableFields": ["licenceNumber", "fullName", "dateOfBirth", "issueDate", "expiryDate", "issuingAuthority", "licenceCategories", "address"],
+    "classificationHints": ["driving licence", "driver license", "DVLA", "DMV", "licence number", "DL"]
+  }
+}

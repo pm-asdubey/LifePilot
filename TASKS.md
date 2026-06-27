@@ -130,19 +130,24 @@ Last updated: 2026-06-27 (all UI tests ✅, LazyColumn layout fixes ✅, metadat
 * [x] Schema validation (REGEX, DATE_FORMAT, ENUM rules)
 * [x] 12+ domain schemas
 
-### Available Schemas
+### Available Schemas (17 total)
 * [x] passport
-* [x] driving-licence
+* [x] driving_licence
 * [x] insurance
 * [x] property
 * [x] vehicle
 * [x] will
-* [x] employment
-* [x] bank-account
-* [x] medical-record
-* [x] tax-return
+* [x] job (employment)
+* [x] bank_account
+* [x] health
+* [x] tax
 * [x] investment
-* [x] health-insurance
+* [x] education
+* [x] loan
+* [x] pension
+* [x] subscription
+* [x] travel
+* [x] utilities
 
 ---
 

@@ -1,7 +1,7 @@
 {
   "objectType": "vehicle",
   "displayName": "Vehicle",
-  "domain": "transport",
+  "domain": "Transport",
   "icon": "DriveEta",
   "description": "Car, motorcycle, or other registered vehicle",
   "schemaVersion": 1,

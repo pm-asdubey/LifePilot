@@ -1,7 +1,7 @@
 {
   "objectType": "travel",
   "displayName": "Travel",
-  "domain": "travel",
+  "domain": "Travel",
   "icon": "Flight",
   "description": "Trip, visa, or travel document",
   "schemaVersion": 1,

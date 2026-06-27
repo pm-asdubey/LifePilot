@@ -1,7 +1,7 @@
 {
   "objectType": "tax",
   "displayName": "Tax Record",
-  "domain": "finance",
+  "domain": "Finance",
   "icon": "Receipt",
   "description": "Annual income tax filing or tax-related document",
   "schemaVersion": 1,
