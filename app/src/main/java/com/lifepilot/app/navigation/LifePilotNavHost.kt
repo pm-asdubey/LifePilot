@@ -74,7 +74,7 @@ fun LifePilotNavHost(deepLinkObjectId: String? = null) {
             homeScreen(navController = navController)
             libraryScreen(navController = navController)
             searchScreen(navController = navController)
-            aiChatScreen()
+            aiChatScreen(navController = navController)
             settingsScreen(navController = navController)
             objectDetailScreen(navController = navController)
             documentViewerScreen(navController = navController)

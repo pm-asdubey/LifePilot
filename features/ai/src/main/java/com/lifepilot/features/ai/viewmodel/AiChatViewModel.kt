@@ -41,6 +41,13 @@ class AiChatViewModel @Inject constructor(
 
     private var cachedSystemPrompt: String? = null
 
+    init {
+        viewModelScope.launch {
+            val configured = aiProviderFactory.isConfigured()
+            _state.update { it.copy(isConfigured = configured) }
+        }
+    }
+
     fun onInputChange(text: String) {
         _state.update { it.copy(inputText = text) }
     }

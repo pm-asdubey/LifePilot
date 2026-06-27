@@ -25,4 +25,9 @@ class AiProviderFactory @Inject constructor(
             else -> offlineProvider
         }
     }
+
+    suspend fun isConfigured(): Boolean {
+        val apiKey = preferenceManager.aiApiKey.firstOrNull()
+        return !apiKey.isNullOrBlank()
+    }
 }
