@@ -1,10 +1,13 @@
 package com.lifepilot.data
 
+import com.lifepilot.data.database.dao.DocumentDao
+import com.lifepilot.data.database.dao.MetadataDao
 import com.lifepilot.data.database.dao.ObjectDao
 import com.lifepilot.data.database.entity.ObjectEntity
 import com.lifepilot.data.repository.PreferenceManager
 import com.lifepilot.data.repository.SearchRepositoryImpl
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -15,6 +18,8 @@ import org.junit.Test
 class SearchRepositoryImplTest {
 
     private val objectDao: ObjectDao = mockk()
+    private val metadataDao: MetadataDao = mockk()
+    private val documentDao: DocumentDao = mockk()
     private val preferenceManager: PreferenceManager = mockk()
     private lateinit var repository: SearchRepositoryImpl
 
@@ -40,7 +45,9 @@ class SearchRepositoryImplTest {
 
     @Before
     fun setUp() {
-        repository = SearchRepositoryImpl(objectDao, preferenceManager)
+        coEvery { metadataDao.searchMetadataValues(any(), any()) } returns emptyList()
+        coEvery { documentDao.searchDocuments(any(), any()) } returns emptyList()
+        repository = SearchRepositoryImpl(objectDao, metadataDao, documentDao, preferenceManager)
     }
 
     @Test
