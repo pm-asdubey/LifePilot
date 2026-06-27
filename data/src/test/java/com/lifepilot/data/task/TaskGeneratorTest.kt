@@ -8,10 +8,7 @@ import com.lifepilot.domain.model.ObjectStatus
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import io.mockk.slot
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -52,7 +49,7 @@ class TaskGeneratorTest {
         val obj = makeObject("passport")
         val insertedTasks = mutableListOf<TaskEntity>()
 
-        coEvery { taskDao.observeTasksByObject("obj-1") } returns flowOf(emptyList())
+        coEvery { taskDao.getTaskTitlesByObject("obj-1") } returns emptyList()
         coEvery { taskDao.insertTask(capture(insertedTasks)) } returns Unit
 
         taskGenerator.generateObjectCreationTasks(obj)
@@ -69,7 +66,7 @@ class TaskGeneratorTest {
         val obj = makeObject("insurance")
         val insertedTasks = mutableListOf<TaskEntity>()
 
-        coEvery { taskDao.observeTasksByObject("obj-1") } returns flowOf(emptyList())
+        coEvery { taskDao.getTaskTitlesByObject("obj-1") } returns emptyList()
         coEvery { taskDao.insertTask(capture(insertedTasks)) } returns Unit
 
         taskGenerator.generateObjectCreationTasks(obj)
@@ -94,7 +91,7 @@ class TaskGeneratorTest {
         val insertedTasks = mutableListOf<TaskEntity>()
         val now = System.currentTimeMillis()
 
-        coEvery { taskDao.observeTasksByObject("obj-1") } returns flowOf(emptyList())
+        coEvery { taskDao.getTaskTitlesByObject("obj-1") } returns emptyList()
         coEvery { taskDao.insertTask(capture(insertedTasks)) } returns Unit
 
         taskGenerator.generateObjectCreationTasks(obj)
@@ -102,5 +99,20 @@ class TaskGeneratorTest {
         assertTrue("All tasks should have future due dates", insertedTasks.all { task ->
             task.dueDate != null && task.dueDate!! > now
         })
+    }
+
+    @Test
+    fun `generateObjectCreationTasks skips already-existing tasks`() = runTest {
+        val obj = makeObject("passport")
+        val insertedTasks = mutableListOf<TaskEntity>()
+
+        // Pretend one task already exists
+        coEvery { taskDao.getTaskTitlesByObject("obj-1") } returns listOf("Scan and upload passport document")
+        coEvery { taskDao.insertTask(capture(insertedTasks)) } returns Unit
+
+        taskGenerator.generateObjectCreationTasks(obj)
+
+        // Should only create the remaining task (record expiry date)
+        assertTrue("Should skip existing tasks", insertedTasks.all { it.title != "Scan and upload passport document" })
     }
 }
