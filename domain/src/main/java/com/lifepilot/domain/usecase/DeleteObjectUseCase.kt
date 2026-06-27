@@ -21,10 +21,16 @@ class DeleteObjectUseCase @Inject constructor(
         val obj = objectRepository.getObjectById(objectId)
             ?: error("Object not found: $objectId")
 
+        // Remove physical files for all associated documents
+        val documents = documentRepository.getDocumentsByObject(objectId)
+        documents.forEach { doc ->
+            runCatching { documentRepository.deleteDocument(doc.documentId) }
+        }
+
         val event = eventRepository.recordEvent(
             objectId = objectId,
             eventType = "OBJECT_DELETED",
-            payload = """{"objectType":"${obj.objectType}","title":"${obj.title}"}""",
+            payload = """{"objectType":"${obj.objectType}","title":"${obj.title}","documentsRemoved":${documents.size}}""",
             source = EventSource.USER,
             confidence = null,
         )

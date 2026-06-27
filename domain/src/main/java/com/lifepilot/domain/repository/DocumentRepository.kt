@@ -8,6 +8,7 @@ interface DocumentRepository {
     fun observeDocumentsByObject(objectId: String): Flow<List<Document>>
     fun observeDocumentById(documentId: String): Flow<Document?>
     suspend fun getDocumentById(documentId: String): Document?
+    suspend fun getDocumentsByObject(objectId: String): List<Document>
     suspend fun uploadDocument(
         objectId: String,
         filePath: String,

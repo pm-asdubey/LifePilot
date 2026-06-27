@@ -45,6 +45,12 @@ class DocumentRepositoryImpl @Inject constructor(
         return entity.toDomain(versions)
     }
 
+    override suspend fun getDocumentsByObject(objectId: String): List<Document> =
+        documentDao.getDocumentsByObjectSync(objectId).map { entity ->
+            val versions = documentDao.getVersionsForDocument(entity.documentId)
+            entity.toDomain(versions)
+        }
+
     override suspend fun uploadDocument(
         objectId: String,
         filePath: String,

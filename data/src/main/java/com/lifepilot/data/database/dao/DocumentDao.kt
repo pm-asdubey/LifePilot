@@ -14,6 +14,9 @@ interface DocumentDao {
     @Query("SELECT * FROM documents WHERE object_id = :objectId ORDER BY created_at DESC")
     fun observeDocumentsByObject(objectId: String): Flow<List<DocumentEntity>>
 
+    @Query("SELECT * FROM documents WHERE object_id = :objectId ORDER BY created_at DESC")
+    suspend fun getDocumentsByObjectSync(objectId: String): List<DocumentEntity>
+
     @Query("SELECT * FROM documents WHERE document_id = :documentId")
     fun observeDocumentById(documentId: String): Flow<DocumentEntity?>
 
