@@ -6,10 +6,12 @@ import androidx.lifecycle.viewModelScope
 import com.lifepilot.domain.model.ObjectStatus
 import com.lifepilot.domain.repository.DocumentRepository
 import com.lifepilot.domain.repository.ObjectRepository
+import com.lifepilot.domain.repository.RelationshipRepository
 import com.lifepilot.domain.repository.ReminderRepository
 import com.lifepilot.domain.repository.TaskRepository
 import com.lifepilot.domain.repository.TimelineRepository
 import com.lifepilot.domain.usecase.ArchiveObjectUseCase
+import com.lifepilot.domain.usecase.LinkObjectsUseCase
 import com.lifepilot.domain.usecase.UpdateObjectStatusUseCase
 import com.lifepilot.features.object.state.ObjectDetailTab
 import com.lifepilot.features.object.state.ObjectDetailUiState
@@ -22,8 +24,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.time.Instant
-import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 
 @HiltViewModel
@@ -34,8 +34,10 @@ class ObjectDetailViewModel @Inject constructor(
     private val taskRepository: TaskRepository,
     private val reminderRepository: ReminderRepository,
     private val timelineRepository: TimelineRepository,
+    private val relationshipRepository: RelationshipRepository,
     private val archiveObjectUseCase: ArchiveObjectUseCase,
     private val updateObjectStatusUseCase: UpdateObjectStatusUseCase,
+    private val linkObjectsUseCase: LinkObjectsUseCase,
 ) : ViewModel() {
 
     private val objectId: String = checkNotNull(savedStateHandle["objectId"])
@@ -45,6 +47,7 @@ class ObjectDetailViewModel @Inject constructor(
 
     init {
         observeObject()
+        observeRelationships()
     }
 
     private fun observeObject() {
@@ -56,14 +59,13 @@ class ObjectDetailViewModel @Inject constructor(
                 reminderRepository.observeRemindersByObject(objectId),
                 timelineRepository.observeTimelineByObject(objectId),
             ) { obj, docs, tasks, reminders, timeline ->
-                ObjectDetailUiState(
+                _uiState.value.copy(
                     isLoading = false,
                     lifeObject = obj,
                     documents = docs,
                     tasks = tasks,
                     reminders = reminders,
                     timeline = timeline,
-                    selectedTab = _uiState.value.selectedTab,
                 )
             }
             .catch { e ->
@@ -71,13 +73,59 @@ class ObjectDetailViewModel @Inject constructor(
                 _uiState.update { it.copy(isLoading = false, error = e.message) }
             }
             .collect { state ->
-                _uiState.value = state
+                _uiState.update { current ->
+                    state.copy(
+                        selectedTab = current.selectedTab,
+                        relationships = current.relationships,
+                        relatedObjects = current.relatedObjects,
+                        showLinkObjectSheet = current.showLinkObjectSheet,
+                    )
+                }
             }
+        }
+    }
+
+    private fun observeRelationships() {
+        viewModelScope.launch {
+            relationshipRepository.observeRelationshipsByObject(objectId)
+                .catch { e -> Timber.e(e, "Error observing relationships") }
+                .collect { relationships ->
+                    val relatedObjectIds = relationships.map { rel ->
+                        if (rel.sourceObjectId == objectId) rel.targetObjectId else rel.sourceObjectId
+                    }.toSet()
+                    val relatedObjects = relatedObjectIds.mapNotNull { id ->
+                        objectRepository.getObjectById(id)
+                    }.associateBy { it.objectId }
+                    _uiState.update { it.copy(relationships = relationships, relatedObjects = relatedObjects) }
+                }
         }
     }
 
     fun selectTab(tab: ObjectDetailTab) {
         _uiState.update { it.copy(selectedTab = tab) }
+    }
+
+    fun showLinkObjectSheet() {
+        _uiState.update { it.copy(showLinkObjectSheet = true) }
+    }
+
+    fun hideLinkObjectSheet() {
+        _uiState.update { it.copy(showLinkObjectSheet = false) }
+    }
+
+    fun linkObject(targetObjectId: String, relationshipType: String) {
+        viewModelScope.launch {
+            linkObjectsUseCase(objectId, targetObjectId, relationshipType)
+                .onSuccess { _uiState.update { it.copy(showLinkObjectSheet = false) } }
+                .onFailure { e -> Timber.e(e, "Failed to link objects") }
+        }
+    }
+
+    fun unlinkObject(relationshipId: String) {
+        viewModelScope.launch {
+            runCatching { relationshipRepository.deleteRelationship(relationshipId) }
+                .onFailure { e -> Timber.e(e, "Failed to unlink objects") }
+        }
     }
 
     fun archiveObject() {

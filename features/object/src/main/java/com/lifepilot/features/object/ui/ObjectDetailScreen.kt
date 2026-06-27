@@ -54,8 +54,10 @@ import com.lifepilot.designsystem.theme.StatusArchived
 import com.lifepilot.designsystem.theme.StatusExpired
 import com.lifepilot.designsystem.theme.StatusRenewalDue
 import com.lifepilot.domain.model.Document
+import com.lifepilot.domain.model.LifeObject
 import com.lifepilot.domain.model.MetadataEntry
 import com.lifepilot.domain.model.ObjectStatus
+import com.lifepilot.domain.model.Relationship
 import com.lifepilot.domain.model.TimelineEntry
 import com.lifepilot.features.object.state.ObjectDetailTab
 import com.lifepilot.features.object.viewmodel.ObjectDetailViewModel
@@ -233,6 +235,13 @@ fun ObjectDetailScreen(
                 )
                 ObjectDetailTab.TASKS -> TasksTab(
                     tasks = uiState.tasks,
+                )
+                ObjectDetailTab.RELATIONSHIPS -> RelationshipsTab(
+                    relationships = uiState.relationships,
+                    relatedObjects = uiState.relatedObjects,
+                    currentObjectId = obj.objectId,
+                    onUnlink = { relationshipId -> viewModel.unlinkObject(relationshipId) },
+                    onLink = { viewModel.showLinkObjectSheet() },
                 )
             }
         }
@@ -460,6 +469,75 @@ private fun TasksTab(
                             label = task.priority.name,
                             color = priorityColor,
                         )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RelationshipsTab(
+    relationships: List<Relationship>,
+    relatedObjects: Map<String, LifeObject>,
+    currentObjectId: String,
+    onUnlink: (String) -> Unit,
+    onLink: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (relationships.isEmpty()) {
+        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                EmptyState(
+                    icon = androidx.compose.material.icons.Icons.Outlined.Link,
+                    title = "No linked objects",
+                    description = "Link this object to others to see connections.",
+                )
+                androidx.compose.material3.TextButton(onClick = onLink) { Text("Link an Object") }
+            }
+        }
+    } else {
+        LazyColumn(
+            modifier = modifier.fillMaxSize(),
+            contentPadding = PaddingValues(Spacing.md),
+        ) {
+            items(relationships, key = { it.relationshipId }) { rel ->
+                val otherId = if (rel.sourceObjectId == currentObjectId) rel.targetObjectId else rel.sourceObjectId
+                val other = relatedObjects[otherId]
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = Spacing.xs),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(Spacing.md),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = other?.title ?: otherId,
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                text = rel.relationshipType.replace("_", " ").lowercase()
+                                    .replaceFirstChar { it.uppercase() },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        IconButton(onClick = { onUnlink(rel.relationshipId) }) {
+                            Icon(
+                                imageVector = androidx.compose.material.icons.Icons.Outlined.LinkOff,
+                                contentDescription = "Remove link",
+                                tint = MaterialTheme.colorScheme.error,
+                            )
+                        }
                     }
                 }
             }
