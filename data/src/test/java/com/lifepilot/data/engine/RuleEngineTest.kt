@@ -3,6 +3,8 @@ package com.lifepilot.data.engine
 import com.lifepilot.domain.engine.SchemaEngine
 import com.lifepilot.domain.model.LifeObject
 import com.lifepilot.domain.model.MetadataEntry
+import com.lifepilot.domain.model.MetadataFieldType
+import com.lifepilot.domain.model.MetadataSource
 import com.lifepilot.domain.model.ObjectStatus
 import com.lifepilot.domain.model.Reminder
 import com.lifepilot.domain.model.ReminderPriority
@@ -97,8 +99,11 @@ class RuleEngineTest {
                 metadataId = "m1",
                 objectId = testObjectId,
                 fieldId = "expiry_date",
+                fieldType = MetadataFieldType.DATE,
                 value = futureDateStr,
                 version = 1,
+                confidence = null,
+                source = MetadataSource.USER,
                 updatedAt = Instant.now(),
             )
         )
@@ -126,8 +131,11 @@ class RuleEngineTest {
                 metadataId = "m1",
                 objectId = testObjectId,
                 fieldId = "expiry_date",
+                fieldType = MetadataFieldType.DATE,
                 value = futureDateStr,
                 version = 1,
+                confidence = null,
+                source = MetadataSource.USER,
                 updatedAt = Instant.now(),
             )
         )
@@ -170,8 +178,11 @@ class RuleEngineTest {
                 metadataId = "m1",
                 objectId = testObjectId,
                 fieldId = "expiry_date",
+                fieldType = MetadataFieldType.DATE,
                 value = pastDate,
                 version = 1,
+                confidence = null,
+                source = MetadataSource.USER,
                 updatedAt = Instant.now(),
             )
         )

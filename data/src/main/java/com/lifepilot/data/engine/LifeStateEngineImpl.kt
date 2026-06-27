@@ -4,6 +4,7 @@ import com.lifepilot.data.task.TaskGenerator
 import com.lifepilot.domain.engine.AttentionItem
 import com.lifepilot.domain.engine.AttentionPriority
 import com.lifepilot.domain.engine.LifeStateEngine
+import com.lifepilot.domain.engine.RuleEngine
 import com.lifepilot.domain.model.MetadataEntry
 import com.lifepilot.domain.model.ReminderPriority
 import com.lifepilot.domain.model.ReminderStatus
@@ -25,7 +26,7 @@ class LifeStateEngineImpl @Inject constructor(
     private val metadataRepository: MetadataRepository,
     private val timelineRepository: TimelineRepository,
     private val reminderRepository: ReminderRepository,
-    private val ruleEngine: RuleEngineImpl,
+    private val ruleEngine: RuleEngine,
     private val taskGenerator: TaskGenerator,
 ) : LifeStateEngine {
 

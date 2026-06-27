@@ -1,6 +1,7 @@
 package com.lifepilot.data.engine
 
 import com.lifepilot.data.task.TaskGenerator
+import com.lifepilot.domain.engine.RuleEngine
 import com.lifepilot.domain.model.LifeObject
 import com.lifepilot.domain.model.MetadataEntry
 import com.lifepilot.domain.model.MetadataFieldType
@@ -20,7 +21,7 @@ class LifeStateEngineTest {
     private val metadataRepository = mockk<com.lifepilot.domain.repository.MetadataRepository>(relaxed = true)
     private val timelineRepository = mockk<com.lifepilot.domain.repository.TimelineRepository>(relaxed = true)
     private val reminderRepository = mockk<com.lifepilot.domain.repository.ReminderRepository>(relaxed = true)
-    private val ruleEngine = mockk<RuleEngineImpl>(relaxed = true)
+    private val ruleEngine = mockk<RuleEngine>(relaxed = true)
     private val taskGenerator = mockk<TaskGenerator>(relaxed = true)
 
     private lateinit var engine: LifeStateEngineImpl
