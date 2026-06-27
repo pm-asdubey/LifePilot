@@ -20,7 +20,9 @@ import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Upload
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -376,7 +378,7 @@ fun SettingsScreen(
                             horizontalArrangement = Arrangement.spacedBy(Spacing.md),
                         ) {
                             Icon(
-                                imageVector = Icons.Outlined.ChevronRight,
+                                imageVector = Icons.Outlined.Upload,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(24.dp),
@@ -458,7 +460,7 @@ fun SettingsScreen(
                             horizontalArrangement = Arrangement.spacedBy(Spacing.md),
                         ) {
                             Icon(
-                                imageVector = Icons.Outlined.ChevronRight,
+                                imageVector = Icons.Outlined.Download,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(24.dp),
