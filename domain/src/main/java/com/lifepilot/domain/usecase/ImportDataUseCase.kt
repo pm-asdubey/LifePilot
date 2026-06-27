@@ -7,7 +7,12 @@ import com.lifepilot.domain.model.ObjectStatus
 import com.lifepilot.domain.repository.MetadataRepository
 import com.lifepilot.domain.repository.ObjectRepository
 import com.lifepilot.domain.repository.ProfileRepository
-import org.json.JSONObject
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
@@ -24,10 +29,12 @@ class ImportDataUseCase @Inject constructor(
     private val objectRepository: ObjectRepository,
     private val metadataRepository: MetadataRepository,
 ) {
+    private val json = Json { ignoreUnknownKeys = true }
+
     suspend operator fun invoke(jsonPayload: String, targetProfileId: String): Result<ImportResult> =
         runCatching {
-            val root = JSONObject(jsonPayload)
-            val version = root.optInt("version", 1)
+            val root = json.parseToJsonElement(jsonPayload).jsonObject
+            val version = root["version"]?.jsonPrimitive?.int ?: 1
 
             if (version > 1) error("Unsupported export version: $version")
 
@@ -39,18 +46,19 @@ class ImportDataUseCase @Inject constructor(
             var objectsSkipped = 0
             var metadataEntriesImported = 0
 
-            val objectsArray = root.optJSONArray("objects") ?: run {
+            val objectsArray = root["objects"]?.jsonArray ?: run {
                 return@runCatching ImportResult(0, 0, 0, listOf("No objects array in payload"))
             }
 
-            for (i in 0 until objectsArray.length()) {
-                val obj = objectsArray.getJSONObject(i)
+            objectsArray.forEachIndexed { i, element ->
                 runCatching {
-                    val objectType = obj.getString("objectType")
-                    val domain = obj.getString("domain")
-                    val title = obj.getString("title")
-                    val statusName = obj.optString("status", "ACTIVE")
-                    val status = runCatching { ObjectStatus.valueOf(statusName) }.getOrDefault(ObjectStatus.ACTIVE)
+                    val obj = element.jsonObject
+                    val objectType = obj["objectType"]!!.jsonPrimitive.content
+                    val domain = obj["domain"]!!.jsonPrimitive.content
+                    val title = obj["title"]!!.jsonPrimitive.content
+                    val statusName = obj["status"]?.jsonPrimitive?.content ?: "ACTIVE"
+                    val status = runCatching { ObjectStatus.valueOf(statusName) }
+                        .getOrDefault(ObjectStatus.ACTIVE)
 
                     val created = objectRepository.createObject(
                         profileId = profile.profileId,
@@ -66,10 +74,11 @@ class ImportDataUseCase @Inject constructor(
 
                     objectsImported++
 
-                    val metadataObj = obj.optJSONObject("metadata")
+                    val metadataObj = obj["metadata"]?.jsonObject
                     if (metadataObj != null) {
-                        val entries = metadataObj.keys().asSequence().mapNotNull { fieldId ->
-                            val value = metadataObj.optString(fieldId).takeIf { it.isNotBlank() }
+                        val entries = metadataObj.entries.mapNotNull { (fieldId, valueElement) ->
+                            val value = runCatching { valueElement.jsonPrimitive.content }
+                                .getOrNull()?.takeIf { it.isNotBlank() }
                                 ?: return@mapNotNull null
                             MetadataEntry(
                                 metadataId = UUID.randomUUID().toString(),
@@ -82,7 +91,7 @@ class ImportDataUseCase @Inject constructor(
                                 version = 1,
                                 updatedAt = Instant.now(),
                             )
-                        }.toList()
+                        }
 
                         if (entries.isNotEmpty()) {
                             metadataRepository.upsertMetadataBatch(entries)
