@@ -17,6 +17,8 @@ data class LibraryUiState(
     val domains: List<DomainItem> = emptyList(),
     val objects: List<LifeObject> = emptyList(),
     val error: String? = null,
+    val isSelecting: Boolean = false,
+    val selectedObjectIds: Set<String> = emptySet(),
 )
 
 data class DomainItem(

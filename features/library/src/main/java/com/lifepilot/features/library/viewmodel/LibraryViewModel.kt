@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.lifepilot.domain.engine.SchemaEngine
 import com.lifepilot.domain.repository.ObjectRepository
 import com.lifepilot.domain.repository.ProfileRepository
+import com.lifepilot.domain.usecase.ArchiveObjectUseCase
+import com.lifepilot.domain.usecase.DeleteObjectUseCase
 import com.lifepilot.features.library.state.DomainItem
 import com.lifepilot.features.library.state.LibraryUiState
 import com.lifepilot.features.library.state.LibrarySortOrder
@@ -26,6 +28,8 @@ class LibraryViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
     private val objectRepository: ObjectRepository,
     private val schemaEngine: SchemaEngine,
+    private val archiveObjectUseCase: ArchiveObjectUseCase,
+    private val deleteObjectUseCase: DeleteObjectUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LibraryUiState())
@@ -108,10 +112,55 @@ class LibraryViewModel @Inject constructor(
 
     fun refresh() {
         _uiState.update { it.copy(isRefreshing = true) }
-        // Flows auto-update from Room; just clear the indicator after a short delay
         viewModelScope.launch {
             kotlinx.coroutines.delay(600)
             _uiState.update { it.copy(isRefreshing = false) }
+        }
+    }
+
+    fun enterSelectionMode(objectId: String) {
+        _uiState.update {
+            it.copy(isSelecting = true, selectedObjectIds = setOf(objectId))
+        }
+    }
+
+    fun toggleObjectSelection(objectId: String) {
+        _uiState.update { state ->
+            val updated = if (objectId in state.selectedObjectIds) {
+                state.selectedObjectIds - objectId
+            } else {
+                state.selectedObjectIds + objectId
+            }
+            state.copy(
+                selectedObjectIds = updated,
+                isSelecting = updated.isNotEmpty(),
+            )
+        }
+    }
+
+    fun exitSelectionMode() {
+        _uiState.update { it.copy(isSelecting = false, selectedObjectIds = emptySet()) }
+    }
+
+    fun archiveSelected() {
+        val ids = _uiState.value.selectedObjectIds.toList()
+        exitSelectionMode()
+        viewModelScope.launch {
+            ids.forEach { id ->
+                archiveObjectUseCase(id)
+                    .onFailure { Timber.e(it, "Failed to archive $id") }
+            }
+        }
+    }
+
+    fun deleteSelected() {
+        val ids = _uiState.value.selectedObjectIds.toList()
+        exitSelectionMode()
+        viewModelScope.launch {
+            ids.forEach { id ->
+                deleteObjectUseCase(id)
+                    .onFailure { Timber.e(it, "Failed to delete $id") }
+            }
         }
     }
 }

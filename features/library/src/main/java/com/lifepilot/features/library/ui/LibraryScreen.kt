@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -12,12 +13,22 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Archive
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Sort
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -25,6 +36,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -59,66 +71,152 @@ fun LibraryScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showSortMenu by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete ${uiState.selectedObjectIds.size} Objects") },
+            text = { Text("This will permanently delete the selected objects and all their documents. This action cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        viewModel.deleteSelected()
+                    },
+                ) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") }
+            },
+        )
+    }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "Library",
-                        style = MaterialTheme.typography.titleLarge,
-                    )
-                },
-                actions = {
-                    Box {
-                        IconButton(onClick = { showSortMenu = true }) {
-                            Icon(
-                                imageVector = Icons.Outlined.Sort,
-                                contentDescription = "Sort",
-                                tint = if (uiState.sortOrder != LibrarySortOrder.UPDATED_RECENT)
-                                    MaterialTheme.colorScheme.primary
-                                else
-                                    MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+            if (uiState.isSelecting) {
+                TopAppBar(
+                    navigationIcon = {
+                        IconButton(onClick = viewModel::exitSelectionMode) {
+                            Icon(Icons.Filled.Close, contentDescription = "Exit selection")
                         }
-                        DropdownMenu(
-                            expanded = showSortMenu,
-                            onDismissRequest = { showSortMenu = false },
-                        ) {
-                            LibrarySortOrder.entries.forEach { order ->
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(
-                                            text = order.label,
-                                            color = if (uiState.sortOrder == order)
-                                                MaterialTheme.colorScheme.primary
-                                            else
-                                                MaterialTheme.colorScheme.onSurface,
-                                        )
-                                    },
-                                    onClick = {
-                                        viewModel.setSortOrder(order)
-                                        showSortMenu = false
-                                    },
+                    },
+                    title = {
+                        Text(
+                            text = "${uiState.selectedObjectIds.size} selected",
+                            style = MaterialTheme.typography.titleLarge,
+                        )
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    ),
+                )
+            } else {
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = "Library",
+                            style = MaterialTheme.typography.titleLarge,
+                        )
+                    },
+                    actions = {
+                        Box {
+                            IconButton(onClick = { showSortMenu = true }) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Sort,
+                                    contentDescription = "Sort",
+                                    tint = if (uiState.sortOrder != LibrarySortOrder.UPDATED_RECENT)
+                                        MaterialTheme.colorScheme.primary
+                                    else
+                                        MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
+                            DropdownMenu(
+                                expanded = showSortMenu,
+                                onDismissRequest = { showSortMenu = false },
+                            ) {
+                                LibrarySortOrder.entries.forEach { order ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                text = order.label,
+                                                color = if (uiState.sortOrder == order)
+                                                    MaterialTheme.colorScheme.primary
+                                                else
+                                                    MaterialTheme.colorScheme.onSurface,
+                                            )
+                                        },
+                                        onClick = {
+                                            viewModel.setSortOrder(order)
+                                            showSortMenu = false
+                                        },
+                                    )
+                                }
+                            }
                         }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                ),
-            )
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                    ),
+                )
+            }
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onAddObject,
-                containerColor = MaterialTheme.colorScheme.primary,
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = "Add Object",
-                )
+            if (!uiState.isSelecting) {
+                FloatingActionButton(
+                    onClick = onAddObject,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = "Add Object",
+                    )
+                }
+            }
+        },
+        bottomBar = {
+            if (uiState.isSelecting && uiState.selectedObjectIds.isNotEmpty()) {
+                BottomAppBar(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.md),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+                    ) {
+                        Button(
+                            onClick = viewModel::archiveSelected,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            ),
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Icon(
+                                Icons.Filled.Archive,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(modifier = Modifier.width(Spacing.xs))
+                            Text("Archive")
+                        }
+                        Button(
+                            onClick = { showDeleteDialog = true },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                            ),
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Icon(
+                                Icons.Filled.Delete,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(modifier = Modifier.width(Spacing.xs))
+                            Text("Delete")
+                        }
+                    }
+                }
             }
         },
         modifier = modifier,
@@ -191,6 +289,7 @@ fun LibraryScreen(
                                 ObjectStatus.ARCHIVED -> StatusArchived
                                 ObjectStatus.DRAFT -> MaterialTheme.colorScheme.onSurfaceVariant
                             }
+                            val isSelected = obj.objectId in uiState.selectedObjectIds
                             ObjectCard(
                                 title = obj.title,
                                 subtitle = obj.description,
@@ -199,7 +298,19 @@ fun LibraryScreen(
                                 statusLabel = obj.status.name.replace("_", " "),
                                 statusColor = statusColor,
                                 icon = domainIcon(obj.domain),
-                                onClick = { onNavigateToObject(obj.objectId) },
+                                isSelected = isSelected,
+                                onClick = {
+                                    if (uiState.isSelecting) {
+                                        viewModel.toggleObjectSelection(obj.objectId)
+                                    } else {
+                                        onNavigateToObject(obj.objectId)
+                                    }
+                                },
+                                onLongClick = {
+                                    if (!uiState.isSelecting) {
+                                        viewModel.enterSelectionMode(obj.objectId)
+                                    }
+                                },
                             )
                         }
                     }

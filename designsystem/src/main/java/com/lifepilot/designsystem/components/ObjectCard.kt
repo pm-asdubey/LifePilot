@@ -1,6 +1,7 @@
 package com.lifepilot.designsystem.components
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,6 +11,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CheckCircleOutline
+import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -21,12 +25,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.lifepilot.designsystem.theme.Spacing
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ObjectCard(
     title: String,
@@ -38,16 +45,30 @@ fun ObjectCard(
     icon: ImageVector,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null,
+    isSelected: Boolean = false,
 ) {
+    val haptic = LocalHapticFeedback.current
     Card(
         modifier = modifier
             .fillMaxWidth()
             .semantics {
-                contentDescription = "$title, $objectType, $statusLabel"
+                contentDescription = "$title, $objectType, $statusLabel${if (isSelected) ", selected" else ""}"
             }
-            .clickable(onClick = onClick),
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = if (onLongClick != null) {
+                    {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onLongClick()
+                    }
+                } else null,
+            ),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            containerColor = if (isSelected)
+                MaterialTheme.colorScheme.primaryContainer
+            else
+                MaterialTheme.colorScheme.surfaceContainerLow,
         ),
         shape = MaterialTheme.shapes.medium,
     ) {
@@ -57,19 +78,28 @@ fun ObjectCard(
                 .padding(Spacing.md),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Surface(
-                shape = MaterialTheme.shapes.small,
-                color = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.size(48.dp),
-            ) {
+            if (isSelected) {
                 Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier
-                        .padding(10.dp)
-                        .size(28.dp),
+                    imageVector = Icons.Outlined.CheckCircleOutline,
+                    contentDescription = "Selected",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(48.dp).padding(10.dp),
                 )
+            } else {
+                Surface(
+                    shape = MaterialTheme.shapes.small,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.size(48.dp),
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier
+                            .padding(10.dp)
+                            .size(28.dp),
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.width(Spacing.md))
