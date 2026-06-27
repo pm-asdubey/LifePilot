@@ -19,6 +19,9 @@ import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -71,6 +74,43 @@ fun SettingsScreen(
             },
             dismissButton = {
                 TextButton(onClick = viewModel::hideCreateProfile) { Text("Cancel") }
+            },
+        )
+    }
+
+    uiState.profileToEdit?.let { profile ->
+        AlertDialog(
+            onDismissRequest = viewModel::hideEditProfile,
+            title = { Text("Rename Profile") },
+            text = {
+                OutlinedTextField(
+                    value = uiState.editProfileName,
+                    onValueChange = viewModel::onEditProfileNameChange,
+                    label = { Text("Profile Name") },
+                    singleLine = true,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = viewModel::saveProfileEdit) { Text("Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::hideEditProfile) { Text("Cancel") }
+            },
+        )
+    }
+
+    uiState.profileToDelete?.let { profile ->
+        AlertDialog(
+            onDismissRequest = viewModel::hideDeleteProfile,
+            title = { Text("Delete Profile") },
+            text = {
+                Text("Delete \"${profile.displayName}\"? This cannot be undone.")
+            },
+            confirmButton = {
+                TextButton(onClick = viewModel::deleteProfile) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::hideDeleteProfile) { Text("Cancel") }
             },
         )
     }
@@ -194,6 +234,23 @@ fun SettingsScreen(
                                 contentDescription = "Active",
                                 tint = MaterialTheme.colorScheme.onPrimaryContainer,
                             )
+                        } else {
+                            Row {
+                                IconButton(onClick = { viewModel.showEditProfile(profile) }) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Edit,
+                                        contentDescription = "Rename",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                                IconButton(onClick = { viewModel.showDeleteProfile(profile) }) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Delete,
+                                        contentDescription = "Delete",
+                                        tint = MaterialTheme.colorScheme.error,
+                                    )
+                                }
+                            }
                         }
                     }
                 }

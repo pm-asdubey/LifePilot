@@ -32,6 +32,9 @@ data class SettingsUiState(
     val exportResult: ExportBundle? = null,
     val exportError: String? = null,
     val biometricLockEnabled: Boolean = false,
+    val profileToEdit: Profile? = null,
+    val editProfileName: String = "",
+    val profileToDelete: Profile? = null,
 )
 
 @HiltViewModel
@@ -87,6 +90,47 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching { preferenceManager.setBiometricLockEnabled(enabled) }
                 .onFailure { Timber.e(it, "Failed to toggle biometric lock") }
+        }
+    }
+
+    fun showEditProfile(profile: Profile) {
+        _uiState.update { it.copy(profileToEdit = profile, editProfileName = profile.displayName) }
+    }
+
+    fun hideEditProfile() {
+        _uiState.update { it.copy(profileToEdit = null, editProfileName = "") }
+    }
+
+    fun onEditProfileNameChange(name: String) {
+        _uiState.update { it.copy(editProfileName = name) }
+    }
+
+    fun saveProfileEdit() {
+        val profile = _uiState.value.profileToEdit ?: return
+        val newName = _uiState.value.editProfileName.trim()
+        if (newName.isBlank()) return
+        viewModelScope.launch {
+            runCatching {
+                profileRepository.updateProfile(profile.copy(displayName = newName))
+            }.onFailure { Timber.e(it, "Failed to update profile") }
+            _uiState.update { it.copy(profileToEdit = null, editProfileName = "") }
+        }
+    }
+
+    fun showDeleteProfile(profile: Profile) {
+        _uiState.update { it.copy(profileToDelete = profile) }
+    }
+
+    fun hideDeleteProfile() {
+        _uiState.update { it.copy(profileToDelete = null) }
+    }
+
+    fun deleteProfile() {
+        val profile = _uiState.value.profileToDelete ?: return
+        viewModelScope.launch {
+            runCatching { profileRepository.deleteProfile(profile.profileId) }
+                .onFailure { Timber.e(it, "Failed to delete profile") }
+            _uiState.update { it.copy(profileToDelete = null) }
         }
     }
 
