@@ -3,6 +3,7 @@ package com.lifepilot.features.object.verification.viewmodel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lifepilot.domain.engine.LifeStateEngine
 import com.lifepilot.domain.model.MetadataEntry
 import com.lifepilot.domain.model.MetadataFieldType
 import com.lifepilot.domain.model.MetadataSource
@@ -30,6 +31,7 @@ class MetadataVerificationViewModel @Inject constructor(
     private val documentRepository: DocumentRepository,
     private val metadataRepository: MetadataRepository,
     private val extractMetadataUseCase: ExtractMetadataUseCase,
+    private val lifeStateEngine: LifeStateEngine,
 ) : ViewModel() {
 
     private val objectId: String = savedStateHandle["objectId"] ?: ""
@@ -136,6 +138,7 @@ class MetadataVerificationViewModel @Inject constructor(
                     )
                 }
                 metadataRepository.upsertMetadataBatch(entries)
+                lifeStateEngine.processMetadataUpdate(objectId, entries)
                 _state.update { it.copy(isSaving = false, saved = true) }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to save verified metadata")

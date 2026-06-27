@@ -5,6 +5,7 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.lifepilot.data.database.dao.DocumentDao
+import com.lifepilot.domain.engine.LifeStateEngine
 import com.lifepilot.domain.ocr.OcrResult
 import com.lifepilot.domain.ocr.OcrService
 import dagger.assisted.Assisted
@@ -17,6 +18,7 @@ class DocumentOcrWorker @AssistedInject constructor(
     @Assisted params: WorkerParameters,
     private val documentDao: DocumentDao,
     private val ocrService: OcrService,
+    private val lifeStateEngine: LifeStateEngine,
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
@@ -41,6 +43,17 @@ class DocumentOcrWorker @AssistedInject constructor(
                 is OcrResult.Success -> {
                     documentDao.updateVersionOcrText(versionId, ocrResult.text)
                     Timber.d("OCR complete for version $versionId: ${ocrResult.text.length} chars")
+                    // Notify LifeStateEngine so rules are evaluated and tasks generated
+                    val objectId = versionEntity.documentId?.let { docId ->
+                        documentDao.getDocumentById(docId)?.objectId
+                    }
+                    if (objectId != null) {
+                        lifeStateEngine.processDocumentIngestion(
+                            objectId = objectId,
+                            documentId = versionEntity.documentId ?: "",
+                            ocrText = ocrResult.text,
+                        )
+                    }
                     Result.success()
                 }
                 is OcrResult.Error -> {
