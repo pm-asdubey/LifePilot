@@ -1,8 +1,12 @@
 package com.lifepilot.features.document.ui
 
+import android.graphics.Bitmap
+import android.graphics.Color as AndroidColor
+import android.os.ParcelFileDescriptor
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,10 +35,15 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -43,6 +52,8 @@ import coil.compose.AsyncImage
 import com.lifepilot.domain.model.DocumentVersion
 import com.lifepilot.features.document.viewmodel.DocumentViewerState
 import com.lifepilot.features.document.viewmodel.DocumentViewerViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -164,29 +175,10 @@ private fun DocumentContent(
                 )
             }
             version.mimeType == "application/pdf" -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(400.dp)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Text(
-                            text = "PDF Document",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            text = version.originalName,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
+                PdfViewer(
+                    filePath = version.filePath,
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
             else -> {
                 Box(
@@ -241,6 +233,106 @@ private fun DocumentContent(
         }
 
         DocumentMetadataSection(version = version)
+    }
+}
+
+@Composable
+private fun PdfViewer(
+    filePath: String,
+    modifier: Modifier = Modifier,
+) {
+    var bitmaps by remember(filePath) { mutableStateOf<List<Bitmap>>(emptyList()) }
+    var isRendering by remember(filePath) { mutableStateOf(true) }
+    var renderError by remember(filePath) { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(filePath) {
+        isRendering = true
+        renderError = null
+        val result = withContext(Dispatchers.IO) {
+            runCatching {
+                val file = java.io.File(filePath)
+                val pfd = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
+                val renderer = android.graphics.pdf.PdfRenderer(pfd)
+                val targetWidth = 1080
+                val pages = mutableListOf<Bitmap>()
+                for (i in 0 until renderer.pageCount) {
+                    val page = renderer.openPage(i)
+                    val scale = targetWidth.toFloat() / page.width
+                    val pageHeight = (page.height * scale).toInt()
+                    val bitmap = Bitmap.createBitmap(targetWidth, pageHeight, Bitmap.Config.ARGB_8888)
+                    bitmap.eraseColor(AndroidColor.WHITE)
+                    page.render(bitmap, null, null, android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                    page.close()
+                    pages.add(bitmap)
+                }
+                renderer.close()
+                pfd.close()
+                pages.toList()
+            }
+        }
+        result.onSuccess { pages ->
+            bitmaps = pages
+            isRendering = false
+        }.onFailure { e ->
+            renderError = e.message ?: "Failed to render PDF"
+            isRendering = false
+        }
+    }
+
+    when {
+        isRendering -> Box(
+            modifier = modifier.height(400.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                CircularProgressIndicator()
+                Text(
+                    text = "Rendering PDF…",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        renderError != null -> Box(
+            modifier = modifier
+                .height(400.dp)
+                .background(MaterialTheme.colorScheme.errorContainer),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = renderError ?: "Render error",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+                modifier = Modifier.padding(24.dp),
+            )
+        }
+        bitmaps.isEmpty() -> Box(
+            modifier = modifier
+                .height(200.dp)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = "Empty PDF",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        else -> Column(modifier = modifier) {
+            bitmaps.forEachIndexed { index, bitmap ->
+                Image(
+                    bitmap = bitmap.asImageBitmap(),
+                    contentDescription = "Page ${index + 1}",
+                    contentScale = ContentScale.FillWidth,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = if (index < bitmaps.lastIndex) 2.dp else 0.dp),
+                )
+            }
+        }
     }
 }
 

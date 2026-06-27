@@ -274,7 +274,7 @@ Last updated: 2026-06-27 (animated transitions ✅, pull-to-refresh ✅, swipe-t
 * [x] Haptic feedback on key actions (task completion, swipe-to-complete)
 * [x] Swipe-to-complete on task cards
 * [x] Pull-to-refresh on Home, Library, and Timeline
-* [ ] PDF rendering (currently shows placeholder)
+* [x] PDF rendering (PdfRenderer — renders all pages, 1080px wide)
 * [ ] Multi-select for bulk operations (archive/delete)
 
 ---
@@ -316,7 +316,6 @@ Last updated: 2026-06-27 (animated transitions ✅, pull-to-refresh ✅, swipe-t
 
 | Priority | Item |
 |----------|------|
-| High | PDF document rendering |
 | Medium | Bulk operations (multi-select) |
 | Medium | Integration tests |
 | Low | UI tests |
