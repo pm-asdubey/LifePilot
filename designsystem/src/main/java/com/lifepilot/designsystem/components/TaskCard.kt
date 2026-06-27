@@ -20,6 +20,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextDecoration
@@ -38,6 +40,7 @@ fun TaskCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val haptic = LocalHapticFeedback.current
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -53,7 +56,10 @@ fun TaskCard(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(
-            onClick = onComplete,
+            onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onComplete()
+            },
             modifier = Modifier.size(36.dp),
         ) {
             Icon(

@@ -2,7 +2,7 @@
 
 This document tracks implementation tasks. Check off items as they are completed.
 
-Last updated: 2026-06-27
+Last updated: 2026-06-27 (animated transitions ✅, pull-to-refresh ✅, swipe-to-complete ✅, haptic feedback ✅, AI setup banner ✅)
 
 ---
 
@@ -270,10 +270,10 @@ Last updated: 2026-06-27
 * [x] Proper empty states throughout
 * [x] Error states in all ViewModels
 * [x] Loading states with CircularProgressIndicator
-* [ ] Animated transitions between screens
-* [ ] Haptic feedback on key actions
-* [ ] Swipe-to-complete on task cards
-* [ ] Pull-to-refresh on Library and Timeline
+* [x] Animated transitions between screens
+* [x] Haptic feedback on key actions (task completion, swipe-to-complete)
+* [x] Swipe-to-complete on task cards
+* [x] Pull-to-refresh on Home, Library, and Timeline
 * [ ] PDF rendering (currently shows placeholder)
 * [ ] Multi-select for bulk operations (archive/delete)
 
@@ -316,10 +316,7 @@ Last updated: 2026-06-27
 
 | Priority | Item |
 |----------|------|
-| High | Animated screen transitions |
 | High | PDF document rendering |
-| High | Pull-to-refresh on list screens |
-| Medium | Swipe-to-complete on tasks |
 | Medium | Bulk operations (multi-select) |
 | Medium | Integration tests |
 | Low | UI tests |
