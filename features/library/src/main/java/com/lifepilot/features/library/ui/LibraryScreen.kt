@@ -14,14 +14,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.outlined.AccountBalance
-import androidx.compose.material.icons.outlined.Badge
-import androidx.compose.material.icons.outlined.DriveEta
-import androidx.compose.material.icons.outlined.FolderOpen
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.Sort
-import androidx.compose.material.icons.outlined.Work
+import com.lifepilot.designsystem.icon.domainIcon
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -43,7 +37,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.lifepilot.designsystem.components.EmptyState
 import com.lifepilot.designsystem.components.ObjectCard
@@ -212,11 +205,3 @@ fun LibraryScreen(
     }
 }
 
-private fun domainIcon(domain: String): ImageVector = when (domain.lowercase()) {
-    "identity" -> Icons.Outlined.Badge
-    "career" -> Icons.Outlined.Work
-    "property" -> Icons.Outlined.Home
-    "vehicle" -> Icons.Outlined.DriveEta
-    "finance" -> Icons.Outlined.AccountBalance
-    else -> Icons.Outlined.FolderOpen
-}

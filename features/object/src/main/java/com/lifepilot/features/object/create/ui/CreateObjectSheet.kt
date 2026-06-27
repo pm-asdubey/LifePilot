@@ -15,13 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.outlined.AccountBalance
-import androidx.compose.material.icons.outlined.Badge
-import androidx.compose.material.icons.outlined.DriveEta
-import androidx.compose.material.icons.outlined.FolderOpen
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Shield
-import androidx.compose.material.icons.outlined.Work
+import com.lifepilot.designsystem.icon.objectTypeIcon
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -39,7 +33,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -98,7 +91,7 @@ fun CreateObjectSheet(
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     Icon(
-                                        imageVector = iconForName(typeItem.icon),
+                                        imageVector = objectTypeIcon(typeItem.icon),
                                         contentDescription = null,
                                         tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(24.dp),
@@ -190,12 +183,3 @@ fun CreateObjectSheet(
     }
 }
 
-private fun iconForName(name: String): ImageVector = when (name.lowercase()) {
-    "badge" -> Icons.Outlined.Badge
-    "work" -> Icons.Outlined.Work
-    "home" -> Icons.Outlined.Home
-    "directions_car", "driveeta" -> Icons.Outlined.DriveEta
-    "shield" -> Icons.Outlined.Shield
-    "account_balance" -> Icons.Outlined.AccountBalance
-    else -> Icons.Outlined.FolderOpen
-}

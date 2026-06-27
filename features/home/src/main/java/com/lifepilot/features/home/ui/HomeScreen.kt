@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Assignment
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Notifications
+import com.lifepilot.designsystem.icon.domainIcon
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
@@ -324,6 +325,13 @@ private fun DomainDistribution(
                         .padding(vertical = 3.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    Icon(
+                        imageVector = domainIcon(domain),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                        modifier = Modifier.size(14.dp),
+                    )
+                    Spacer(modifier = Modifier.size(Spacing.xs))
                     Text(
                         text = domain.replaceFirstChar { it.uppercase() },
                         style = MaterialTheme.typography.bodySmall,
