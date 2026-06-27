@@ -10,15 +10,18 @@ import javax.inject.Singleton
 class AiProviderFactory @Inject constructor(
     private val preferenceManager: PreferenceManager,
     private val anthropicProvider: AnthropicAiProvider,
+    private val nvidiaProvider: NvidiaAiProvider,
     private val offlineProvider: OfflineAiProvider,
 ) {
     suspend fun getProvider(): AiProvider {
-        val configuredProvider = preferenceManager.aiProvider.firstOrNull()
+        val configuredProvider = preferenceManager.aiProvider.firstOrNull()?.lowercase()
         val apiKey = preferenceManager.aiApiKey.firstOrNull()
 
-        return when {
-            configuredProvider?.equals("anthropic", ignoreCase = true) == true && !apiKey.isNullOrBlank() ->
-                anthropicProvider
+        if (apiKey.isNullOrBlank()) return offlineProvider
+
+        return when (configuredProvider) {
+            "anthropic" -> anthropicProvider
+            "nvidia", "nvapi" -> nvidiaProvider
             else -> offlineProvider
         }
     }

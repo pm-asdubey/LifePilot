@@ -124,7 +124,8 @@ fun SettingsScreen(
                     OutlinedTextField(
                         value = uiState.aiProvider,
                         onValueChange = viewModel::onAiProviderChange,
-                        label = { Text("Provider (anthropic / openai / gemini)") },
+                        label = { Text("Provider") },
+                        placeholder = { Text("anthropic / nvidia") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -141,7 +142,8 @@ fun SettingsScreen(
                     OutlinedTextField(
                         value = uiState.aiModel,
                         onValueChange = viewModel::onAiModelChange,
-                        label = { Text("Model (e.g. claude-sonnet-4-6)") },
+                        label = { Text("Model") },
+                        placeholder = { Text("claude-sonnet-4-6 / meta/llama-3.1-70b-instruct") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
