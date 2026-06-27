@@ -1,5 +1,9 @@
 package com.lifepilot.app.navigation
 
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -61,7 +65,11 @@ fun LifePilotNavHost(deepLinkObjectId: String? = null) {
         NavHost(
             navController = navController,
             startDestination = HOME.route,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(innerPadding),
+            enterTransition = { slideInHorizontally(initialOffsetX = { it / 4 }) + fadeIn() },
+            exitTransition = { slideOutHorizontally(targetOffsetX = { -it / 4 }) + fadeOut() },
+            popEnterTransition = { slideInHorizontally(initialOffsetX = { -it / 4 }) + fadeIn() },
+            popExitTransition = { slideOutHorizontally(targetOffsetX = { it / 4 }) + fadeOut() },
         ) {
             homeScreen(navController = navController)
             libraryScreen(navController = navController)

@@ -105,4 +105,13 @@ class LibraryViewModel @Inject constructor(
     fun setSortOrder(order: LibrarySortOrder) {
         sortOrder.value = order
     }
+
+    fun refresh() {
+        _uiState.update { it.copy(isRefreshing = true) }
+        // Flows auto-update from Room; just clear the indicator after a short delay
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(600)
+            _uiState.update { it.copy(isRefreshing = false) }
+        }
+    }
 }

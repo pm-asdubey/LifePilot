@@ -6,6 +6,7 @@ import com.lifepilot.domain.model.TimelineEntry
 
 data class HomeUiState(
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val profileName: String = "",
     val objectCount: Int = 0,
     val pendingTaskCount: Int = 0,

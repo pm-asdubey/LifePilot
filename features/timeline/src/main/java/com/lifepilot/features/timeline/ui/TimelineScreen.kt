@@ -21,6 +21,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -83,66 +84,70 @@ fun TimelineScreen(
             return@Scaffold
         }
 
-        Column(
+        PullToRefreshBox(
+            isRefreshing = uiState.isRefreshing,
+            onRefresh = viewModel::refresh,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
         ) {
-            if (uiState.availableSourceTypes.isNotEmpty()) {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = Spacing.md),
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    item {
-                        FilterChip(
-                            selected = uiState.selectedSourceType == null,
-                            onClick = { viewModel.selectFilter(null) },
-                            label = { Text("All (${uiState.entries.size})") },
-                        )
+            Column(modifier = Modifier.fillMaxSize()) {
+                if (uiState.availableSourceTypes.isNotEmpty()) {
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = Spacing.md),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        item {
+                            FilterChip(
+                                selected = uiState.selectedSourceType == null,
+                                onClick = { viewModel.selectFilter(null) },
+                                label = { Text("All (${uiState.entries.size})") },
+                            )
+                        }
+                        items(uiState.availableSourceTypes) { sourceType ->
+                            val count = uiState.entries.count { it.sourceType.name == sourceType }
+                            FilterChip(
+                                selected = uiState.selectedSourceType == sourceType,
+                                onClick = { viewModel.selectFilter(sourceType) },
+                                label = {
+                                    Text(
+                                        sourceType
+                                            .replace("_", " ")
+                                            .lowercase()
+                                            .replaceFirstChar { it.uppercase() } + " ($count)"
+                                    )
+                                },
+                            )
+                        }
                     }
-                    items(uiState.availableSourceTypes) { sourceType ->
-                        val count = uiState.entries.count { it.sourceType.name == sourceType }
-                        FilterChip(
-                            selected = uiState.selectedSourceType == sourceType,
-                            onClick = { viewModel.selectFilter(sourceType) },
-                            label = {
-                                Text(
-                                    sourceType
-                                        .replace("_", " ")
-                                        .lowercase()
-                                        .replaceFirstChar { it.uppercase() } + " ($count)"
-                                )
+                }
+
+                val displayEntries = uiState.filteredEntries.ifEmpty { uiState.entries }
+
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        horizontal = Spacing.sm,
+                        vertical = Spacing.md,
+                    ),
+                ) {
+                    itemsIndexed(
+                        items = displayEntries,
+                        key = { _, entry -> entry.timelineId },
+                    ) { index, entry ->
+                        TimelineCard(
+                            title = entry.title,
+                            summary = entry.summary,
+                            dateLabel = entry.timestamp
+                                .atZone(ZoneId.systemDefault())
+                                .format(DateTimeFormatter.ofPattern("MMM d, yyyy HH:mm")),
+                            isLast = index == displayEntries.lastIndex,
+                            onClick = {
+                                entry.objectId?.let { onNavigateToObject(it) }
                             },
                         )
                     }
-                }
-            }
-
-            val displayEntries = uiState.filteredEntries.ifEmpty { uiState.entries }
-
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(
-                    horizontal = Spacing.sm,
-                    vertical = Spacing.md,
-                ),
-            ) {
-                itemsIndexed(
-                    items = displayEntries,
-                    key = { _, entry -> entry.timelineId },
-                ) { index, entry ->
-                    TimelineCard(
-                        title = entry.title,
-                        summary = entry.summary,
-                        dateLabel = entry.timestamp
-                            .atZone(ZoneId.systemDefault())
-                            .format(DateTimeFormatter.ofPattern("MMM d, yyyy HH:mm")),
-                        isLast = index == displayEntries.lastIndex,
-                        onClick = {
-                            entry.objectId?.let { onNavigateToObject(it) }
-                        },
-                    )
                 }
             }
         }

@@ -98,4 +98,12 @@ class HomeViewModel @Inject constructor(
             }
         }
     }
+
+    fun refresh() {
+        _uiState.update { it.copy(isRefreshing = true) }
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(600)
+            _uiState.update { it.copy(isRefreshing = false) }
+        }
+    }
 }

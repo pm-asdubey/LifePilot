@@ -11,6 +11,7 @@ enum class LibrarySortOrder(val label: String) {
 
 data class LibraryUiState(
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val selectedDomain: String? = null,
     val sortOrder: LibrarySortOrder = LibrarySortOrder.UPDATED_RECENT,
     val domains: List<DomainItem> = emptyList(),

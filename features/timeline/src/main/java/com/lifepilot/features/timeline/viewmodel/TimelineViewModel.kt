@@ -20,6 +20,7 @@ import javax.inject.Inject
 
 data class TimelineUiState(
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val entries: List<TimelineEntry> = emptyList(),
     val filteredEntries: List<TimelineEntry> = emptyList(),
     val availableSourceTypes: List<String> = emptyList(),
@@ -86,5 +87,13 @@ class TimelineViewModel @Inject constructor(
 
     fun selectFilter(sourceType: String?) {
         _selectedFilter.value = sourceType
+    }
+
+    fun refresh() {
+        _uiState.update { it.copy(isRefreshing = true) }
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(600)
+            _uiState.update { it.copy(isRefreshing = false) }
+        }
     }
 }
