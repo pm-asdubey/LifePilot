@@ -4,7 +4,27 @@ All notable changes to LifePilot are documented here.
 
 ---
 
-## [Unreleased] — 0.10.0-alpha
+## [Unreleased] — 0.11.0-alpha
+
+### Added
+- `driving_licence` schema (17th schema) with expiry reminders, all standard fields
+- `MetadataRepository.getMetadataForObjects()` batch method to eliminate N+1 queries
+- `ObjectDao.getObjectsByIds()` batch method for search result hydration
+- DocumentDao instrumented tests (8 cases: insert, object isolation, delete, versions, OCR text, search)
+- TimelineDao instrumented tests (6 cases: ordering, profile isolation, object/domain filter, delete, limit)
+- RelationshipDao instrumented tests (6 cases: bidirectional, between-query, filtering, delete)
+- EventDao instrumented tests (5 cases: ordering, isolation, cascade, empty)
+- Search flow UI tests (4 cases: bar visible, empty state, text input, clear)
+- Document upload flow UI tests (2 cases: sheet opens, schema types load)
+
+### Fixed
+- N+1 metadata query in AI chat context builder replaced with single batch query (capped at 30 objects)
+- N+1 object queries in SearchRepositoryImpl replaced with `getObjectsByIds` batch calls
+- `LazyColumn` inside `Column(fillMaxSize)` now uses `Modifier.weight(1f)` in Library, Search, Timeline screens
+- Schema domain values normalized to Title Case: Finance, Travel, Home, Transport (was mixed case)
+- CURRENCY field type now shows decimal keyboard in MetadataEditScreen
+
+## [0.10.0-alpha] — 2026-06-27
 
 ### Added
 - PDF rendering using Android `PdfRenderer` API: all pages rendered at 1080px width with loading/error states
@@ -15,6 +35,9 @@ All notable changes to LifePilot are documented here.
 - Swipe-to-complete on task cards in Object Detail screen
 - AI unconfigured setup banner in AI Chat screen with Settings deep link
 - Instrumented Room DAO integration tests: ObjectDao (8), TaskDao (6), MetadataDao (7), ReminderDao (5)
+- FileStorageManager integration tests (7 cases)
+- Navigation smoke tests (5 cases), Create object smoke tests (2 cases)
+- HiltTestRunner for instrumented test setup
 
 ### Fixed
 - All fully-qualified class references in feature composables replaced with proper imports
