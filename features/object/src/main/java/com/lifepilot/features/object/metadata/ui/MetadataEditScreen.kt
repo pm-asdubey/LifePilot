@@ -137,7 +137,7 @@ private fun MetadataFieldInput(
             )
         } else {
             val keyboardType = when (field.fieldType) {
-                "NUMBER" -> KeyboardType.Number
+                "NUMBER", "CURRENCY" -> KeyboardType.Decimal
                 "DATE" -> KeyboardType.Number
                 else -> KeyboardType.Text
             }
