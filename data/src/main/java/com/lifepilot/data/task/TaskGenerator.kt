@@ -81,9 +81,14 @@ class TaskGenerator @Inject constructor(
 
     suspend fun generateObjectCreationTasks(obj: LifeObject) {
         val templates = objectCreationTasks[obj.objectType.lowercase()] ?: return
-        Timber.d("Generating ${templates.size} tasks for ${obj.objectType} ${obj.objectId}")
 
-        for (template in templates) {
+        val existingTitles = taskDao.getTaskTitlesByObject(obj.objectId).toSet()
+        val newTemplates = templates.filter { it.title !in existingTitles }
+        if (newTemplates.isEmpty()) return
+
+        Timber.d("Generating ${newTemplates.size} tasks for ${obj.objectType} ${obj.objectId}")
+
+        for (template in newTemplates) {
             val taskId = UUID.randomUUID().toString()
             val dueDate = Instant.now().plus(template.dueDays.toLong(), ChronoUnit.DAYS)
 
