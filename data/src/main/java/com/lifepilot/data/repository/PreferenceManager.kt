@@ -7,8 +7,10 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.lifepilot.data.security.EncryptedKeyStorage
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -19,17 +21,19 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 @Singleton
 class PreferenceManager @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val encryptedKeyStorage: EncryptedKeyStorage,
 ) {
     private val activeProfileIdKey = stringPreferencesKey("active_profile_id")
     private val aiProviderKey = stringPreferencesKey("ai_provider")
-    private val aiApiKeyKey = stringPreferencesKey("ai_api_key")
     private val aiModelKey = stringPreferencesKey("ai_model")
     private val biometricLockKey = booleanPreferencesKey("biometric_lock_enabled")
+
+    private val _aiApiKeyFlow = MutableStateFlow(encryptedKeyStorage.retrieve(ENCRYPTED_AI_API_KEY))
 
     val activeProfileId: Flow<String?> = context.dataStore.data.map { it[activeProfileIdKey] }
     val biometricLockEnabled: Flow<Boolean> = context.dataStore.data.map { it[biometricLockKey] ?: false }
     val aiProvider: Flow<String?> = context.dataStore.data.map { it[aiProviderKey] }
-    val aiApiKey: Flow<String?> = context.dataStore.data.map { it[aiApiKeyKey] }
+    val aiApiKey: Flow<String?> = _aiApiKeyFlow
     val aiModel: Flow<String?> = context.dataStore.data.map { it[aiModelKey] }
 
     suspend fun getActiveProfileId(): String? = activeProfileId.firstOrNull()
@@ -42,8 +46,13 @@ class PreferenceManager @Inject constructor(
         context.dataStore.edit { it[aiProviderKey] = provider }
     }
 
-    suspend fun setAiApiKey(apiKey: String) {
-        context.dataStore.edit { it[aiApiKeyKey] = apiKey }
+    fun setAiApiKey(apiKey: String) {
+        if (apiKey.isBlank()) {
+            encryptedKeyStorage.delete(ENCRYPTED_AI_API_KEY)
+        } else {
+            encryptedKeyStorage.store(ENCRYPTED_AI_API_KEY, apiKey)
+        }
+        _aiApiKeyFlow.value = apiKey.takeIf { it.isNotBlank() }
     }
 
     suspend fun setAiModel(model: String) {
@@ -61,8 +70,13 @@ class PreferenceManager @Inject constructor(
     suspend fun clearAiConfig() {
         context.dataStore.edit {
             it.remove(aiProviderKey)
-            it.remove(aiApiKeyKey)
             it.remove(aiModelKey)
         }
+        encryptedKeyStorage.delete(ENCRYPTED_AI_API_KEY)
+        _aiApiKeyFlow.value = null
+    }
+
+    companion object {
+        private const val ENCRYPTED_AI_API_KEY = "encrypted_ai_api_key"
     }
 }
