@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lifepilot.domain.engine.LifeStateEngine
 import com.lifepilot.domain.model.MetadataEntry
-import com.lifepilot.domain.model.MetadataFieldType
 import com.lifepilot.domain.model.MetadataSource
 import com.lifepilot.domain.repository.DocumentRepository
 import com.lifepilot.domain.repository.MetadataRepository
@@ -74,6 +73,7 @@ class MetadataVerificationViewModel @Inject constructor(
                                 suggestedValue = field.suggestedValue,
                                 editedValue = field.suggestedValue,
                                 confidence = field.confidence,
+                                fieldType = field.fieldType,
                                 isAccepted = true,
                             )
                         }
@@ -130,7 +130,7 @@ class MetadataVerificationViewModel @Inject constructor(
                         objectId = objectId,
                         fieldId = suggestion.fieldId,
                         value = suggestion.editedValue,
-                        fieldType = MetadataFieldType.TEXT,
+                        fieldType = suggestion.fieldType,
                         source = MetadataSource.AI_EXTRACTED,
                         confidence = suggestion.confidence,
                         version = 1,

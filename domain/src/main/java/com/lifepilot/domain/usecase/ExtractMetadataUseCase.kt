@@ -14,6 +14,7 @@ data class ExtractedField(
     val label: String,
     val suggestedValue: String,
     val confidence: Float,
+    val fieldType: MetadataFieldType = MetadataFieldType.TEXT,
 )
 
 data class ExtractionResult(
@@ -78,11 +79,15 @@ class ExtractMetadataUseCase @Inject constructor(
                 val extracted = parseJsonFields(result.content)
                 val fields = extractableFields.mapNotNull { field ->
                     val value = extracted[field.fieldId] ?: return@mapNotNull null
+                    val domainFieldType = runCatching {
+                        MetadataFieldType.valueOf(field.fieldType.uppercase())
+                    }.getOrDefault(MetadataFieldType.TEXT)
                     ExtractedField(
                         fieldId = field.fieldId,
                         label = field.displayName.ifBlank { field.fieldId },
                         suggestedValue = value,
                         confidence = 0.85f,
+                        fieldType = domainFieldType,
                     )
                 }
                 ExtractionResult(

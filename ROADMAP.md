@@ -25,46 +25,55 @@ Every release should strengthen one or more of these pillars:
 
 # Version 1.0 — Foundation
 
+**Status: Alpha — Implementation ~90% complete**
+
 ## Goal
 
 Build a stable offline-first platform capable of managing a person's administrative life.
 
 ### Core Platform
 
-* Offline-first architecture
-* Local SQLite database
-* File Storage Service
-* Schema Engine
-* Rule Engine
-* Search Engine
-* Life State Engine
+* ✅ Offline-first architecture
+* ✅ Local SQLite database (Room)
+* ✅ File Storage Service
+* ✅ Schema Engine (JSON-driven, 12+ schemas)
+* ✅ Rule Engine (reminder/task evaluation)
+* ✅ Search Engine (cross-index with metadata)
+* ✅ Life State Engine (full pipeline)
 
 ### User Features
 
-* Profiles
-* Objects
-* Documents
-* Timeline
-* Tasks
-* Reminders
-* Universal Search
-* Dashboard
+* ✅ Profiles
+* ✅ Objects (create, view, archive, delete)
+* ✅ Documents (upload, view, OCR)
+* ✅ Timeline (grouped, filterable)
+* ✅ Tasks (generated, completable)
+* ✅ Reminders (rule-driven, notifications)
+* ✅ Universal Search
+* ✅ Dashboard (attention items, domain distribution)
+* ✅ Object Relationships
 
 ### AI Features
 
-* OCR
-* Document Classification
-* Metadata Extraction
-* Object Matching
-* AI Summaries
+* ✅ OCR (ML Kit)
+* ✅ Metadata Extraction (AI-powered with user verification)
+* ✅ AI Chat (structured context from life state)
+* ⬜ Document Classification (deferred to 1.1)
+* ⬜ AI Summaries (deferred to 1.1)
 
 ### Infrastructure
 
-* Backup
-* Restore
-* Export
-* Import
-* Security Foundation
+* ✅ Export (JSON with full payload)
+* ✅ Import (with manifest validation)
+* ✅ Security (biometric lock, Keystore encryption)
+* ✅ Notifications (WorkManager periodic reminders)
+
+### Remaining for 1.0 GA
+
+* PDF document rendering
+* Animated screen transitions
+* Pull-to-refresh on list screens
+* Play Store listing assets
 
 ---
 

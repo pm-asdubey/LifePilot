@@ -1,5 +1,7 @@
 package com.lifepilot.features.object.verification.state
 
+import com.lifepilot.domain.model.MetadataFieldType
+
 data class MetadataVerificationState(
     val isLoading: Boolean = false,
     val objectId: String = "",
@@ -17,5 +19,6 @@ data class FieldSuggestion(
     val suggestedValue: String,
     val editedValue: String,
     val confidence: Float,
+    val fieldType: MetadataFieldType = MetadataFieldType.TEXT,
     val isAccepted: Boolean = true,
 )
