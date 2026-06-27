@@ -26,10 +26,7 @@ class UpdateObjectStatusUseCase @Inject constructor(
         eventRepository.recordEvent(
             objectId = objectId,
             eventType = "STATUS_CHANGED",
-            payload = mapOf(
-                "from" to previousStatus.name,
-                "to" to newStatus.name,
-            ),
+            payload = """{"from":"${previousStatus.name}","to":"${newStatus.name}"}""",
             source = EventSource.USER,
             confidence = null,
         )

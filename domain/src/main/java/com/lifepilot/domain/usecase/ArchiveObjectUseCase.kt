@@ -21,7 +21,7 @@ class ArchiveObjectUseCase @Inject constructor(
         eventRepository.recordEvent(
             objectId = objectId,
             eventType = "OBJECT_ARCHIVED",
-            payload = mapOf("objectType" to obj.objectType, "title" to obj.title),
+            payload = """{"objectType":"${obj.objectType}","title":"${obj.title}"}""",
             source = EventSource.USER,
             confidence = null,
         )
