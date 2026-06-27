@@ -34,7 +34,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.lifepilot.designsystem.theme.Spacing
 import com.lifepilot.domain.model.schema.MetadataFieldDefinition
@@ -134,6 +136,11 @@ private fun MetadataFieldInput(
                 onValueChange = onValueChange,
             )
         } else {
+            val keyboardType = when (field.fieldType) {
+                "NUMBER" -> KeyboardType.Number
+                "DATE" -> KeyboardType.Number
+                else -> KeyboardType.Text
+            }
             OutlinedTextField(
                 value = value,
                 onValueChange = onValueChange,
@@ -144,6 +151,7 @@ private fun MetadataFieldInput(
                 singleLine = field.fieldType != "MULTILINE_TEXT",
                 minLines = if (field.fieldType == "MULTILINE_TEXT") 3 else 1,
                 maxLines = if (field.fieldType == "MULTILINE_TEXT") 5 else 1,
+                keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
                 isError = error != null,
                 supportingText = if (error != null) {
                     { Text(error, color = MaterialTheme.colorScheme.error) }

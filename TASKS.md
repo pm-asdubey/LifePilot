@@ -2,7 +2,7 @@
 
 This document tracks implementation tasks. Check off items as they are completed.
 
-Last updated: 2026-06-27 (animated transitions ✅, pull-to-refresh ✅, swipe-to-complete ✅, haptic feedback ✅, AI setup banner ✅)
+Last updated: 2026-06-27 (all UI tests ✅, LazyColumn layout fixes ✅, metadata keyboard types ✅)
 
 ---
 
@@ -311,8 +311,8 @@ Last updated: 2026-06-27 (animated transitions ✅, pull-to-refresh ✅, swipe-t
 * [x] HiltTestRunner configured
 * [x] Navigation smoke tests (5 cases: home, library, search, AI, settings tabs)
 * [x] Create object flow smoke test (2 cases: home FAB, library FAB)
-* [ ] Document upload flow
-* [ ] Search flow
+* [x] Document upload flow (2 cases: sheet opens, schema types visible)
+* [x] Search flow (4 cases: bar visible, empty state, text input, clear)
 
 ---
 
