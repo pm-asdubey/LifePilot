@@ -1,9 +1,12 @@
 package com.lifepilot.features.document.upload
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -63,6 +66,7 @@ fun DocumentUploadSheet(
     val context = LocalContext.current
 
     var cameraUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingCameraLaunch by remember { mutableStateOf(false) }
 
     val filePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
@@ -75,6 +79,17 @@ fun DocumentUploadSheet(
     ) { success: Boolean ->
         if (success) {
             cameraUri?.let { viewModel.onFileSelected(it) }
+        }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted && pendingCameraLaunch) {
+            pendingCameraLaunch = false
+            val uri = createCameraImageUri(context)
+            cameraUri = uri
+            cameraPicker.launch(uri)
         }
     }
 
@@ -119,9 +134,18 @@ fun DocumentUploadSheet(
                 }
                 OutlinedButton(
                     onClick = {
-                        val uri = createCameraImageUri(context)
-                        cameraUri = uri
-                        cameraPicker.launch(uri)
+                        val hasCameraPermission = ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.CAMERA,
+                        ) == PackageManager.PERMISSION_GRANTED
+                        if (hasCameraPermission) {
+                            val uri = createCameraImageUri(context)
+                            cameraUri = uri
+                            cameraPicker.launch(uri)
+                        } else {
+                            pendingCameraLaunch = true
+                            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                        }
                     },
                     modifier = Modifier.weight(1f),
                 ) {
