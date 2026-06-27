@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import com.lifepilot.data.R
 import com.lifepilot.domain.model.Reminder
 import com.lifepilot.domain.model.ReminderPriority
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -80,7 +81,7 @@ class NotificationHelper @Inject constructor(
             }
 
             val notification = NotificationCompat.Builder(context, CHANNEL_REMINDERS)
-                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle(title)
                 .setContentText(message)
                 .setPriority(notifPriority)
