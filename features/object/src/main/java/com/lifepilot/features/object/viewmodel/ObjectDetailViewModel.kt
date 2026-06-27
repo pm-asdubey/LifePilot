@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.lifepilot.domain.model.ObjectStatus
 import com.lifepilot.domain.model.TaskStatus
 import com.lifepilot.domain.usecase.CompleteTaskUseCase
+import com.lifepilot.domain.usecase.DeleteObjectUseCase
 import com.lifepilot.domain.repository.DocumentRepository
 import com.lifepilot.domain.repository.ObjectRepository
 import com.lifepilot.domain.repository.RelationshipRepository
@@ -43,6 +44,7 @@ class ObjectDetailViewModel @Inject constructor(
     private val updateObjectStatusUseCase: UpdateObjectStatusUseCase,
     private val linkObjectsUseCase: LinkObjectsUseCase,
     private val completeTaskUseCase: CompleteTaskUseCase,
+    private val deleteObjectUseCase: DeleteObjectUseCase,
 ) : ViewModel() {
 
     private val objectId: String = checkNotNull(savedStateHandle["objectId"])
@@ -172,6 +174,17 @@ class ObjectDetailViewModel @Inject constructor(
                 Timber.e(e, "Failed to complete task $taskId")
                 _uiState.update { it.copy(error = "Failed to complete task: ${e.message}") }
             }
+        }
+    }
+
+    fun deleteObject(onDeleted: () -> Unit) {
+        viewModelScope.launch {
+            deleteObjectUseCase(objectId)
+                .onSuccess { onDeleted() }
+                .onFailure { e ->
+                    Timber.e(e, "Failed to delete object $objectId")
+                    _uiState.update { it.copy(error = "Failed to delete: ${e.message}") }
+                }
         }
     }
 }
