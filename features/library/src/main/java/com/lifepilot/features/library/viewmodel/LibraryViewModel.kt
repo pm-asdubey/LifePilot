@@ -7,6 +7,7 @@ import com.lifepilot.domain.repository.ObjectRepository
 import com.lifepilot.domain.repository.ProfileRepository
 import com.lifepilot.features.library.state.DomainItem
 import com.lifepilot.features.library.state.LibraryUiState
+import com.lifepilot.features.library.state.LibrarySortOrder
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,6 +32,7 @@ class LibraryViewModel @Inject constructor(
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
 
     private val selectedDomain = MutableStateFlow<String?>(null)
+    private val sortOrder = MutableStateFlow(LibrarySortOrder.UPDATED_RECENT)
 
     init {
         observeLibrary()
@@ -45,8 +47,9 @@ class LibraryViewModel @Inject constructor(
                         objectRepository.observeObjectsByProfile(profile.profileId),
                         objectRepository.observeObjectCountByDomain(profile.profileId),
                         selectedDomain,
-                    ) { objects, domainCounts, domain ->
-                        Triple(objects, domainCounts, domain)
+                        sortOrder,
+                    ) { objects, domainCounts, domain, sort ->
+                        Triple(objects to domainCounts, domain, sort)
                     }
                 }
                 .catch { e ->
@@ -58,7 +61,8 @@ class LibraryViewModel @Inject constructor(
                         _uiState.update { it.copy(isLoading = false) }
                         return@collect
                     }
-                    val (objects, domainCounts, domain) = result
+                    val (objectsAndCounts, domain, sort) = result
+                    val (objects, domainCounts) = objectsAndCounts
                     val domains = domainCounts.entries.map { (d, count) ->
                         DomainItem(
                             domain = d,
@@ -67,10 +71,17 @@ class LibraryViewModel @Inject constructor(
                         )
                     }.sortedBy { it.domain }
 
-                    val filteredObjects = if (domain != null) {
+                    val filteredObjects = (if (domain != null) {
                         objects.filter { it.domain == domain }
                     } else {
                         objects
+                    }).let { list ->
+                        when (sort) {
+                            LibrarySortOrder.TITLE_ASC -> list.sortedBy { it.title.lowercase() }
+                            LibrarySortOrder.TITLE_DESC -> list.sortedByDescending { it.title.lowercase() }
+                            LibrarySortOrder.UPDATED_RECENT -> list.sortedByDescending { it.updatedAt }
+                            LibrarySortOrder.STATUS -> list.sortedBy { it.status.ordinal }
+                        }
                     }
 
                     _uiState.update {
@@ -79,6 +90,7 @@ class LibraryViewModel @Inject constructor(
                             domains = domains,
                             objects = filteredObjects,
                             selectedDomain = domain,
+                            sortOrder = sort,
                             error = null,
                         )
                     }
@@ -88,5 +100,9 @@ class LibraryViewModel @Inject constructor(
 
     fun selectDomain(domain: String?) {
         selectedDomain.value = domain
+    }
+
+    fun setSortOrder(order: LibrarySortOrder) {
+        sortOrder.value = order
     }
 }

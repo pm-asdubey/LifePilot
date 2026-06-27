@@ -14,18 +14,22 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.outlined.FolderOpen
-import androidx.compose.material.icons.outlined.Work
-import androidx.compose.material.icons.outlined.Badge
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.DriveEta
-import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.AccountBalance
+import androidx.compose.material.icons.outlined.Badge
+import androidx.compose.material.icons.outlined.DriveEta
+import androidx.compose.material.icons.outlined.FolderOpen
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Shield
+import androidx.compose.material.icons.outlined.Sort
+import androidx.compose.material.icons.outlined.Work
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -34,6 +38,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -46,6 +53,7 @@ import com.lifepilot.designsystem.theme.StatusArchived
 import com.lifepilot.designsystem.theme.StatusExpired
 import com.lifepilot.designsystem.theme.StatusRenewalDue
 import com.lifepilot.domain.model.ObjectStatus
+import com.lifepilot.features.library.state.LibrarySortOrder
 import com.lifepilot.features.library.viewmodel.LibraryViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -57,6 +65,7 @@ fun LibraryScreen(
     viewModel: LibraryViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var showSortMenu by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -66,6 +75,42 @@ fun LibraryScreen(
                         text = "Library",
                         style = MaterialTheme.typography.titleLarge,
                     )
+                },
+                actions = {
+                    Box {
+                        IconButton(onClick = { showSortMenu = true }) {
+                            Icon(
+                                imageVector = Icons.Outlined.Sort,
+                                contentDescription = "Sort",
+                                tint = if (uiState.sortOrder != LibrarySortOrder.UPDATED_RECENT)
+                                    MaterialTheme.colorScheme.primary
+                                else
+                                    MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showSortMenu,
+                            onDismissRequest = { showSortMenu = false },
+                        ) {
+                            LibrarySortOrder.entries.forEach { order ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = order.label,
+                                            color = if (uiState.sortOrder == order)
+                                                MaterialTheme.colorScheme.primary
+                                            else
+                                                MaterialTheme.colorScheme.onSurface,
+                                        )
+                                    },
+                                    onClick = {
+                                        viewModel.setSortOrder(order)
+                                        showSortMenu = false
+                                    },
+                                )
+                            }
+                        }
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
