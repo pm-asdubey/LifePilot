@@ -32,6 +32,7 @@ fun NavGraphBuilder.objectDetailScreen(navController: NavController) {
             onEditMetadata = { objectId ->
                 navController.navigate("object/$objectId/edit")
             },
+            onArchived = { navController.popBackStack() },
         )
 
         val targetId = uploadTargetObjectId
