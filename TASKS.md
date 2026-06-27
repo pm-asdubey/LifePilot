@@ -301,6 +301,8 @@ Last updated: 2026-06-27 (animated transitions ✅, pull-to-refresh ✅, swipe-t
 ## Integration Tests (In Progress)
 * [x] ObjectDao instrumented tests (8 test cases)
 * [x] TaskDao instrumented tests (6 test cases)
+* [x] MetadataDao instrumented tests (7 test cases)
+* [x] ReminderDao instrumented tests (5 test cases)
 * [ ] PreferenceManager integration tests
 * [ ] EncryptedKeyStorage integration tests
 * [ ] FileStorageManager integration tests
