@@ -88,7 +88,27 @@ class SchemaEngineImpl @Inject constructor(
                     val minLength = rule.parameter?.toIntOrNull() ?: 0
                     if (value.length < minLength) errors.add(rule.message)
                 }
+                "REGEX" -> {
+                    val pattern = rule.parameter ?: continue
+                    runCatching {
+                        if (!Regex(pattern).matches(value)) errors.add(rule.message)
+                    }
+                }
+                "DATE_FORMAT" -> {
+                    val fmt = rule.parameter ?: "yyyy-MM-dd"
+                    runCatching {
+                        java.time.LocalDate.parse(value, java.time.format.DateTimeFormatter.ofPattern(fmt))
+                    }.onFailure { errors.add(rule.message) }
+                }
+                "ENUM" -> {
+                    if (field.enumValues.isNotEmpty() && value !in field.enumValues) {
+                        errors.add(rule.message)
+                    }
+                }
             }
+        }
+        if (field.fieldType == "ENUM" && field.enumValues.isNotEmpty() && value.isNotBlank() && value !in field.enumValues) {
+            errors.add("Value must be one of: ${field.enumValues.joinToString(", ")}")
         }
         return ValidationResult(isValid = errors.isEmpty(), errors = errors)
     }
