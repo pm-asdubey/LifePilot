@@ -4,9 +4,9 @@ import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.lifepilot.data.engine.RuleEngineImpl
 import com.lifepilot.data.notification.NotificationHelper
 import com.lifepilot.data.repository.PreferenceManager
+import com.lifepilot.domain.engine.RuleEngine
 import com.lifepilot.domain.model.ReminderStatus
 import com.lifepilot.domain.repository.ObjectRepository
 import com.lifepilot.domain.repository.ReminderRepository
@@ -24,7 +24,7 @@ class ReminderEvaluationWorker @AssistedInject constructor(
     private val objectRepository: ObjectRepository,
     private val reminderRepository: ReminderRepository,
     private val preferenceManager: PreferenceManager,
-    private val ruleEngine: RuleEngineImpl,
+    private val ruleEngine: RuleEngine,
     private val notificationHelper: NotificationHelper,
 ) : CoroutineWorker(appContext, workerParams) {
 

@@ -46,6 +46,8 @@ class RuleEngineTest {
         description = null,
         status = ObjectStatus.ACTIVE,
         metadata = emptyList(),
+        archived = false,
+        deleted = false,
         createdAt = Instant.now(),
         updatedAt = Instant.now(),
     )

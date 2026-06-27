@@ -1,5 +1,6 @@
 package com.lifepilot.data.engine
 
+import com.lifepilot.domain.engine.RuleEngine
 import com.lifepilot.domain.engine.SchemaEngine
 import com.lifepilot.domain.model.Reminder
 import com.lifepilot.domain.model.ReminderPriority
@@ -9,7 +10,6 @@ import com.lifepilot.domain.repository.MetadataRepository
 import com.lifepilot.domain.repository.ObjectRepository
 import com.lifepilot.domain.repository.ReminderRepository
 import timber.log.Timber
-import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -23,8 +23,9 @@ class RuleEngineImpl @Inject constructor(
     private val metadataRepository: MetadataRepository,
     private val reminderRepository: ReminderRepository,
     private val schemaEngine: SchemaEngine,
-) {
-    suspend fun evaluateRemindersForObject(objectId: String) {
+) : RuleEngine {
+
+    override suspend fun evaluateRemindersForObject(objectId: String) {
         val obj = objectRepository.getObjectById(objectId) ?: return
         val schema = schemaEngine.getSchema(obj.objectType) ?: return
         val metadata = metadataRepository.getMetadataByObject(objectId)
