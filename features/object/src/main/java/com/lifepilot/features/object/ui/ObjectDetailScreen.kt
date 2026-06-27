@@ -22,6 +22,8 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Link
+import androidx.compose.material.icons.outlined.LinkOff
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -55,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.lifepilot.designsystem.components.EmptyState
 import com.lifepilot.designsystem.components.StatusChip
+import com.lifepilot.designsystem.components.TaskCard
 import com.lifepilot.designsystem.components.TimelineCard
 import com.lifepilot.designsystem.theme.Spacing
 import com.lifepilot.designsystem.theme.StatusActive
@@ -66,6 +69,7 @@ import com.lifepilot.domain.model.LifeObject
 import com.lifepilot.domain.model.MetadataEntry
 import com.lifepilot.domain.model.ObjectStatus
 import com.lifepilot.domain.model.Relationship
+import com.lifepilot.domain.model.Task
 import com.lifepilot.domain.model.TimelineEntry
 import com.lifepilot.features.object.state.ObjectDetailTab
 import com.lifepilot.features.object.viewmodel.ObjectDetailViewModel
@@ -471,7 +475,7 @@ private fun TimelineTab(
 
 @Composable
 private fun TasksTab(
-    tasks: List<com.lifepilot.domain.model.Task>,
+    tasks: List<Task>,
     onCompleteTask: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -528,7 +532,7 @@ private fun TasksTab(
                     },
                     modifier = Modifier.padding(vertical = Spacing.xs),
                 ) {
-                    com.lifepilot.designsystem.components.TaskCard(
+                    TaskCard(
                         title = task.title,
                         dueDateLabel = task.dueDate?.format(java.time.format.DateTimeFormatter.ofPattern("MMM d")),
                         priorityLabel = task.priority.name,
@@ -556,11 +560,11 @@ private fun RelationshipsTab(
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 EmptyState(
-                    icon = androidx.compose.material.icons.Icons.Outlined.Link,
+                    icon = Icons.Outlined.Link,
                     title = "No linked objects",
                     description = "Link this object to others to see connections.",
                 )
-                androidx.compose.material3.TextButton(onClick = onLink) { Text("Link an Object") }
+                TextButton(onClick = onLink) { Text("Link an Object") }
             }
         }
     } else {
@@ -600,7 +604,7 @@ private fun RelationshipsTab(
                         }
                         IconButton(onClick = { onUnlink(rel.relationshipId) }) {
                             Icon(
-                                imageVector = androidx.compose.material.icons.Icons.Outlined.LinkOff,
+                                imageVector = Icons.Outlined.LinkOff,
                                 contentDescription = "Remove link",
                                 tint = MaterialTheme.colorScheme.error,
                             )

@@ -36,6 +36,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -273,7 +274,7 @@ private fun StatsRow(
 private fun StatCard(
     label: String,
     value: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     modifier: Modifier = Modifier,
 ) {
     Card(

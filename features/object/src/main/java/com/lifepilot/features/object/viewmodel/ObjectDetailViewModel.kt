@@ -3,6 +3,7 @@ package com.lifepilot.features.object.viewmodel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import LifeObject
 import com.lifepilot.domain.model.ObjectStatus
 import com.lifepilot.domain.model.TaskStatus
 import com.lifepilot.domain.usecase.CompleteTaskUseCase
@@ -52,8 +53,8 @@ class ObjectDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ObjectDetailUiState())
     val uiState: StateFlow<ObjectDetailUiState> = _uiState.asStateFlow()
 
-    private val _allProfileObjects = MutableStateFlow<List<com.lifepilot.domain.model.LifeObject>>(emptyList())
-    val allProfileObjects: StateFlow<List<com.lifepilot.domain.model.LifeObject>> = _allProfileObjects.asStateFlow()
+    private val _allProfileObjects = MutableStateFlow<List<LifeObject>>(emptyList())
+    val allProfileObjects: StateFlow<List<LifeObject>> = _allProfileObjects.asStateFlow()
 
     init {
         observeObject()
