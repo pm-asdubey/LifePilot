@@ -2,6 +2,7 @@ package com.lifepilot.features.home.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lifepilot.domain.engine.LifeStateEngine
 import com.lifepilot.domain.repository.ProfileRepository
 import com.lifepilot.domain.usecase.CompleteTaskUseCase
 import com.lifepilot.domain.usecase.GetDashboardDataUseCase
@@ -23,6 +24,7 @@ class HomeViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
     private val getDashboardDataUseCase: GetDashboardDataUseCase,
     private val completeTaskUseCase: CompleteTaskUseCase,
+    private val lifeStateEngine: LifeStateEngine,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -30,6 +32,7 @@ class HomeViewModel @Inject constructor(
 
     init {
         observeDashboard()
+        observeAttentionItems()
     }
 
     private fun observeDashboard() {
@@ -67,6 +70,23 @@ class HomeViewModel @Inject constructor(
                             error = null,
                         )
                     }
+                }
+        }
+    }
+
+    private fun observeAttentionItems() {
+        viewModelScope.launch {
+            profileRepository.observeActiveProfile()
+                .flatMapLatest { profile ->
+                    if (profile == null) {
+                        kotlinx.coroutines.flow.flowOf(emptyList())
+                    } else {
+                        lifeStateEngine.observeAttentionRequired(profile.profileId)
+                    }
+                }
+                .catch { }
+                .collect { items ->
+                    _uiState.update { it.copy(attentionItems = items) }
                 }
         }
     }
