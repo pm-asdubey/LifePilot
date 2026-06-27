@@ -29,4 +29,13 @@ interface MetadataDao {
 
     @Query("DELETE FROM metadata WHERE object_id = :objectId")
     suspend fun deleteAllMetadataForObject(objectId: String)
+
+    @Query("""
+        SELECT m.* FROM metadata m
+        INNER JOIN objects o ON m.object_id = o.object_id
+        WHERE o.profile_id = :profileId
+          AND m.value LIKE '%' || :query || '%'
+        ORDER BY m.object_id ASC
+    """)
+    suspend fun searchMetadataValues(profileId: String, query: String): List<MetadataEntity>
 }

@@ -1,5 +1,6 @@
 package com.lifepilot.data.repository
 
+import com.lifepilot.data.database.dao.MetadataDao
 import com.lifepilot.data.database.dao.ObjectDao
 import com.lifepilot.domain.model.SearchEntityType
 import com.lifepilot.domain.model.SearchResult
@@ -13,6 +14,7 @@ import javax.inject.Singleton
 @Singleton
 class SearchRepositoryImpl @Inject constructor(
     private val objectDao: ObjectDao,
+    private val metadataDao: MetadataDao,
     private val preferenceManager: PreferenceManager,
 ) : SearchRepository {
 
@@ -22,6 +24,7 @@ class SearchRepositoryImpl @Inject constructor(
     override suspend fun search(query: String, profileId: String): List<SearchResult> {
         if (query.isBlank()) return emptyList()
 
+        // Object title/description/type search
         val objectResults = objectDao.searchObjects(profileId, query).map { entity ->
             SearchResult(
                 entityId = entity.objectId,
@@ -34,7 +37,39 @@ class SearchRepositoryImpl @Inject constructor(
             )
         }
 
-        return objectResults.sortedByDescending { it.relevanceScore }
+        // Metadata value search — find objects by their metadata content
+        val metadataMatches = metadataDao.searchMetadataValues(profileId, query)
+        val metadataObjectIds = metadataMatches.map { it.objectId }.toSet()
+        val existingObjectIds = objectResults.map { it.entityId }.toSet()
+
+        // Load objects that matched via metadata but not already in object results
+        val additionalObjects = metadataObjectIds
+            .filter { it !in existingObjectIds }
+            .mapNotNull { objectId ->
+                val entity = objectDao.getObjectById(objectId) ?: return@mapNotNull null
+                val matchingField = metadataMatches.first { it.objectId == objectId }
+                SearchResult(
+                    entityId = entity.objectId,
+                    entityType = SearchEntityType.OBJECT,
+                    title = entity.title,
+                    subtitle = "Matched: ${matchingField.fieldId.replace("_", " ")} = ${matchingField.value}",
+                    objectType = entity.objectType,
+                    domain = entity.domain,
+                    relevanceScore = 0.6f,
+                )
+            }
+
+        // Boost scores for objects that match both title and metadata
+        val boostedObjectResults = objectResults.map { result ->
+            if (result.entityId in metadataObjectIds) {
+                result.copy(relevanceScore = minOf(1.0f, result.relevanceScore + 0.1f))
+            } else {
+                result
+            }
+        }
+
+        return (boostedObjectResults + additionalObjects)
+            .sortedByDescending { it.relevanceScore }
     }
 
     private fun computeScore(query: String, title: String, description: String?): Float {
