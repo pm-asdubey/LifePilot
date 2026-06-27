@@ -30,6 +30,9 @@ interface MetadataDao {
     @Query("DELETE FROM metadata WHERE object_id = :objectId")
     suspend fun deleteAllMetadataForObject(objectId: String)
 
+    @Query("SELECT * FROM metadata WHERE object_id IN (:objectIds) ORDER BY object_id ASC, field_id ASC")
+    suspend fun getMetadataForObjects(objectIds: List<String>): List<MetadataEntity>
+
     @Query("""
         SELECT m.* FROM metadata m
         INNER JOIN objects o ON m.object_id = o.object_id

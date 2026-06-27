@@ -17,4 +17,5 @@ interface MetadataRepository {
     ): MetadataEntry
     suspend fun upsertMetadataBatch(entries: List<MetadataEntry>): List<MetadataEntry>
     suspend fun deleteMetadata(metadataId: String)
+    suspend fun getMetadataForObjects(objectIds: List<String>): Map<String, List<MetadataEntry>>
 }

@@ -128,12 +128,17 @@ class AiChatViewModel @Inject constructor(
             .catch { }
             .firstOrNull()
 
-        val objects = profile?.let {
+        val allObjects = profile?.let {
             objectRepository.observeObjectsByProfile(it.profileId)
                 .catch { }
                 .firstOrNull()
                 ?: emptyList()
         } ?: emptyList()
+        val objects = allObjects.take(30)
+
+        val metadataByObject = runCatching {
+            metadataRepository.getMetadataForObjects(objects.map { it.objectId })
+        }.getOrElse { emptyMap() }
 
         val pendingTasks = profile?.let {
             taskRepository.observePendingTasks(it.profileId)
@@ -159,12 +164,11 @@ class AiChatViewModel @Inject constructor(
                 appendLine("Profile: ${profile.displayName}")
             }
             appendLine()
-            appendLine("Objects (${objects.size} total):")
+            val objectLabel = if (allObjects.size > 30) "Objects (showing 30 of ${allObjects.size})" else "Objects (${objects.size} total)"
+            appendLine("$objectLabel:")
             objects.forEach { obj ->
                 appendLine("  - ${obj.title} [type=${obj.objectType}, domain=${obj.domain}, status=${obj.status}]")
-                val metadata = runCatching {
-                    metadataRepository.getMetadataByObject(obj.objectId)
-                }.getOrElse { emptyList() }
+                val metadata = metadataByObject[obj.objectId] ?: emptyList()
                 if (metadata.isNotEmpty()) {
                     metadata.take(5).forEach { entry ->
                         appendLine("    ${entry.fieldId}: ${entry.value}")
