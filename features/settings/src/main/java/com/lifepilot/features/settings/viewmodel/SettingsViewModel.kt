@@ -1,5 +1,8 @@
 package com.lifepilot.features.settings.viewmodel
 
+import android.content.Context
+import android.net.Uri
+import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lifepilot.data.repository.PreferenceManager
@@ -8,6 +11,7 @@ import com.lifepilot.domain.repository.ProfileRepository
 import com.lifepilot.domain.usecase.ExportBundle
 import com.lifepilot.domain.usecase.ExportDataUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,6 +20,10 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
 
 data class SettingsUiState(
@@ -30,6 +38,7 @@ data class SettingsUiState(
     val showAiConfig: Boolean = false,
     val isExporting: Boolean = false,
     val exportResult: ExportBundle? = null,
+    val exportShareUri: Uri? = null,
     val exportError: String? = null,
     val biometricLockEnabled: Boolean = false,
     val profileToEdit: Profile? = null,
@@ -39,6 +48,7 @@ data class SettingsUiState(
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val profileRepository: ProfileRepository,
     private val preferenceManager: PreferenceManager,
     private val exportDataUseCase: ExportDataUseCase,
@@ -210,10 +220,13 @@ class SettingsViewModel @Inject constructor(
     fun exportData() {
         val profileId = _uiState.value.activeProfile?.profileId ?: return
         viewModelScope.launch {
-            _uiState.update { it.copy(isExporting = true, exportError = null) }
+            _uiState.update { it.copy(isExporting = true, exportError = null, exportShareUri = null) }
             exportDataUseCase(profileId)
                 .onSuccess { bundle ->
-                    _uiState.update { it.copy(isExporting = false, exportResult = bundle) }
+                    val uri = writeExportFile(bundle)
+                    _uiState.update {
+                        it.copy(isExporting = false, exportResult = bundle, exportShareUri = uri)
+                    }
                 }
                 .onFailure { e ->
                     Timber.e(e, "Export failed")
@@ -222,7 +235,20 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    private fun writeExportFile(bundle: ExportBundle): Uri? {
+        return try {
+            val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+            val exportDir = File(context.filesDir, "exports").apply { mkdirs() }
+            val file = File(exportDir, "lifepilot_export_$timestamp.json")
+            file.writeText(bundle.jsonPayload)
+            FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to write export file")
+            null
+        }
+    }
+
     fun clearExportResult() {
-        _uiState.update { it.copy(exportResult = null, exportError = null) }
+        _uiState.update { it.copy(exportResult = null, exportError = null, exportShareUri = null) }
     }
 }

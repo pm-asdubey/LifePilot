@@ -50,6 +50,8 @@ class ExportDataUseCase @Inject constructor(
             reminderRepository.getRemindersForObject(obj.objectId)
         }
 
+        val metadataByObject = allMetadata.groupBy { it.objectId }
+
         val payload = buildString {
             appendLine("{")
             appendLine("  \"version\": 1,")
@@ -59,10 +61,31 @@ class ExportDataUseCase @Inject constructor(
             appendLine("    \"displayName\": \"${profile.displayName.sanitize()}\",")
             appendLine("    \"isPrimary\": ${profile.isPrimary}")
             appendLine("  },")
-            appendLine("  \"objectCount\": ${objects.size},")
-            appendLine("  \"documentCount\": ${allDocuments.size},")
+            appendLine("  \"objects\": [")
+            objects.forEachIndexed { objIndex, obj ->
+                appendLine("    {")
+                appendLine("      \"objectId\": \"${obj.objectId}\",")
+                appendLine("      \"objectType\": \"${obj.objectType}\",")
+                appendLine("      \"domain\": \"${obj.domain}\",")
+                appendLine("      \"title\": \"${obj.title.sanitize()}\",")
+                appendLine("      \"status\": \"${obj.status.name}\",")
+                appendLine("      \"createdAt\": \"${obj.createdAt}\",")
+                appendLine("      \"updatedAt\": \"${obj.updatedAt}\",")
+                appendLine("      \"metadata\": {")
+                val metas = metadataByObject[obj.objectId] ?: emptyList()
+                metas.forEachIndexed { metaIndex, meta ->
+                    val comma = if (metaIndex < metas.lastIndex) "," else ""
+                    appendLine("        \"${meta.fieldId}\": \"${meta.value.sanitize()}\"$comma")
+                }
+                val objComma = if (objIndex < objects.lastIndex) "," else ""
+                appendLine("      }")
+                appendLine("    }$objComma")
+            }
+            appendLine("  ],")
             appendLine("  \"taskCount\": ${tasks.size},")
-            appendLine("  \"metadataCount\": ${allMetadata.size}")
+            appendLine("  \"reminderCount\": ${allReminders.size},")
+            appendLine("  \"documentCount\": ${allDocuments.size},")
+            appendLine("  \"timelineCount\": ${timeline.size}")
             append("}")
         }
 

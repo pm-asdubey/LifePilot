@@ -8,4 +8,8 @@
     <files-path
         name="documents"
         path="documents/" />
+    <!-- Export files shared via Intent -->
+    <files-path
+        name="exports"
+        path="exports/" />
 </paths>
