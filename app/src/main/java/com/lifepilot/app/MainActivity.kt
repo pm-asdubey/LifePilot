@@ -44,8 +44,13 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         requestNotificationPermissionIfNeeded()
 
+        val deepLinkObjectId = intent?.getStringExtra("objectId")
+
         setContent {
-            LifePilotApp(biometricAuthManager = biometricAuthManager)
+            LifePilotApp(
+                biometricAuthManager = biometricAuthManager,
+                deepLinkObjectId = deepLinkObjectId,
+            )
         }
     }
 
@@ -67,7 +72,10 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun LifePilotApp(biometricAuthManager: BiometricAuthManager) {
+private fun LifePilotApp(
+    biometricAuthManager: BiometricAuthManager,
+    deepLinkObjectId: String? = null,
+) {
     LifePilotTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
             val lockEnabled = biometricAuthManager.isBiometricLockEnabled()
@@ -79,7 +87,7 @@ private fun LifePilotApp(biometricAuthManager: BiometricAuthManager) {
                     onAuthenticated = { isAuthenticated = true },
                 )
             } else {
-                LifePilotNavHost()
+                LifePilotNavHost(deepLinkObjectId = deepLinkObjectId)
             }
         }
     }

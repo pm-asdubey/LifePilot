@@ -3,6 +3,7 @@ package com.lifepilot.app.navigation
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -22,10 +23,16 @@ import com.lifepilot.features.settings.navigation.settingsScreen
 import com.lifepilot.features.timeline.navigation.timelineScreen
 
 @Composable
-fun LifePilotNavHost() {
+fun LifePilotNavHost(deepLinkObjectId: String? = null) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
+
+    LaunchedEffect(deepLinkObjectId) {
+        if (!deepLinkObjectId.isNullOrBlank()) {
+            navController.navigate("object/$deepLinkObjectId")
+        }
+    }
 
     val topLevelRoutes = TopLevelDestination.entries.map { it.route }
     val showBottomBar = topLevelRoutes.any { route ->
