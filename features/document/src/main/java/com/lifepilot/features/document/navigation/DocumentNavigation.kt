@@ -18,6 +18,9 @@ fun NavGraphBuilder.documentViewerScreen(navController: NavController) {
     ) {
         DocumentViewerScreen(
             onNavigateBack = { navController.popBackStack() },
+            onExtractMetadata = { objectId, versionId ->
+                navController.navigate("object/$objectId/verify/$versionId")
+            },
         )
     }
 }

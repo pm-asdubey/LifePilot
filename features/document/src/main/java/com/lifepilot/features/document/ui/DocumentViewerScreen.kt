@@ -17,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -47,6 +48,7 @@ import com.lifepilot.features.document.viewmodel.DocumentViewerViewModel
 @Composable
 fun DocumentViewerScreen(
     onNavigateBack: () -> Unit,
+    onExtractMetadata: ((objectId: String, versionId: String) -> Unit)? = null,
     modifier: Modifier = Modifier,
     viewModel: DocumentViewerViewModel = hiltViewModel(),
 ) {
@@ -73,6 +75,21 @@ fun DocumentViewerScreen(
                 },
                 actions = {
                     if (state.ocrText != null) {
+                        if (onExtractMetadata != null) {
+                            val doc = state.document
+                            val ver = state.currentVersion
+                            if (doc != null && ver != null) {
+                                IconButton(onClick = {
+                                    onExtractMetadata(doc.objectId, ver.versionId)
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.AutoAwesome,
+                                        contentDescription = "Extract metadata with AI",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
+                            }
+                        }
                         IconButton(onClick = viewModel::toggleOcrText) {
                             Icon(
                                 imageVector = Icons.Filled.TextFields,
