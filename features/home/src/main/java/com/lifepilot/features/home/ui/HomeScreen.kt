@@ -1,5 +1,6 @@
 package com.lifepilot.features.home.ui
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,12 +43,10 @@ import com.lifepilot.designsystem.components.SectionHeader
 import com.lifepilot.designsystem.components.TaskCard
 import com.lifepilot.designsystem.components.TimelineCard
 import com.lifepilot.designsystem.theme.Spacing
-import com.lifepilot.designsystem.theme.StatusActive
 import com.lifepilot.designsystem.theme.Warning
 import com.lifepilot.domain.model.TaskPriority
-import com.lifepilot.domain.model.TimelineEntry
 import com.lifepilot.features.home.viewmodel.HomeViewModel
-import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
@@ -68,7 +67,7 @@ fun HomeScreen(
                 title = {
                     Column {
                         Text(
-                            text = "Good day",
+                            text = timeBasedGreeting(),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -136,8 +135,8 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.height(Spacing.md))
                     SectionHeader(
                         title = "TASKS",
-                        actionLabel = "See all",
-                        onAction = {},
+                        actionLabel = "Library",
+                        onAction = onNavigateToLibrary,
                     )
                     Spacer(modifier = Modifier.height(Spacing.sm))
                 }
@@ -187,6 +186,24 @@ fun HomeScreen(
                             entry.objectId?.let { onNavigateToObject(it) }
                         },
                         modifier = Modifier.padding(horizontal = Spacing.sm),
+                    )
+                }
+            }
+
+            if (uiState.domainCounts.isNotEmpty()) {
+                item {
+                    Spacer(modifier = Modifier.height(Spacing.md))
+                    SectionHeader(
+                        title = "BY DOMAIN",
+                        actionLabel = "Library",
+                        onAction = onNavigateToLibrary,
+                    )
+                    Spacer(modifier = Modifier.height(Spacing.sm))
+                }
+                item {
+                    DomainDistribution(
+                        domainCounts = uiState.domainCounts,
+                        modifier = Modifier.padding(horizontal = Spacing.md),
                     )
                 }
             }
@@ -270,5 +287,66 @@ private fun StatCard(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun DomainDistribution(
+    domainCounts: Map<String, Int>,
+    modifier: Modifier = Modifier,
+) {
+    val total = domainCounts.values.sum().coerceAtLeast(1)
+    val sorted = domainCounts.entries.sortedByDescending { it.value }
+
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
+        shape = MaterialTheme.shapes.medium,
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(Spacing.md)) {
+            sorted.forEach { (domain, count) ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 3.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = domain.replaceFirstChar { it.uppercase() },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        text = count.toString(),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Spacer(modifier = Modifier.size(Spacing.sm))
+                    // Progress bar
+                    Canvas(
+                        modifier = Modifier
+                            .size(width = 80.dp, height = 6.dp),
+                    ) {
+                        val fraction = count.toFloat() / total
+                        val trackColor = androidx.compose.ui.graphics.Color(0x1A6650A4.toInt())
+                        val fillColor = androidx.compose.ui.graphics.Color(0xFF6650A4.toInt())
+                        drawRect(color = trackColor)
+                        drawRect(color = fillColor, size = size.copy(width = size.width * fraction))
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun timeBasedGreeting(): String {
+    return when (LocalTime.now().hour) {
+        in 5..11 -> "Good morning"
+        in 12..16 -> "Good afternoon"
+        in 17..20 -> "Good evening"
+        else -> "Good night"
     }
 }
