@@ -8,7 +8,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import com.lifepilot.features.library.ui.LibraryScreen
-import com.lifepilot.features.object.create.ui.CreateObjectSheet
+import com.lifepilot.features.objectdetail.create.ui.CreateObjectSheet
 
 fun NavGraphBuilder.libraryScreen(navController: NavController) {
     composable(route = "library") {

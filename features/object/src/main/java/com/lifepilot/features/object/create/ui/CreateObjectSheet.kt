@@ -1,4 +1,4 @@
-package com.lifepilot.features.object.create.ui
+package com.lifepilot.features.objectdetail.create.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -37,8 +37,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.lifepilot.designsystem.theme.Spacing
-import com.lifepilot.features.object.create.state.CreateObjectStep
-import com.lifepilot.features.object.create.viewmodel.CreateObjectViewModel
+import com.lifepilot.features.objectdetail.create.state.CreateObjectStep
+import com.lifepilot.features.objectdetail.create.viewmodel.CreateObjectViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

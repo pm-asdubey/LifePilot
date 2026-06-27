@@ -1,4 +1,4 @@
-package com.lifepilot.features.object.navigation
+package com.lifepilot.features.objectdetail.navigation
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -10,9 +10,9 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.lifepilot.features.document.upload.DocumentUploadSheet
-import com.lifepilot.features.object.metadata.ui.MetadataEditScreen
-import com.lifepilot.features.object.ui.ObjectDetailScreen
-import com.lifepilot.features.object.verification.ui.MetadataVerificationScreen
+import com.lifepilot.features.objectdetail.metadata.ui.MetadataEditScreen
+import com.lifepilot.features.objectdetail.ui.ObjectDetailScreen
+import com.lifepilot.features.objectdetail.verification.ui.MetadataVerificationScreen
 
 fun NavGraphBuilder.objectDetailScreen(navController: NavController) {
     composable(

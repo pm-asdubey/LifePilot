@@ -1,4 +1,4 @@
-package com.lifepilot.features.object.ui
+package com.lifepilot.features.objectdetail.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -73,8 +73,8 @@ import com.lifepilot.domain.model.ObjectStatus
 import com.lifepilot.domain.model.Relationship
 import com.lifepilot.domain.model.Task
 import com.lifepilot.domain.model.TimelineEntry
-import com.lifepilot.features.object.state.ObjectDetailTab
-import com.lifepilot.features.object.viewmodel.ObjectDetailViewModel
+import com.lifepilot.features.objectdetail.state.ObjectDetailTab
+import com.lifepilot.features.objectdetail.viewmodel.ObjectDetailViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

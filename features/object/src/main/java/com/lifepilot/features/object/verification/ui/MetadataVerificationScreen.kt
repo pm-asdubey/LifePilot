@@ -1,4 +1,4 @@
-package com.lifepilot.features.object.verification.ui
+package com.lifepilot.features.objectdetail.verification.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,8 +41,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.lifepilot.designsystem.theme.Spacing
-import com.lifepilot.features.object.verification.state.FieldSuggestion
-import com.lifepilot.features.object.verification.viewmodel.MetadataVerificationViewModel
+import com.lifepilot.features.objectdetail.verification.state.FieldSuggestion
+import com.lifepilot.features.objectdetail.verification.viewmodel.MetadataVerificationViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

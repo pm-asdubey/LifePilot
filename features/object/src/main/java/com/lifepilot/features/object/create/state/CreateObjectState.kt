@@ -1,4 +1,4 @@
-package com.lifepilot.features.object.create.state
+package com.lifepilot.features.objectdetail.create.state
 
 data class CreateObjectState(
     val isLoading: Boolean = false,

@@ -1,8 +1,8 @@
 [versions]
 agp = "8.5.2"
 kotlin = "2.0.0"
-ksp = "2.0.0-1.0.21"
-hilt = "2.51.1"
+ksp = "2.0.0-1.0.24"
+hilt = "2.52"
 hiltNavigationCompose = "1.2.0"
 compose-bom = "2024.09.00"
 room = "2.6.1"
@@ -29,6 +29,7 @@ splashscreen = "1.0.1"
 material3 = "1.3.0"
 leakcanary = "2.14"
 timber = "5.0.1"
+javax-inject = "1"
 
 [libraries]
 # AndroidX Core
@@ -73,6 +74,7 @@ room-compiler = { group = "androidx.room", name = "room-compiler", version.ref =
 room-testing = { group = "androidx.room", name = "room-testing", version.ref = "room" }
 
 # Coroutines
+kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutinesTest" }
 
@@ -90,7 +92,6 @@ hilt-work-compiler = { group = "androidx.hilt", name = "hilt-compiler", version.
 # Networking
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
-retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
 
 # ML Kit
 mlkit-text-recognition = { group = "com.google.mlkit", name = "text-recognition", version.ref = "mlkitTextRecognition" }
@@ -108,6 +109,9 @@ espresso = { group = "androidx.test.espresso", name = "espresso-core", version.r
 truth = { group = "com.google.truth", name = "truth", version.ref = "truth" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 mockk-android = { group = "io.mockk", name = "mockk-android", version.ref = "mockk" }
+
+# Dependency Injection (JVM-only)
+javax-inject = { group = "javax.inject", name = "javax.inject", version.ref = "javax-inject" }
 
 # Debug
 leakcanary = { group = "com.squareup.leakcanary", name = "leakcanary-android", version.ref = "leakcanary" }

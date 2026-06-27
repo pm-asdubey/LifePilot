@@ -8,7 +8,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import com.lifepilot.features.home.ui.HomeScreen
-import com.lifepilot.features.object.create.ui.CreateObjectSheet
+import com.lifepilot.features.objectdetail.create.ui.CreateObjectSheet
 
 fun NavGraphBuilder.homeScreen(navController: NavController) {
     composable(route = "home") {

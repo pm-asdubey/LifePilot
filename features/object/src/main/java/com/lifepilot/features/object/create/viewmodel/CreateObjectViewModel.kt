@@ -1,13 +1,13 @@
-package com.lifepilot.features.object.create.viewmodel
+package com.lifepilot.features.objectdetail.create.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lifepilot.domain.engine.SchemaEngine
 import com.lifepilot.domain.repository.ProfileRepository
 import com.lifepilot.domain.usecase.CreateObjectUseCase
-import com.lifepilot.features.object.create.state.CreateObjectState
-import com.lifepilot.features.object.create.state.CreateObjectStep
-import com.lifepilot.features.object.create.state.ObjectTypeItem
+import com.lifepilot.features.objectdetail.create.state.CreateObjectState
+import com.lifepilot.features.objectdetail.create.state.CreateObjectStep
+import com.lifepilot.features.objectdetail.create.state.ObjectTypeItem
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

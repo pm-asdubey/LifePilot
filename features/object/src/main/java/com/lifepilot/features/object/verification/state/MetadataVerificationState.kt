@@ -1,4 +1,4 @@
-package com.lifepilot.features.object.verification.state
+package com.lifepilot.features.objectdetail.verification.state
 
 import com.lifepilot.domain.model.MetadataFieldType
 

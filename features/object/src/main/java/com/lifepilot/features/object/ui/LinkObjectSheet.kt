@@ -1,4 +1,4 @@
-package com.lifepilot.features.object.ui
+package com.lifepilot.features.objectdetail.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column

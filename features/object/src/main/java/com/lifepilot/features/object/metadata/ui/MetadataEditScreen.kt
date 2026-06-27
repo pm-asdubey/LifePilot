@@ -1,4 +1,4 @@
-package com.lifepilot.features.object.metadata.ui
+package com.lifepilot.features.objectdetail.metadata.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -40,7 +40,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.lifepilot.designsystem.theme.Spacing
 import com.lifepilot.domain.model.schema.MetadataFieldDefinition
-import com.lifepilot.features.object.metadata.viewmodel.MetadataEditViewModel
+import com.lifepilot.features.objectdetail.metadata.viewmodel.MetadataEditViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

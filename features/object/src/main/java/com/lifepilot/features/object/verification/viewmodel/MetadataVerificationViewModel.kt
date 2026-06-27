@@ -1,4 +1,4 @@
-package com.lifepilot.features.object.verification.viewmodel
+package com.lifepilot.features.objectdetail.verification.viewmodel
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -10,8 +10,8 @@ import com.lifepilot.domain.repository.DocumentRepository
 import com.lifepilot.domain.repository.MetadataRepository
 import com.lifepilot.domain.repository.ObjectRepository
 import com.lifepilot.domain.usecase.ExtractMetadataUseCase
-import com.lifepilot.features.object.verification.state.FieldSuggestion
-import com.lifepilot.features.object.verification.state.MetadataVerificationState
+import com.lifepilot.features.objectdetail.verification.state.FieldSuggestion
+import com.lifepilot.features.objectdetail.verification.state.MetadataVerificationState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

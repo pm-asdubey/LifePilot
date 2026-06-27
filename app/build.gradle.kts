@@ -111,6 +111,8 @@ dependencies {
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
+    implementation(libs.hilt.work)
+    ksp(libs.hilt.work.compiler)
 
     implementation(libs.androidx.biometric)
     implementation(libs.timber)

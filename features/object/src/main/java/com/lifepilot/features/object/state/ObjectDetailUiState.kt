@@ -1,4 +1,4 @@
-package com.lifepilot.features.object.state
+package com.lifepilot.features.objectdetail.state
 
 import com.lifepilot.domain.model.Document
 import com.lifepilot.domain.model.LifeObject

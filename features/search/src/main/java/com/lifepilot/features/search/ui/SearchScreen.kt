@@ -162,9 +162,10 @@ fun SearchScreen(
                                 ),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            if (result.domain != null) {
+                            val domain = result.domain
+                            if (domain != null) {
                                 Icon(
-                                    imageVector = domainIcon(result.domain),
+                                    imageVector = domainIcon(domain),
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
                                     modifier = Modifier.size(20.dp),
@@ -177,17 +178,19 @@ fun SearchScreen(
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurface,
                                 )
-                                if (result.subtitle != null) {
+                                val subtitle = result.subtitle
+                                if (subtitle != null) {
                                     Text(
-                                        text = result.subtitle,
+                                        text = subtitle,
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
                             }
-                            if (result.objectType != null) {
+                            val objectType = result.objectType
+                            if (objectType != null) {
                                 Text(
-                                    text = result.objectType,
+                                    text = objectType,
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )

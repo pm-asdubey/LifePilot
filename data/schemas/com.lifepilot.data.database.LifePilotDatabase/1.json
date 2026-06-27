@@ -1,0 +1,957 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "2f5c388f9fbc459e4951118ca408d490",
+    "entities": [
+      {
+        "tableName": "profiles",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`profile_id` TEXT NOT NULL, `display_name` TEXT NOT NULL, `avatar_path` TEXT, `is_primary` INTEGER NOT NULL, `created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`profile_id`))",
+        "fields": [
+          {
+            "fieldPath": "profileId",
+            "columnName": "profile_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "displayName",
+            "columnName": "display_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avatarPath",
+            "columnName": "avatar_path",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "isPrimary",
+            "columnName": "is_primary",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "profile_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_profiles_display_name",
+            "unique": false,
+            "columnNames": [
+              "display_name"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_profiles_display_name` ON `${TABLE_NAME}` (`display_name`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "objects",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`object_id` TEXT NOT NULL, `profile_id` TEXT NOT NULL, `object_type` TEXT NOT NULL, `domain` TEXT NOT NULL, `title` TEXT NOT NULL, `description` TEXT, `status` TEXT NOT NULL, `archived` INTEGER NOT NULL, `deleted` INTEGER NOT NULL, `created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`object_id`), FOREIGN KEY(`profile_id`) REFERENCES `profiles`(`profile_id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "objectId",
+            "columnName": "object_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "profileId",
+            "columnName": "profile_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "objectType",
+            "columnName": "object_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "domain",
+            "columnName": "domain",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "archived",
+            "columnName": "archived",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deleted",
+            "columnName": "deleted",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "object_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_objects_profile_id",
+            "unique": false,
+            "columnNames": [
+              "profile_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_objects_profile_id` ON `${TABLE_NAME}` (`profile_id`)"
+          },
+          {
+            "name": "index_objects_object_type",
+            "unique": false,
+            "columnNames": [
+              "object_type"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_objects_object_type` ON `${TABLE_NAME}` (`object_type`)"
+          },
+          {
+            "name": "index_objects_domain",
+            "unique": false,
+            "columnNames": [
+              "domain"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_objects_domain` ON `${TABLE_NAME}` (`domain`)"
+          },
+          {
+            "name": "index_objects_status",
+            "unique": false,
+            "columnNames": [
+              "status"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_objects_status` ON `${TABLE_NAME}` (`status`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "profiles",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "profile_id"
+            ],
+            "referencedColumns": [
+              "profile_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "metadata",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`metadata_id` TEXT NOT NULL, `object_id` TEXT NOT NULL, `field_id` TEXT NOT NULL, `field_type` TEXT NOT NULL, `value` TEXT NOT NULL, `version` INTEGER NOT NULL, `confidence` REAL, `source` TEXT NOT NULL, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`metadata_id`), FOREIGN KEY(`object_id`) REFERENCES `objects`(`object_id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "metadataId",
+            "columnName": "metadata_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "objectId",
+            "columnName": "object_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fieldId",
+            "columnName": "field_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fieldType",
+            "columnName": "field_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "value",
+            "columnName": "value",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "version",
+            "columnName": "version",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "confidence",
+            "columnName": "confidence",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "source",
+            "columnName": "source",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "metadata_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_metadata_object_id",
+            "unique": false,
+            "columnNames": [
+              "object_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_metadata_object_id` ON `${TABLE_NAME}` (`object_id`)"
+          },
+          {
+            "name": "index_metadata_field_id",
+            "unique": false,
+            "columnNames": [
+              "field_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_metadata_field_id` ON `${TABLE_NAME}` (`field_id`)"
+          },
+          {
+            "name": "index_metadata_object_id_field_id",
+            "unique": true,
+            "columnNames": [
+              "object_id",
+              "field_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_metadata_object_id_field_id` ON `${TABLE_NAME}` (`object_id`, `field_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "objects",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "object_id"
+            ],
+            "referencedColumns": [
+              "object_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "documents",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`document_id` TEXT NOT NULL, `object_id` TEXT NOT NULL, `document_type` TEXT NOT NULL, `current_version_id` TEXT, `created_at` INTEGER NOT NULL, PRIMARY KEY(`document_id`), FOREIGN KEY(`object_id`) REFERENCES `objects`(`object_id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "documentId",
+            "columnName": "document_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "objectId",
+            "columnName": "object_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "documentType",
+            "columnName": "document_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currentVersionId",
+            "columnName": "current_version_id",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "document_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_documents_object_id",
+            "unique": false,
+            "columnNames": [
+              "object_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_documents_object_id` ON `${TABLE_NAME}` (`object_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "objects",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "object_id"
+            ],
+            "referencedColumns": [
+              "object_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "document_versions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`version_id` TEXT NOT NULL, `document_id` TEXT NOT NULL, `file_path` TEXT NOT NULL, `original_name` TEXT NOT NULL, `mime_type` TEXT NOT NULL, `checksum` TEXT NOT NULL, `size_bytes` INTEGER NOT NULL, `uploaded_at` INTEGER NOT NULL, `ocr_text` TEXT, PRIMARY KEY(`version_id`), FOREIGN KEY(`document_id`) REFERENCES `documents`(`document_id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "versionId",
+            "columnName": "version_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "documentId",
+            "columnName": "document_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "filePath",
+            "columnName": "file_path",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "originalName",
+            "columnName": "original_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mimeType",
+            "columnName": "mime_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "checksum",
+            "columnName": "checksum",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sizeBytes",
+            "columnName": "size_bytes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "uploadedAt",
+            "columnName": "uploaded_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ocrText",
+            "columnName": "ocr_text",
+            "affinity": "TEXT",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "version_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_document_versions_document_id",
+            "unique": false,
+            "columnNames": [
+              "document_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_document_versions_document_id` ON `${TABLE_NAME}` (`document_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "documents",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "document_id"
+            ],
+            "referencedColumns": [
+              "document_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "events",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`event_id` TEXT NOT NULL, `object_id` TEXT NOT NULL, `event_type` TEXT NOT NULL, `payload` TEXT NOT NULL, `timestamp` INTEGER NOT NULL, `source` TEXT NOT NULL, `confidence` REAL, PRIMARY KEY(`event_id`), FOREIGN KEY(`object_id`) REFERENCES `objects`(`object_id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "eventId",
+            "columnName": "event_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "objectId",
+            "columnName": "object_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "eventType",
+            "columnName": "event_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "payload",
+            "columnName": "payload",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "source",
+            "columnName": "source",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "confidence",
+            "columnName": "confidence",
+            "affinity": "REAL",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "event_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_events_object_id",
+            "unique": false,
+            "columnNames": [
+              "object_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_events_object_id` ON `${TABLE_NAME}` (`object_id`)"
+          },
+          {
+            "name": "index_events_timestamp",
+            "unique": false,
+            "columnNames": [
+              "timestamp"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_events_timestamp` ON `${TABLE_NAME}` (`timestamp`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "objects",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "object_id"
+            ],
+            "referencedColumns": [
+              "object_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "tasks",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`task_id` TEXT NOT NULL, `profile_id` TEXT NOT NULL, `object_id` TEXT, `title` TEXT NOT NULL, `description` TEXT, `priority` TEXT NOT NULL, `due_date` INTEGER, `status` TEXT NOT NULL, `source` TEXT NOT NULL, `completed_at` INTEGER, PRIMARY KEY(`task_id`))",
+        "fields": [
+          {
+            "fieldPath": "taskId",
+            "columnName": "task_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "profileId",
+            "columnName": "profile_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "objectId",
+            "columnName": "object_id",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "priority",
+            "columnName": "priority",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dueDate",
+            "columnName": "due_date",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "source",
+            "columnName": "source",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "completedAt",
+            "columnName": "completed_at",
+            "affinity": "INTEGER",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "task_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_tasks_object_id",
+            "unique": false,
+            "columnNames": [
+              "object_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_tasks_object_id` ON `${TABLE_NAME}` (`object_id`)"
+          },
+          {
+            "name": "index_tasks_due_date",
+            "unique": false,
+            "columnNames": [
+              "due_date"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_tasks_due_date` ON `${TABLE_NAME}` (`due_date`)"
+          },
+          {
+            "name": "index_tasks_status",
+            "unique": false,
+            "columnNames": [
+              "status"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_tasks_status` ON `${TABLE_NAME}` (`status`)"
+          },
+          {
+            "name": "index_tasks_profile_id",
+            "unique": false,
+            "columnNames": [
+              "profile_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_tasks_profile_id` ON `${TABLE_NAME}` (`profile_id`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "reminders",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`reminder_id` TEXT NOT NULL, `object_id` TEXT NOT NULL, `reminder_type` TEXT NOT NULL, `trigger_date` INTEGER NOT NULL, `priority` TEXT NOT NULL, `status` TEXT NOT NULL, `title` TEXT NOT NULL, `message` TEXT, PRIMARY KEY(`reminder_id`), FOREIGN KEY(`object_id`) REFERENCES `objects`(`object_id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "reminderId",
+            "columnName": "reminder_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "objectId",
+            "columnName": "object_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reminderType",
+            "columnName": "reminder_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "triggerDate",
+            "columnName": "trigger_date",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "priority",
+            "columnName": "priority",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "message",
+            "columnName": "message",
+            "affinity": "TEXT",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "reminder_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_reminders_object_id",
+            "unique": false,
+            "columnNames": [
+              "object_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_reminders_object_id` ON `${TABLE_NAME}` (`object_id`)"
+          },
+          {
+            "name": "index_reminders_trigger_date",
+            "unique": false,
+            "columnNames": [
+              "trigger_date"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_reminders_trigger_date` ON `${TABLE_NAME}` (`trigger_date`)"
+          },
+          {
+            "name": "index_reminders_status",
+            "unique": false,
+            "columnNames": [
+              "status"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_reminders_status` ON `${TABLE_NAME}` (`status`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "objects",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "object_id"
+            ],
+            "referencedColumns": [
+              "object_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "relationships",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`relationship_id` TEXT NOT NULL, `source_object_id` TEXT NOT NULL, `target_object_id` TEXT NOT NULL, `relationship_type` TEXT NOT NULL, `status` TEXT NOT NULL, `created_at` INTEGER NOT NULL, PRIMARY KEY(`relationship_id`))",
+        "fields": [
+          {
+            "fieldPath": "relationshipId",
+            "columnName": "relationship_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceObjectId",
+            "columnName": "source_object_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "targetObjectId",
+            "columnName": "target_object_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "relationshipType",
+            "columnName": "relationship_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "relationship_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_relationships_source_object_id",
+            "unique": false,
+            "columnNames": [
+              "source_object_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_relationships_source_object_id` ON `${TABLE_NAME}` (`source_object_id`)"
+          },
+          {
+            "name": "index_relationships_target_object_id",
+            "unique": false,
+            "columnNames": [
+              "target_object_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_relationships_target_object_id` ON `${TABLE_NAME}` (`target_object_id`)"
+          },
+          {
+            "name": "index_relationships_relationship_type",
+            "unique": false,
+            "columnNames": [
+              "relationship_type"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_relationships_relationship_type` ON `${TABLE_NAME}` (`relationship_type`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "timeline",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`timeline_id` TEXT NOT NULL, `profile_id` TEXT NOT NULL, `source_id` TEXT NOT NULL, `source_type` TEXT NOT NULL, `timestamp` INTEGER NOT NULL, `title` TEXT NOT NULL, `summary` TEXT, `object_id` TEXT, `object_type` TEXT, `domain` TEXT, PRIMARY KEY(`timeline_id`))",
+        "fields": [
+          {
+            "fieldPath": "timelineId",
+            "columnName": "timeline_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "profileId",
+            "columnName": "profile_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceId",
+            "columnName": "source_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceType",
+            "columnName": "source_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "summary",
+            "columnName": "summary",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "objectId",
+            "columnName": "object_id",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "objectType",
+            "columnName": "object_type",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "domain",
+            "columnName": "domain",
+            "affinity": "TEXT",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "timeline_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_timeline_profile_id",
+            "unique": false,
+            "columnNames": [
+              "profile_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_timeline_profile_id` ON `${TABLE_NAME}` (`profile_id`)"
+          },
+          {
+            "name": "index_timeline_object_id",
+            "unique": false,
+            "columnNames": [
+              "object_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_timeline_object_id` ON `${TABLE_NAME}` (`object_id`)"
+          },
+          {
+            "name": "index_timeline_timestamp",
+            "unique": false,
+            "columnNames": [
+              "timestamp"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_timeline_timestamp` ON `${TABLE_NAME}` (`timestamp`)"
+          },
+          {
+            "name": "index_timeline_domain",
+            "unique": false,
+            "columnNames": [
+              "domain"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_timeline_domain` ON `${TABLE_NAME}` (`domain`)"
+          }
+        ],
+        "foreignKeys": []
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '2f5c388f9fbc459e4951118ca408d490')"
+    ]
+  }
+}

@@ -1,4 +1,4 @@
-package com.lifepilot.features.object.metadata.state
+package com.lifepilot.features.objectdetail.metadata.state
 
 import com.lifepilot.domain.model.schema.MetadataFieldDefinition
 

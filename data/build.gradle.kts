@@ -55,6 +55,7 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
     implementation(libs.mlkit.text.recognition)
+    implementation(libs.androidx.biometric)
     implementation(libs.timber)
 
     testImplementation(libs.bundles.testing.unit)

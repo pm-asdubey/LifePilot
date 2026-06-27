@@ -21,7 +21,7 @@ import com.lifepilot.features.ai.navigation.aiChatScreen
 import com.lifepilot.features.document.navigation.documentViewerScreen
 import com.lifepilot.features.home.navigation.homeScreen
 import com.lifepilot.features.library.navigation.libraryScreen
-import com.lifepilot.features.object.navigation.objectDetailScreen
+import com.lifepilot.features.objectdetail.navigation.objectDetailScreen
 import com.lifepilot.features.search.navigation.searchScreen
 import com.lifepilot.features.settings.navigation.settingsScreen
 import com.lifepilot.features.timeline.navigation.timelineScreen

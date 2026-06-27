@@ -13,9 +13,9 @@ kotlin {
 }
 
 dependencies {
-    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.serialization.json)
-    implementation(libs.timber)
+    implementation(libs.javax.inject)
 
     testImplementation(libs.bundles.testing.unit)
 }

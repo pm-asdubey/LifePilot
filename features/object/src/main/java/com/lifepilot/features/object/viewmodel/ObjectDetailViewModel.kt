@@ -1,9 +1,9 @@
-package com.lifepilot.features.object.viewmodel
+package com.lifepilot.features.objectdetail.viewmodel
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import LifeObject
+import com.lifepilot.domain.model.LifeObject
 import com.lifepilot.domain.model.ObjectStatus
 import com.lifepilot.domain.model.TaskStatus
 import com.lifepilot.domain.usecase.CompleteTaskUseCase
@@ -18,8 +18,8 @@ import com.lifepilot.data.repository.PreferenceManager
 import com.lifepilot.domain.usecase.ArchiveObjectUseCase
 import com.lifepilot.domain.usecase.LinkObjectsUseCase
 import com.lifepilot.domain.usecase.UpdateObjectStatusUseCase
-import com.lifepilot.features.object.state.ObjectDetailTab
-import com.lifepilot.features.object.state.ObjectDetailUiState
+import com.lifepilot.features.objectdetail.state.ObjectDetailTab
+import com.lifepilot.features.objectdetail.state.ObjectDetailUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

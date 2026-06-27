@@ -1,4 +1,4 @@
-package com.lifepilot.features.object.metadata.viewmodel
+package com.lifepilot.features.objectdetail.metadata.viewmodel
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -9,7 +9,7 @@ import com.lifepilot.domain.model.MetadataFieldType
 import com.lifepilot.domain.model.MetadataSource
 import com.lifepilot.domain.repository.MetadataRepository
 import com.lifepilot.domain.repository.ObjectRepository
-import com.lifepilot.features.object.metadata.state.MetadataEditState
+import com.lifepilot.features.objectdetail.metadata.state.MetadataEditState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
