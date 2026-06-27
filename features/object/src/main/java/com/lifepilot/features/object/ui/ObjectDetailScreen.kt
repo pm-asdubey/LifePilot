@@ -74,7 +74,16 @@ fun ObjectDetailScreen(
     viewModel: ObjectDetailViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val allProfileObjects by viewModel.allProfileObjects.collectAsState()
     var showMenu by remember { mutableStateOf(false) }
+
+    if (uiState.showLinkObjectSheet) {
+        LinkObjectSheet(
+            availableObjects = allProfileObjects,
+            onLink = { targetId, relType -> viewModel.linkObject(targetId, relType) },
+            onDismiss = viewModel::hideLinkObjectSheet,
+        )
+    }
 
     Scaffold(
         topBar = {

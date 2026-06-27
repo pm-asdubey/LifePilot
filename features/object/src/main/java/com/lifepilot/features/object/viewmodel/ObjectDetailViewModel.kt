@@ -10,6 +10,7 @@ import com.lifepilot.domain.repository.RelationshipRepository
 import com.lifepilot.domain.repository.ReminderRepository
 import com.lifepilot.domain.repository.TaskRepository
 import com.lifepilot.domain.repository.TimelineRepository
+import com.lifepilot.data.repository.PreferenceManager
 import com.lifepilot.domain.usecase.ArchiveObjectUseCase
 import com.lifepilot.domain.usecase.LinkObjectsUseCase
 import com.lifepilot.domain.usecase.UpdateObjectStatusUseCase
@@ -35,6 +36,7 @@ class ObjectDetailViewModel @Inject constructor(
     private val reminderRepository: ReminderRepository,
     private val timelineRepository: TimelineRepository,
     private val relationshipRepository: RelationshipRepository,
+    private val preferenceManager: PreferenceManager,
     private val archiveObjectUseCase: ArchiveObjectUseCase,
     private val updateObjectStatusUseCase: UpdateObjectStatusUseCase,
     private val linkObjectsUseCase: LinkObjectsUseCase,
@@ -45,9 +47,13 @@ class ObjectDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ObjectDetailUiState())
     val uiState: StateFlow<ObjectDetailUiState> = _uiState.asStateFlow()
 
+    private val _allProfileObjects = MutableStateFlow<List<com.lifepilot.domain.model.LifeObject>>(emptyList())
+    val allProfileObjects: StateFlow<List<com.lifepilot.domain.model.LifeObject>> = _allProfileObjects.asStateFlow()
+
     init {
         observeObject()
         observeRelationships()
+        observeAllObjects()
     }
 
     private fun observeObject() {
@@ -97,6 +103,17 @@ class ObjectDetailViewModel @Inject constructor(
                         objectRepository.getObjectById(id)
                     }.associateBy { it.objectId }
                     _uiState.update { it.copy(relationships = relationships, relatedObjects = relatedObjects) }
+                }
+        }
+    }
+
+    private fun observeAllObjects() {
+        viewModelScope.launch {
+            val profileId = preferenceManager.getActiveProfileId() ?: return@launch
+            objectRepository.observeObjectsByProfile(profileId)
+                .catch { e -> Timber.e(e, "Error observing all objects") }
+                .collect { objects ->
+                    _allProfileObjects.value = objects.filter { it.objectId != objectId }
                 }
         }
     }
