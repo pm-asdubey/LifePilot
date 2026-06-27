@@ -58,6 +58,7 @@ import java.time.format.DateTimeFormatter
 fun HomeScreen(
     onNavigateToObject: (String) -> Unit,
     onNavigateToLibrary: () -> Unit,
+    onNavigateToTimeline: () -> Unit,
     onAddObject: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
@@ -178,7 +179,7 @@ fun HomeScreen(
                     SectionHeader(
                         title = "RECENT ACTIVITY",
                         actionLabel = "Timeline",
-                        onAction = {},
+                        onAction = onNavigateToTimeline,
                     )
                     Spacer(modifier = Modifier.height(Spacing.sm))
                 }
@@ -318,6 +319,10 @@ private fun DomainDistribution(
         modifier = modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(Spacing.md)) {
+            val primaryColor = MaterialTheme.colorScheme.primary
+            val trackColor = primaryColor.copy(alpha = 0.1f)
+            val fillColor = primaryColor
+
             sorted.forEach { (domain, count) ->
                 Row(
                     modifier = Modifier
@@ -328,7 +333,7 @@ private fun DomainDistribution(
                     Icon(
                         imageVector = domainIcon(domain),
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                        tint = primaryColor.copy(alpha = 0.7f),
                         modifier = Modifier.size(14.dp),
                     )
                     Spacer(modifier = Modifier.size(Spacing.xs))
@@ -341,17 +346,13 @@ private fun DomainDistribution(
                     Text(
                         text = count.toString(),
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = primaryColor,
                     )
                     Spacer(modifier = Modifier.size(Spacing.sm))
-                    // Progress bar
                     Canvas(
-                        modifier = Modifier
-                            .size(width = 80.dp, height = 6.dp),
+                        modifier = Modifier.size(width = 80.dp, height = 6.dp),
                     ) {
                         val fraction = count.toFloat() / total
-                        val trackColor = androidx.compose.ui.graphics.Color(0x1A6650A4.toInt())
-                        val fillColor = androidx.compose.ui.graphics.Color(0xFF6650A4.toInt())
                         drawRect(color = trackColor)
                         drawRect(color = fillColor, size = size.copy(width = size.width * fraction))
                     }

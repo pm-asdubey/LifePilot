@@ -21,6 +21,9 @@ fun NavGraphBuilder.homeScreen(navController: NavController) {
             onNavigateToLibrary = {
                 navController.navigate("library")
             },
+            onNavigateToTimeline = {
+                navController.navigate("timeline")
+            },
             onAddObject = {
                 showCreateSheet = true
             },
