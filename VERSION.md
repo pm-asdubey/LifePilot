@@ -8,7 +8,7 @@
 
 **Status:** Alpha
 
-**Current Version:** 0.9.0-alpha
+**Current Version:** 0.10.0-alpha
 
 **Release Target:** 1.0.0
 
@@ -16,9 +16,12 @@
 
 # Current Milestone
 
-**Milestone 12 — Polish & Production Readiness**
+**Milestone 13 — Testing**
 
-The core application is functionally complete. Current focus is on production quality: UX polish, error state completeness, performance, and any remaining compile issues.
+Milestones 1–12 complete. All core features implemented and polished:
+animated transitions, pull-to-refresh, swipe-to-complete, haptic feedback,
+PDF rendering, multi-select bulk operations, AI setup detection. Integration
+tests in progress (4 DAO test suites with 26 test cases).
 
 ---
 

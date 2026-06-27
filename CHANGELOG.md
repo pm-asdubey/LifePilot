@@ -4,7 +4,24 @@ All notable changes to LifePilot are documented here.
 
 ---
 
-## [Unreleased] — 0.9.0-alpha
+## [Unreleased] — 0.10.0-alpha
+
+### Added
+- PDF rendering using Android `PdfRenderer` API: all pages rendered at 1080px width with loading/error states
+- Multi-select bulk operations in Library: long-press to enter selection mode, Archive/Delete buttons in bottom action bar with confirmation dialog
+- Haptic feedback on task completion (check button) and swipe-to-complete gesture
+- Animated screen transitions (slide+fade) via NavHost enter/exit/pop animations
+- Pull-to-refresh on Home, Library, and Timeline screens
+- Swipe-to-complete on task cards in Object Detail screen
+- AI unconfigured setup banner in AI Chat screen with Settings deep link
+- Instrumented Room DAO integration tests: ObjectDao (8), TaskDao (6), MetadataDao (7), ReminderDao (5)
+
+### Fixed
+- All fully-qualified class references in feature composables replaced with proper imports
+- `ObjectCard` now uses `combinedClickable` for long-press support
+- `PdfRenderer` state updates correctly happen on main thread after `withContext(Dispatchers.IO)`
+
+## [0.9.0-alpha] — 2026-06-27
 
 ### Fixed
 - Metadata saved with correct `fieldType` (DATE, NUMBER, ENUM) instead of always TEXT
