@@ -150,12 +150,14 @@ class ObjectDetailViewModel @Inject constructor(
         }
     }
 
-    fun archiveObject() {
+    fun archiveObject(onArchived: () -> Unit = {}) {
         viewModelScope.launch {
-            archiveObjectUseCase(objectId).onFailure { e ->
-                Timber.e(e, "Failed to archive object")
-                _uiState.update { it.copy(error = "Failed to archive: ${e.message}") }
-            }
+            archiveObjectUseCase(objectId)
+                .onSuccess { onArchived() }
+                .onFailure { e ->
+                    Timber.e(e, "Failed to archive object")
+                    _uiState.update { it.copy(error = "Failed to archive: ${e.message}") }
+                }
         }
     }
 

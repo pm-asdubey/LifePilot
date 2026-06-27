@@ -158,8 +158,7 @@ fun ObjectDetailScreen(
                                     text = { Text("Archive") },
                                     onClick = {
                                         showMenu = false
-                                        viewModel.archiveObject()
-                                        onArchived()
+                                        viewModel.archiveObject(onArchived)
                                     }
                                 )
                                 DropdownMenuItem(
