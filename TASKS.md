@@ -307,9 +307,10 @@ Last updated: 2026-06-27 (animated transitions ✅, pull-to-refresh ✅, swipe-t
 * [ ] PreferenceManager integration tests
 * [ ] EncryptedKeyStorage integration tests
 
-## UI Tests (Not Started)
-* [ ] Home screen end-to-end
-* [ ] Object creation flow
+## UI Tests (In Progress)
+* [x] HiltTestRunner configured
+* [x] Navigation smoke tests (5 cases: home, library, search, AI, settings tabs)
+* [x] Create object flow smoke test (2 cases: home FAB, library FAB)
 * [ ] Document upload flow
 * [ ] Search flow
 

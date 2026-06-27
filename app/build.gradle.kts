@@ -110,5 +110,6 @@ dependencies {
     testImplementation(libs.bundles.testing.unit)
     androidTestImplementation(libs.bundles.testing.android)
     androidTestImplementation(libs.hilt.testing)
+    androidTestImplementation(libs.compose.ui.test.junit4)
     kspAndroidTest(libs.hilt.compiler)
 }
