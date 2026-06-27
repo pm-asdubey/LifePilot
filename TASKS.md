@@ -303,14 +303,16 @@ Last updated: 2026-06-27 (all UI tests ✅, LazyColumn layout fixes ✅, metadat
 * [x] ImportDataUseCaseTest
 * [x] UploadDocumentUseCaseTest
 
-## Integration Tests (In Progress)
+## Integration Tests ✅
 * [x] ObjectDao instrumented tests (8 test cases)
 * [x] TaskDao instrumented tests (6 test cases)
 * [x] MetadataDao instrumented tests (7 test cases)
 * [x] ReminderDao instrumented tests (5 test cases)
+* [x] DocumentDao instrumented tests (8 test cases)
+* [x] TimelineDao instrumented tests (6 test cases)
 * [x] FileStorageManager integration tests (7 test cases)
-* [ ] PreferenceManager integration tests
-* [ ] EncryptedKeyStorage integration tests
+* [ ] PreferenceManager integration tests (deferred — complex DataStore setup)
+* [ ] EncryptedKeyStorage integration tests (deferred — Android Keystore)
 
 ## UI Tests (In Progress)
 * [x] HiltTestRunner configured
