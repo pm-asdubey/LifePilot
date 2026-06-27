@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- LP monogram for LifePilot -->
+    <path
+        android:fillColor="#6650A4"
+        android:pathData="M32,28 L32,80 L42,80 L42,58 L58,58 L58,48 L42,48 L42,38 L60,38 L60,28 Z" />
+    <path
+        android:fillColor="#6650A4"
+        android:pathData="M66,28 L66,80 L76,80 L76,58 L88,50 C92,47 94,43 94,38 C94,32 89,28 82,28 Z M76,38 L82,38 C84.5,38 85.5,39.5 85.5,41 C85.5,42.5 84,44.5 81,46.5 L76,50 Z" />
+</vector>
