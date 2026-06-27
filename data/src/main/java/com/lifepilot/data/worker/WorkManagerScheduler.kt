@@ -18,7 +18,7 @@ import javax.inject.Singleton
 class WorkManagerScheduler @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
-    private val workManager = WorkManager.getInstance(context)
+    private val workManager by lazy { WorkManager.getInstance(context) }
 
     fun scheduleReminderEvaluation() {
         val constraints = Constraints.Builder()
