@@ -43,14 +43,11 @@ class DocumentOcrWorker @AssistedInject constructor(
                 is OcrResult.Success -> {
                     documentDao.updateVersionOcrText(versionId, ocrResult.text)
                     Timber.d("OCR complete for version $versionId: ${ocrResult.text.length} chars")
-                    // Notify LifeStateEngine so rules are evaluated and tasks generated
-                    val objectId = versionEntity.documentId?.let { docId ->
-                        documentDao.getDocumentById(docId)?.objectId
-                    }
+                    val objectId = documentDao.getDocumentById(versionEntity.documentId)?.objectId
                     if (objectId != null) {
                         lifeStateEngine.processDocumentIngestion(
                             objectId = objectId,
-                            documentId = versionEntity.documentId ?: "",
+                            documentId = versionEntity.documentId,
                             ocrText = ocrResult.text,
                         )
                     }
