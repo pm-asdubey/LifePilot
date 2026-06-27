@@ -303,9 +303,9 @@ Last updated: 2026-06-27 (animated transitions ✅, pull-to-refresh ✅, swipe-t
 * [x] TaskDao instrumented tests (6 test cases)
 * [x] MetadataDao instrumented tests (7 test cases)
 * [x] ReminderDao instrumented tests (5 test cases)
+* [x] FileStorageManager integration tests (7 test cases)
 * [ ] PreferenceManager integration tests
 * [ ] EncryptedKeyStorage integration tests
-* [ ] FileStorageManager integration tests
 
 ## UI Tests (Not Started)
 * [ ] Home screen end-to-end
