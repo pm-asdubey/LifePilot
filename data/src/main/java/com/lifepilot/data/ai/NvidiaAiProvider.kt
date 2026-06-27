@@ -5,7 +5,9 @@ import com.lifepilot.domain.ai.AiCompletionResult
 import com.lifepilot.domain.ai.AiMessage
 import com.lifepilot.domain.ai.AiMessageRole
 import com.lifepilot.domain.ai.AiProvider
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -33,7 +35,6 @@ class NvidiaAiProvider @Inject constructor(
         conversationHistory: List<AiMessage>,
     ): AiCompletionResult {
         val apiKey = preferenceManager.aiApiKey.firstOrNull()
-        // Default to meta/llama-3.1-70b-instruct for high-quality responses
         val model = preferenceManager.aiModel.firstOrNull()?.takeIf { it.isNotBlank() }
             ?: "meta/llama-3.1-70b-instruct"
 
@@ -41,37 +42,50 @@ class NvidiaAiProvider @Inject constructor(
             return AiCompletionResult.Unavailable
         }
 
+        return withContext(Dispatchers.IO) {
+            executeRequest(apiKey, model, systemPrompt, userMessage, conversationHistory)
+        }
+    }
+
+    private fun executeRequest(
+        apiKey: String,
+        model: String,
+        systemPrompt: String,
+        userMessage: String,
+        conversationHistory: List<AiMessage>,
+    ): AiCompletionResult {
         return try {
             val messages = JSONArray()
 
-            // System message
-            val sysMsg = JSONObject()
-            sysMsg.put("role", "system")
-            sysMsg.put("content", systemPrompt)
+            val sysMsg = JSONObject().apply {
+                put("role", "system")
+                put("content", systemPrompt)
+            }
             messages.put(sysMsg)
 
-            // Conversation history
             for (msg in conversationHistory) {
                 if (msg.role != AiMessageRole.SYSTEM) {
-                    val obj = JSONObject()
-                    obj.put("role", msg.role.name.lowercase())
-                    obj.put("content", msg.content)
+                    val obj = JSONObject().apply {
+                        put("role", msg.role.name.lowercase())
+                        put("content", msg.content)
+                    }
                     messages.put(obj)
                 }
             }
 
-            // Current user message
-            val userMsg = JSONObject()
-            userMsg.put("role", "user")
-            userMsg.put("content", userMessage)
+            val userMsg = JSONObject().apply {
+                put("role", "user")
+                put("content", userMessage)
+            }
             messages.put(userMsg)
 
-            val body = JSONObject()
-            body.put("model", model)
-            body.put("messages", messages)
-            body.put("max_tokens", 1024)
-            body.put("temperature", 0.7)
-            body.put("stream", false)
+            val body = JSONObject().apply {
+                put("model", model)
+                put("messages", messages)
+                put("max_tokens", 1024)
+                put("temperature", 0.7)
+                put("stream", false)
+            }
 
             val request = Request.Builder()
                 .url("https://integrate.api.nvidia.com/v1/chat/completions")

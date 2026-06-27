@@ -1,10 +1,6 @@
 package com.lifepilot.domain.engine
 
-import com.lifepilot.domain.model.Document
-import com.lifepilot.domain.model.Event
-import com.lifepilot.domain.model.LifeObject
 import com.lifepilot.domain.model.MetadataEntry
-import com.lifepilot.domain.model.Task
 import kotlinx.coroutines.flow.Flow
 
 interface LifeStateEngine {

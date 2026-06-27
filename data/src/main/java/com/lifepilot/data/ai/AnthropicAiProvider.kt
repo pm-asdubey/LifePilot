@@ -5,7 +5,9 @@ import com.lifepilot.domain.ai.AiCompletionResult
 import com.lifepilot.domain.ai.AiMessage
 import com.lifepilot.domain.ai.AiMessageRole
 import com.lifepilot.domain.ai.AiProvider
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -40,26 +42,41 @@ class AnthropicAiProvider @Inject constructor(
             return AiCompletionResult.Unavailable
         }
 
+        return withContext(Dispatchers.IO) {
+            executeRequest(apiKey, model, systemPrompt, userMessage, conversationHistory)
+        }
+    }
+
+    private fun executeRequest(
+        apiKey: String,
+        model: String,
+        systemPrompt: String,
+        userMessage: String,
+        conversationHistory: List<AiMessage>,
+    ): AiCompletionResult {
         return try {
             val messages = JSONArray()
             for (msg in conversationHistory) {
                 if (msg.role != AiMessageRole.SYSTEM) {
-                    val obj = JSONObject()
-                    obj.put("role", msg.role.name.lowercase())
-                    obj.put("content", msg.content)
+                    val obj = JSONObject().apply {
+                        put("role", msg.role.name.lowercase())
+                        put("content", msg.content)
+                    }
                     messages.put(obj)
                 }
             }
-            val userMsg = JSONObject()
-            userMsg.put("role", "user")
-            userMsg.put("content", userMessage)
+            val userMsg = JSONObject().apply {
+                put("role", "user")
+                put("content", userMessage)
+            }
             messages.put(userMsg)
 
-            val body = JSONObject()
-            body.put("model", model)
-            body.put("max_tokens", 1024)
-            body.put("system", systemPrompt)
-            body.put("messages", messages)
+            val body = JSONObject().apply {
+                put("model", model)
+                put("max_tokens", 1024)
+                put("system", systemPrompt)
+                put("messages", messages)
+            }
 
             val request = Request.Builder()
                 .url("https://api.anthropic.com/v1/messages")
