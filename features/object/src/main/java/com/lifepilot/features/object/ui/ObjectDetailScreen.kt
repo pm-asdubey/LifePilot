@@ -244,6 +244,7 @@ fun ObjectDetailScreen(
                 )
                 ObjectDetailTab.TASKS -> TasksTab(
                     tasks = uiState.tasks,
+                    onCompleteTask = { taskId -> viewModel.completeTask(taskId) },
                 )
                 ObjectDetailTab.RELATIONSHIPS -> RelationshipsTab(
                     relationships = uiState.relationships,
@@ -426,6 +427,7 @@ private fun TimelineTab(
 @Composable
 private fun TasksTab(
     tasks: List<com.lifepilot.domain.model.Task>,
+    onCompleteTask: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (tasks.isEmpty()) {
@@ -441,45 +443,22 @@ private fun TasksTab(
             contentPadding = PaddingValues(Spacing.md),
         ) {
             items(tasks, key = { it.taskId }) { task ->
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = Spacing.xs),
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(Spacing.md),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = task.title,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                            if (task.dueDate != null) {
-                                Text(
-                                    text = "Due: ${task.dueDate.format(java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy"))}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                        val priorityColor = when (task.priority.name) {
-                            "HIGH" -> MaterialTheme.colorScheme.error
-                            "MEDIUM" -> MaterialTheme.colorScheme.tertiary
-                            else -> MaterialTheme.colorScheme.onSurfaceVariant
-                        }
-                        StatusChip(
-                            label = task.priority.name,
-                            color = priorityColor,
-                        )
-                    }
+                val isCompleted = task.status.name == "COMPLETED"
+                val priorityColor = when (task.priority.name) {
+                    "HIGH", "URGENT" -> MaterialTheme.colorScheme.error
+                    "MEDIUM" -> MaterialTheme.colorScheme.tertiary
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
                 }
+                com.lifepilot.designsystem.components.TaskCard(
+                    title = task.title,
+                    dueDateLabel = task.dueDate?.format(java.time.format.DateTimeFormatter.ofPattern("MMM d")),
+                    priorityLabel = task.priority.name,
+                    priorityColor = priorityColor,
+                    isCompleted = isCompleted,
+                    onComplete = { if (!isCompleted) onCompleteTask(task.taskId) },
+                    onClick = {},
+                    modifier = Modifier.padding(vertical = Spacing.xs),
+                )
             }
         }
     }
