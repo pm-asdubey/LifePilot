@@ -40,4 +40,22 @@ interface DocumentDao {
 
     @Query("UPDATE document_versions SET ocr_text = :text WHERE version_id = :versionId")
     suspend fun updateVersionOcrText(versionId: String, text: String)
+
+    @Query("""
+        SELECT d.* FROM documents d
+        INNER JOIN objects o ON d.object_id = o.object_id
+        WHERE o.profile_id = :profileId
+          AND o.deleted = 0
+          AND d.document_type LIKE '%' || :query || '%'
+        UNION
+        SELECT d.* FROM documents d
+        INNER JOIN document_versions dv ON d.document_id = dv.document_id
+        INNER JOIN objects o ON d.object_id = o.object_id
+        WHERE o.profile_id = :profileId
+          AND o.deleted = 0
+          AND dv.original_name LIKE '%' || :query || '%'
+        ORDER BY created_at DESC
+        LIMIT 20
+    """)
+    suspend fun searchDocuments(profileId: String, query: String): List<DocumentEntity>
 }

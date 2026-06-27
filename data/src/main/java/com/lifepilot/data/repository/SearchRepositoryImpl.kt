@@ -1,5 +1,6 @@
 package com.lifepilot.data.repository
 
+import com.lifepilot.data.database.dao.DocumentDao
 import com.lifepilot.data.database.dao.MetadataDao
 import com.lifepilot.data.database.dao.ObjectDao
 import com.lifepilot.domain.model.SearchEntityType
@@ -15,6 +16,7 @@ import javax.inject.Singleton
 class SearchRepositoryImpl @Inject constructor(
     private val objectDao: ObjectDao,
     private val metadataDao: MetadataDao,
+    private val documentDao: DocumentDao,
     private val preferenceManager: PreferenceManager,
 ) : SearchRepository {
 
@@ -59,6 +61,27 @@ class SearchRepositoryImpl @Inject constructor(
                 )
             }
 
+        // Document name/type search — surfaces the parent object
+        val documentMatches = documentDao.searchDocuments(profileId, query)
+        val docObjectIds = documentMatches.map { it.objectId }.toSet()
+        val existingObjectIds2 = (objectResults.map { it.entityId } + additionalObjects.map { it.entityId }).toSet()
+
+        val docObjects = docObjectIds
+            .filter { it !in existingObjectIds2 }
+            .mapNotNull { objectId ->
+                val entity = objectDao.getObjectById(objectId) ?: return@mapNotNull null
+                val matchingDoc = documentMatches.first { it.objectId == objectId }
+                SearchResult(
+                    entityId = entity.objectId,
+                    entityType = SearchEntityType.OBJECT,
+                    title = entity.title,
+                    subtitle = "Document: ${matchingDoc.documentType.replace("_", " ")}",
+                    objectType = entity.objectType,
+                    domain = entity.domain,
+                    relevanceScore = 0.55f,
+                )
+            }
+
         // Boost scores for objects that match both title and metadata
         val boostedObjectResults = objectResults.map { result ->
             if (result.entityId in metadataObjectIds) {
@@ -68,7 +91,7 @@ class SearchRepositoryImpl @Inject constructor(
             }
         }
 
-        return (boostedObjectResults + additionalObjects)
+        return (boostedObjectResults + additionalObjects + docObjects)
             .sortedByDescending { it.relevanceScore }
     }
 
