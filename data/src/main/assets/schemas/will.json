@@ -66,6 +66,11 @@
       { "stateId": "DRAFT", "displayName": "Draft" },
       { "stateId": "SIGNED", "displayName": "Signed" },
       { "stateId": "OUTDATED", "displayName": "Outdated" }
+    ],
+    "transitions": [
+      { "fromState": "DRAFT", "toState": "SIGNED", "trigger": "SIGNED", "label": "Signed" },
+      { "fromState": "SIGNED", "toState": "OUTDATED", "trigger": "REVIEW_OVERDUE", "label": "Outdated" },
+      { "fromState": "OUTDATED", "toState": "SIGNED", "trigger": "UPDATED", "label": "Updated & Signed" }
     ]
   },
   "aiConfig": {
