@@ -126,7 +126,7 @@ fun TimelineScreen(
                 val displayEntries = uiState.filteredEntries.ifEmpty { uiState.entries }
 
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(
                         horizontal = Spacing.sm,
                         vertical = Spacing.md,
