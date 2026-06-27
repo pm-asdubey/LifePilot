@@ -144,6 +144,28 @@ class ExtractMetadataUseCaseTest {
     }
 
     @Test
+    fun `handles AI response with numeric values`() = runTest {
+        val schemaWithNumber = passportSchema.copy(
+            fields = passportSchema.fields + MetadataFieldDefinition(
+                fieldId = "page_count",
+                displayName = "Page Count",
+                fieldType = "NUMBER",
+                aiExtractable = true,
+            )
+        )
+        coEvery { schemaEngine.getSchema("passport") } returns schemaWithNumber
+        coEvery { aiProvider.complete(any(), any(), any()) } returns AiCompletionResult.Success(
+            content = """{"passport_number": "GH445566", "page_count": 32}""",
+        )
+
+        val result = useCase("passport", "OCR text")
+
+        assertTrue(result.isSuccess)
+        val pageCount = result.getOrThrow().fields.find { it.fieldId == "page_count" }
+        assertEquals("32", pageCount?.suggestedValue)
+    }
+
+    @Test
     fun `skips fields with aiExtractable=false`() = runTest {
         val schemaWithNonExtractable = passportSchema.copy(
             fields = passportSchema.fields + MetadataFieldDefinition(
