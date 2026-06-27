@@ -39,6 +39,8 @@ class AiChatViewModel @Inject constructor(
     private val _state = MutableStateFlow(AiChatState())
     val state: StateFlow<AiChatState> = _state.asStateFlow()
 
+    private var cachedSystemPrompt: String? = null
+
     fun onInputChange(text: String) {
         _state.update { it.copy(inputText = text) }
     }
@@ -64,7 +66,7 @@ class AiChatViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                val systemPrompt = buildSystemPrompt()
+                val systemPrompt = cachedSystemPrompt ?: buildSystemPrompt().also { cachedSystemPrompt = it }
                 val history = _state.value.messages
                     .dropLast(1)
                     .map { msg ->
@@ -180,6 +182,7 @@ class AiChatViewModel @Inject constructor(
     }
 
     fun clearMessages() {
+        cachedSystemPrompt = null
         _state.update { it.copy(messages = emptyList()) }
     }
 }
