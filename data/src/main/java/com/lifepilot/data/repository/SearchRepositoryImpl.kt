@@ -45,42 +45,42 @@ class SearchRepositoryImpl @Inject constructor(
         val existingObjectIds = objectResults.map { it.entityId }.toSet()
 
         // Load objects that matched via metadata but not already in object results
-        val additionalObjects = metadataObjectIds
-            .filter { it !in existingObjectIds }
-            .mapNotNull { objectId ->
-                val entity = objectDao.getObjectById(objectId) ?: return@mapNotNull null
-                val matchingField = metadataMatches.first { it.objectId == objectId }
-                SearchResult(
-                    entityId = entity.objectId,
-                    entityType = SearchEntityType.OBJECT,
-                    title = entity.title,
-                    subtitle = "Matched: ${matchingField.fieldId.replace("_", " ")} = ${matchingField.value}",
-                    objectType = entity.objectType,
-                    domain = entity.domain,
-                    relevanceScore = 0.6f,
-                )
-            }
+        val metadataOnlyIds = (metadataObjectIds - existingObjectIds).toList()
+        val metadataOnlyEntities = objectDao.getObjectsByIds(metadataOnlyIds).associateBy { it.objectId }
+        val additionalObjects = metadataOnlyIds.mapNotNull { objectId ->
+            val entity = metadataOnlyEntities[objectId] ?: return@mapNotNull null
+            val matchingField = metadataMatches.first { it.objectId == objectId }
+            SearchResult(
+                entityId = entity.objectId,
+                entityType = SearchEntityType.OBJECT,
+                title = entity.title,
+                subtitle = "Matched: ${matchingField.fieldId.replace("_", " ")} = ${matchingField.value}",
+                objectType = entity.objectType,
+                domain = entity.domain,
+                relevanceScore = 0.6f,
+            )
+        }
 
         // Document name/type search — surfaces the parent object
         val documentMatches = documentDao.searchDocuments(profileId, query)
         val docObjectIds = documentMatches.map { it.objectId }.toSet()
         val existingObjectIds2 = (objectResults.map { it.entityId } + additionalObjects.map { it.entityId }).toSet()
 
-        val docObjects = docObjectIds
-            .filter { it !in existingObjectIds2 }
-            .mapNotNull { objectId ->
-                val entity = objectDao.getObjectById(objectId) ?: return@mapNotNull null
-                val matchingDoc = documentMatches.first { it.objectId == objectId }
-                SearchResult(
-                    entityId = entity.objectId,
-                    entityType = SearchEntityType.OBJECT,
-                    title = entity.title,
-                    subtitle = "Document: ${matchingDoc.documentType.replace("_", " ")}",
-                    objectType = entity.objectType,
-                    domain = entity.domain,
-                    relevanceScore = 0.55f,
-                )
-            }
+        val docOnlyIds = (docObjectIds - existingObjectIds2).toList()
+        val docEntities = objectDao.getObjectsByIds(docOnlyIds).associateBy { it.objectId }
+        val docObjects = docOnlyIds.mapNotNull { objectId ->
+            val entity = docEntities[objectId] ?: return@mapNotNull null
+            val matchingDoc = documentMatches.first { it.objectId == objectId }
+            SearchResult(
+                entityId = entity.objectId,
+                entityType = SearchEntityType.OBJECT,
+                title = entity.title,
+                subtitle = "Document: ${matchingDoc.documentType.replace("_", " ")}",
+                objectType = entity.objectType,
+                domain = entity.domain,
+                relevanceScore = 0.55f,
+            )
+        }
 
         // Boost scores for objects that match both title and metadata
         val boostedObjectResults = objectResults.map { result ->

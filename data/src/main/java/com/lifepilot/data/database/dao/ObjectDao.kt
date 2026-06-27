@@ -63,6 +63,9 @@ interface ObjectDao {
         LIMIT 50
     """)
     suspend fun searchObjects(profileId: String, query: String): List<ObjectEntity>
+
+    @Query("SELECT * FROM objects WHERE object_id IN (:objectIds) AND deleted = 0")
+    suspend fun getObjectsByIds(objectIds: List<String>): List<ObjectEntity>
 }
 
 data class DomainCount(
