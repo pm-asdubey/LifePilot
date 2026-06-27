@@ -16,7 +16,7 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = 1
-        versionName = "0.1.0"
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "com.lifepilot.app.HiltTestRunner"
 
@@ -38,6 +38,18 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // Signing: configure via local.properties or environment variables.
+            // Required keys: KEYSTORE_PATH, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD
+            // Do NOT commit keystore or credentials to the repository.
+            val keystorePath = project.findProperty("KEYSTORE_PATH") as String?
+            if (keystorePath != null) {
+                signingConfig = signingConfigs.create("release").apply {
+                    storeFile = file(keystorePath)
+                    storePassword = project.findProperty("KEYSTORE_PASSWORD") as String?
+                    keyAlias = project.findProperty("KEY_ALIAS") as String?
+                    keyPassword = project.findProperty("KEY_PASSWORD") as String?
+                }
+            }
         }
     }
 

@@ -4,6 +4,21 @@ All notable changes to LifePilot are documented here.
 
 ---
 
+## [1.0.0-rc1] — Release Candidate
+
+### Release Prep
+- versionName updated to `1.0.0`, versionCode = 1
+- Removed unused permissions: `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_DATA_SYNC`, `READ_MEDIA_VIDEO`
+- Fixed `android:autoVerify` on custom URI scheme deep link (autoVerify is invalid for non-http schemes)
+- Wired Notifications bell on HomeScreen to navigate to Timeline (was dead `onClick = {}`)
+- Removed empty stubs `indexObject` / `removeFromIndex` from `SearchRepository` interface and implementation
+- Removed `compose.compiler` plugin from `:data` module (data has no Compose code)
+- Removed dead version catalog entries: moshi, moshi-codegen, retrofit, accompanist, pdfRenderer, detekt, ktlint
+- Added signing configuration (reads from `local.properties` — never committed)
+- Created `RELEASE_CHECKLIST.md` with complete pre-release verification requirements
+- Created `ARCHITECTURE.md` documenting module structure, engines, data flow, and design decisions
+- Created `data/schemas/` directory for Room schema export
+
 ## [Unreleased] — 0.11.0-alpha
 
 ### Added

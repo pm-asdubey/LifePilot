@@ -93,7 +93,7 @@ fun HomeScreen(
                             }
                         }
                     ) {
-                        IconButton(onClick = { }) {
+                        IconButton(onClick = onNavigateToTimeline) {
                             Icon(
                                 imageVector = Icons.Outlined.Notifications,
                                 contentDescription = "Notifications ($attentionCount)",

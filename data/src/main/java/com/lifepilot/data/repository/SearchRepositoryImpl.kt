@@ -124,7 +124,5 @@ class SearchRepositoryImpl @Inject constructor(
         recentSearchesFlow.value = recentSearchesMap.toMap()
     }
 
-    override suspend fun indexObject(objectId: String) {}
 
-    override suspend fun removeFromIndex(objectId: String) {}
 }
