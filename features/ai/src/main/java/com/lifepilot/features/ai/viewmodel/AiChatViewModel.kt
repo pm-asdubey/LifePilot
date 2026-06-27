@@ -133,6 +133,12 @@ class AiChatViewModel @Inject constructor(
                 ?: emptyList()
         } ?: emptyList()
 
+        val upcomingReminders = runCatching {
+            reminderRepository.observeUpcomingReminders(
+                java.time.Instant.now().plus(30, java.time.temporal.ChronoUnit.DAYS)
+            ).catch { }.firstOrNull() ?: emptyList()
+        }.getOrElse { emptyList() }
+
         return buildString {
             appendLine("You are the LifePilot AI assistant. You help users manage their administrative life.")
             appendLine("You have access to the user's structured life data below. Answer questions based ONLY on this data.")
@@ -164,6 +170,11 @@ class AiChatViewModel @Inject constructor(
             pendingTasks.take(10).forEach { task ->
                 val due = task.dueDate?.toString() ?: "no due date"
                 appendLine("  - ${task.title} [priority=${task.priority}, due=$due]")
+            }
+            appendLine()
+            appendLine("Upcoming reminders (next 30 days, ${upcomingReminders.size}):")
+            upcomingReminders.take(10).forEach { reminder ->
+                appendLine("  - ${reminder.title} [due=${reminder.triggerDate}, priority=${reminder.priority}]")
             }
         }
     }

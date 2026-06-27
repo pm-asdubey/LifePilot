@@ -1,11 +1,9 @@
 package com.lifepilot.domain.usecase
 
 import com.lifepilot.domain.ai.AiCompletionResult
-import com.lifepilot.domain.ai.AiMessage
-import com.lifepilot.domain.ai.AiMessageRole
 import com.lifepilot.domain.ai.AiProvider
 import com.lifepilot.domain.engine.SchemaEngine
-import com.lifepilot.domain.model.schema.MetadataFieldType
+import com.lifepilot.domain.model.MetadataFieldType
 import javax.inject.Inject
 
 data class ExtractedField(
@@ -32,20 +30,21 @@ class ExtractMetadataUseCase @Inject constructor(
         val schema = schemaEngine.getSchema(objectType)
             ?: error("Unknown object type: $objectType")
 
+        val extractableTypes = setOf(
+            MetadataFieldType.TEXT.name,
+            MetadataFieldType.DATE.name,
+            MetadataFieldType.NUMBER.name,
+            MetadataFieldType.ENUM.name,
+        )
         val extractableFields = schema.fields.filter { field ->
-            field.type in listOf(
-                MetadataFieldType.TEXT,
-                MetadataFieldType.DATE,
-                MetadataFieldType.NUMBER,
-                MetadataFieldType.ENUM,
-            )
+            field.fieldType.uppercase() in extractableTypes && field.aiExtractable
         }
 
         val fieldDescriptions = extractableFields.joinToString("\n") { field ->
             val enumHint = if (field.enumValues.isNotEmpty()) {
                 " (one of: ${field.enumValues.joinToString(", ")})"
             } else ""
-            "- ${field.fieldId}: ${field.label}${enumHint}"
+            "- ${field.fieldId}: ${field.displayName.ifBlank { field.fieldId }}${enumHint}"
         }
 
         val systemPrompt = """
@@ -78,7 +77,7 @@ class ExtractMetadataUseCase @Inject constructor(
                     val value = extracted[field.fieldId] ?: return@mapNotNull null
                     ExtractedField(
                         fieldId = field.fieldId,
-                        label = field.label,
+                        label = field.displayName.ifBlank { field.fieldId },
                         suggestedValue = value,
                         confidence = 0.85f,
                     )
