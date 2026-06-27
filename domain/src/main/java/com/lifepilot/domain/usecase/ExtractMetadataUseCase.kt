@@ -4,6 +4,9 @@ import com.lifepilot.domain.ai.AiCompletionResult
 import com.lifepilot.domain.ai.AiProvider
 import com.lifepilot.domain.engine.SchemaEngine
 import com.lifepilot.domain.model.MetadataFieldType
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import javax.inject.Inject
 
 data class ExtractedField(
@@ -93,21 +96,30 @@ class ExtractMetadataUseCase @Inject constructor(
         }
     }
 
+    private val lenientJson = Json { ignoreUnknownKeys = true; isLenient = true }
+
     private fun parseJsonFields(json: String): Map<String, String> {
+        val cleaned = json.trim()
+            .removePrefix("```json").removePrefix("```")
+            .removeSuffix("```").trim()
         return try {
-            val cleaned = json.trim().removePrefix("```json").removeSuffix("```").trim()
-            val result = mutableMapOf<String, String>()
-            val regex = """"([^"]+)"\s*:\s*"([^"]*)"|\s*"([^"]+)"\s*:\s*(\d+(?:\.\d+)?)""".toRegex()
-            for (match in regex.findAll(cleaned)) {
-                val key = match.groupValues[1].ifEmpty { match.groupValues[3] }
-                val value = match.groupValues[2].ifEmpty { match.groupValues[4] }
-                if (key.isNotEmpty() && value.isNotEmpty()) {
-                    result[key] = value
-                }
-            }
-            result
-        } catch (e: Exception) {
-            emptyMap()
+            lenientJson.parseToJsonElement(cleaned).jsonObject
+                .mapValues { (_, v) -> runCatching { v.jsonPrimitive.content }.getOrElse { v.toString().trim('"') } }
+        } catch (_: Exception) {
+            parseJsonFieldsFallback(cleaned)
         }
+    }
+
+    private fun parseJsonFieldsFallback(cleaned: String): Map<String, String> {
+        val result = mutableMapOf<String, String>()
+        val regex = """"([^"]+)"\s*:\s*"([^"]*)"|\s*"([^"]+)"\s*:\s*(\d+(?:\.\d+)?)""".toRegex()
+        for (match in regex.findAll(cleaned)) {
+            val key = match.groupValues[1].ifEmpty { match.groupValues[3] }
+            val value = match.groupValues[2].ifEmpty { match.groupValues[4] }
+            if (key.isNotEmpty() && value.isNotEmpty()) {
+                result[key] = value
+            }
+        }
+        return result
     }
 }
