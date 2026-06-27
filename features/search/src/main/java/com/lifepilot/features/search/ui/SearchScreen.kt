@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.lifepilot.designsystem.components.EmptyState
 import com.lifepilot.designsystem.components.SectionHeader
+import com.lifepilot.designsystem.icon.domainIcon
 import com.lifepilot.designsystem.theme.Spacing
 import com.lifepilot.domain.model.SearchEntityType
 import com.lifepilot.features.search.viewmodel.SearchViewModel
@@ -146,6 +147,7 @@ fun SearchScreen(
                                 .clickable {
                                     if (result.entityType == SearchEntityType.OBJECT) {
                                         onNavigateToObject(result.entityId)
+                                        viewModel.onSearch(uiState.query)
                                     }
                                 }
                                 .padding(
@@ -154,6 +156,15 @@ fun SearchScreen(
                                 ),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
+                            if (result.domain != null) {
+                                Icon(
+                                    imageVector = domainIcon(result.domain),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                                    modifier = Modifier.size(20.dp),
+                                )
+                                Spacer(modifier = Modifier.width(Spacing.sm))
+                            }
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = result.title,
