@@ -61,4 +61,6 @@ dependencies {
     testImplementation(libs.bundles.testing.unit)
     testImplementation(libs.room.testing)
     androidTestImplementation(libs.bundles.testing.android)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(libs.room.testing)
 }

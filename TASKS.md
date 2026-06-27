@@ -263,7 +263,7 @@ Last updated: 2026-06-27 (animated transitions ✅, pull-to-refresh ✅, swipe-t
 
 ---
 
-# Milestone 12 — Polish (In Progress)
+# Milestone 12 — Polish ✅
 
 * [x] Accessibility semantics on shared components
 * [x] Domain icons in search results
@@ -298,8 +298,9 @@ Last updated: 2026-06-27 (animated transitions ✅, pull-to-refresh ✅, swipe-t
 * [x] ImportDataUseCaseTest
 * [x] UploadDocumentUseCaseTest
 
-## Integration Tests (Not Started)
-* [ ] Database integration tests (instrumented)
+## Integration Tests (In Progress)
+* [x] ObjectDao instrumented tests (8 test cases)
+* [x] TaskDao instrumented tests (6 test cases)
 * [ ] PreferenceManager integration tests
 * [ ] EncryptedKeyStorage integration tests
 * [ ] FileStorageManager integration tests
