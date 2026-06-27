@@ -25,7 +25,7 @@ Every release should strengthen one or more of these pillars:
 
 # Version 1.0 — Foundation
 
-**Status: Alpha — Implementation ~90% complete**
+**Status: Alpha — Implementation ~97% complete**
 
 ## Goal
 
@@ -70,10 +70,12 @@ Build a stable offline-first platform capable of managing a person's administrat
 
 ### Remaining for 1.0 GA
 
-* PDF document rendering
-* Animated screen transitions
-* Pull-to-refresh on list screens
-* Play Store listing assets
+* ✅ PDF document rendering (Android PdfRenderer)
+* ✅ Animated screen transitions (slide+fade)
+* ✅ Pull-to-refresh on list screens
+* ✅ Multi-select bulk operations (archive/delete)
+* ✅ Haptic feedback on key actions
+* ⬜ Play Store listing assets
 
 ---
 
