@@ -38,6 +38,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -59,6 +61,12 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+
+    val importFileLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let { viewModel.importData(it) }
+    }
 
     if (uiState.showCreateProfile) {
         AlertDialog(
@@ -428,6 +436,74 @@ fun SettingsScreen(
                             enabled = !uiState.isExporting && uiState.activeProfile != null,
                         ) {
                             Text("Export")
+                        }
+                    }
+                }
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(Spacing.md))
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    ),
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = Spacing.md),
+                ) {
+                    Column(modifier = Modifier.padding(Spacing.md)) {
+                        Row(
+                            verticalAlignment = Alignment.Top,
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.ChevronRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp),
+                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Import Data",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
+                                Text(
+                                    text = "Restore objects and metadata from a LifePilot export file",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                        if (uiState.isImporting) {
+                            Spacer(modifier = Modifier.height(Spacing.sm))
+                            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                        }
+                        if (uiState.importResult != null) {
+                            val result = uiState.importResult!!
+                            Spacer(modifier = Modifier.height(Spacing.sm))
+                            Text(
+                                text = "Import complete: ${result.objectsImported} objects, ${result.metadataEntriesImported} fields" +
+                                    if (result.objectsSkipped > 0) ", ${result.objectsSkipped} skipped" else "",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                        if (uiState.importError != null) {
+                            Spacer(modifier = Modifier.height(Spacing.sm))
+                            Text(
+                                text = "Import failed: ${uiState.importError}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(Spacing.sm))
+                        TextButton(
+                            onClick = { importFileLauncher.launch("application/json") },
+                            enabled = !uiState.isImporting && uiState.activeProfile != null,
+                        ) {
+                            Text("Choose Import File")
                         }
                     }
                 }

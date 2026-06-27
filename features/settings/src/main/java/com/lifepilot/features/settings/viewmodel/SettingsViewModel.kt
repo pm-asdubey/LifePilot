@@ -10,6 +10,8 @@ import com.lifepilot.domain.model.Profile
 import com.lifepilot.domain.repository.ProfileRepository
 import com.lifepilot.domain.usecase.ExportBundle
 import com.lifepilot.domain.usecase.ExportDataUseCase
+import com.lifepilot.domain.usecase.ImportDataUseCase
+import com.lifepilot.domain.usecase.ImportResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,6 +42,9 @@ data class SettingsUiState(
     val exportResult: ExportBundle? = null,
     val exportShareUri: Uri? = null,
     val exportError: String? = null,
+    val isImporting: Boolean = false,
+    val importResult: ImportResult? = null,
+    val importError: String? = null,
     val biometricLockEnabled: Boolean = false,
     val profileToEdit: Profile? = null,
     val editProfileName: String = "",
@@ -52,6 +57,7 @@ class SettingsViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
     private val preferenceManager: PreferenceManager,
     private val exportDataUseCase: ExportDataUseCase,
+    private val importDataUseCase: ImportDataUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -250,5 +256,29 @@ class SettingsViewModel @Inject constructor(
 
     fun clearExportResult() {
         _uiState.update { it.copy(exportResult = null, exportError = null, exportShareUri = null) }
+    }
+
+    fun importData(uri: Uri) {
+        val profileId = _uiState.value.activeProfile?.profileId ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isImporting = true, importError = null, importResult = null) }
+            runCatching {
+                val content = context.contentResolver.openInputStream(uri)?.bufferedReader()?.readText()
+                    ?: error("Could not read import file")
+                importDataUseCase(content, profileId)
+            }
+                .mapCatching { it.getOrThrow() }
+                .onSuccess { result ->
+                    _uiState.update { it.copy(isImporting = false, importResult = result) }
+                }
+                .onFailure { e ->
+                    Timber.e(e, "Import failed")
+                    _uiState.update { it.copy(isImporting = false, importError = e.message) }
+                }
+        }
+    }
+
+    fun clearImportResult() {
+        _uiState.update { it.copy(importResult = null, importError = null) }
     }
 }
