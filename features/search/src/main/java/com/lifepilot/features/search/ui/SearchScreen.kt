@@ -98,7 +98,10 @@ fun SearchScreen(
                         title = "RECENT SEARCHES",
                         modifier = Modifier.padding(top = Spacing.md),
                     )
-                    LazyColumn(contentPadding = PaddingValues(top = Spacing.sm)) {
+                    LazyColumn(
+                        contentPadding = PaddingValues(top = Spacing.sm),
+                        modifier = Modifier.weight(1f),
+                    ) {
                         items(uiState.recentSearches) { query ->
                             Row(
                                 modifier = Modifier
@@ -139,7 +142,10 @@ fun SearchScreen(
                     description = "No matches found for \"${uiState.query}\".",
                 )
             } else {
-                LazyColumn(contentPadding = PaddingValues(top = Spacing.sm)) {
+                LazyColumn(
+                    contentPadding = PaddingValues(top = Spacing.sm),
+                    modifier = Modifier.weight(1f),
+                ) {
                     items(uiState.results, key = { it.entityId }) { result ->
                         Row(
                             modifier = Modifier

@@ -280,6 +280,7 @@ fun LibraryScreen(
                             vertical = Spacing.sm,
                         ),
                         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+                        modifier = Modifier.weight(1f),
                     ) {
                         items(uiState.objects, key = { it.objectId }) { obj ->
                             val statusColor = when (obj.status) {
