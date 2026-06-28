@@ -1,6 +1,7 @@
 package com.lifepilot.features.library.ui
 
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Archive
@@ -284,6 +286,17 @@ fun LibraryScreen(
                         modifier = Modifier.weight(1f),
                     )
                 } else {
+                    // Group by domain when no domain filter is active (Object Tree view)
+                    val selectedDomainFilter = uiState.selectedDomain
+                    val domainGroups: List<Pair<String, List<com.lifepilot.domain.model.LifeObject>>> =
+                        if (selectedDomainFilter == null) {
+                            uiState.objects.groupBy { it.domain }.entries
+                                .sortedBy { it.key }
+                                .map { it.key to it.value }
+                        } else {
+                            listOf(selectedDomainFilter to uiState.objects)
+                        }
+
                     LazyColumn(
                         contentPadding = PaddingValues(
                             horizontal = Spacing.md,
@@ -292,44 +305,79 @@ fun LibraryScreen(
                         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                         modifier = Modifier.weight(1f),
                     ) {
-                        items(uiState.objects, key = { it.objectId }) { obj ->
-                            val statusColor = when (obj.status) {
-                                ObjectStatus.ACTIVE -> StatusActive
-                                ObjectStatus.RENEWAL_DUE -> StatusRenewalDue
-                                ObjectStatus.EXPIRED -> StatusExpired
-                                ObjectStatus.ARCHIVED -> StatusArchived
-                                ObjectStatus.DRAFT -> MaterialTheme.colorScheme.onSurfaceVariant
-                            }
-                            val statusLabel = when (obj.status) {
-                                ObjectStatus.ACTIVE -> "Active"
-                                ObjectStatus.RENEWAL_DUE -> "Renewal due"
-                                ObjectStatus.EXPIRED -> "Expired"
-                                ObjectStatus.ARCHIVED -> "Archived"
-                                ObjectStatus.DRAFT -> "Draft"
-                            }
-                            val isSelected = obj.objectId in uiState.selectedObjectIds
-                            ObjectCard(
-                                title = obj.title,
-                                subtitle = obj.description,
-                                objectType = obj.objectType,
-                                domain = obj.domain,
-                                statusLabel = statusLabel,
-                                statusColor = statusColor,
-                                icon = domainIcon(obj.domain),
-                                isSelected = isSelected,
-                                onClick = {
-                                    if (uiState.isSelecting) {
-                                        viewModel.toggleObjectSelection(obj.objectId)
-                                    } else {
-                                        onNavigateToObject(obj.objectId)
+                        domainGroups.forEach { (domain, objects) ->
+                            if (selectedDomainFilter == null) {
+                                stickyHeader(key = "header_$domain") {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = androidx.compose.ui.Modifier
+                                            .fillMaxWidth()
+                                            .background(MaterialTheme.colorScheme.background)
+                                            .padding(
+                                                top = Spacing.sm,
+                                                bottom = Spacing.xs,
+                                            ),
+                                    ) {
+                                        Icon(
+                                            imageVector = domainIcon(domain),
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                                            modifier = androidx.compose.ui.Modifier.size(16.dp),
+                                        )
+                                        Spacer(modifier = androidx.compose.ui.Modifier.width(Spacing.xs))
+                                        Text(
+                                            text = domain,
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                        Spacer(modifier = androidx.compose.ui.Modifier.width(Spacing.xs))
+                                        Text(
+                                            text = "${objects.size}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                        )
                                     }
-                                },
-                                onLongClick = {
-                                    if (!uiState.isSelecting) {
-                                        viewModel.enterSelectionMode(obj.objectId)
-                                    }
-                                },
-                            )
+                                }
+                            }
+                            items(objects, key = { it.objectId }) { obj ->
+                                val statusColor = when (obj.status) {
+                                    ObjectStatus.ACTIVE -> StatusActive
+                                    ObjectStatus.RENEWAL_DUE -> StatusRenewalDue
+                                    ObjectStatus.EXPIRED -> StatusExpired
+                                    ObjectStatus.ARCHIVED -> StatusArchived
+                                    ObjectStatus.DRAFT -> MaterialTheme.colorScheme.onSurfaceVariant
+                                }
+                                val statusLabel = when (obj.status) {
+                                    ObjectStatus.ACTIVE -> "Active"
+                                    ObjectStatus.RENEWAL_DUE -> "Renewal due"
+                                    ObjectStatus.EXPIRED -> "Expired"
+                                    ObjectStatus.ARCHIVED -> "Archived"
+                                    ObjectStatus.DRAFT -> "Draft"
+                                }
+                                val isSelected = obj.objectId in uiState.selectedObjectIds
+                                ObjectCard(
+                                    title = obj.title,
+                                    subtitle = obj.description,
+                                    objectType = obj.objectType,
+                                    domain = obj.domain,
+                                    statusLabel = statusLabel,
+                                    statusColor = statusColor,
+                                    icon = domainIcon(obj.domain),
+                                    isSelected = isSelected,
+                                    onClick = {
+                                        if (uiState.isSelecting) {
+                                            viewModel.toggleObjectSelection(obj.objectId)
+                                        } else {
+                                            onNavigateToObject(obj.objectId)
+                                        }
+                                    },
+                                    onLongClick = {
+                                        if (!uiState.isSelecting) {
+                                            viewModel.enterSelectionMode(obj.objectId)
+                                        }
+                                    },
+                                )
+                            }
                         }
                     }
                 }
