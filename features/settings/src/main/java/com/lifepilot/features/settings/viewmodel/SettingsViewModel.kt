@@ -7,7 +7,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lifepilot.data.repository.PreferenceManager
 import com.lifepilot.domain.model.Profile
+import com.lifepilot.domain.model.UpdateStatus
 import com.lifepilot.domain.repository.ProfileRepository
+import com.lifepilot.domain.repository.UpdateRepository
 import com.lifepilot.domain.usecase.ExportBundle
 import com.lifepilot.domain.usecase.ExportDataUseCase
 import com.lifepilot.domain.usecase.ImportDataUseCase
@@ -49,6 +51,8 @@ data class SettingsUiState(
     val profileToEdit: Profile? = null,
     val editProfileName: String = "",
     val profileToDelete: Profile? = null,
+    val updateStatus: UpdateStatus = UpdateStatus.Unknown,
+    val isCheckingUpdate: Boolean = false,
 )
 
 @HiltViewModel
@@ -58,6 +62,7 @@ class SettingsViewModel @Inject constructor(
     private val preferenceManager: PreferenceManager,
     private val exportDataUseCase: ExportDataUseCase,
     private val importDataUseCase: ImportDataUseCase,
+    private val updateRepository: UpdateRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -99,6 +104,24 @@ class SettingsViewModel @Inject constructor(
                 .collect { enabled ->
                     _uiState.update { it.copy(biometricLockEnabled = enabled) }
                 }
+        }
+
+        viewModelScope.launch {
+            updateRepository.observeUpdateStatus()
+                .catch { e -> Timber.w(e, "Error observing update status") }
+                .collect { status ->
+                    _uiState.update { it.copy(updateStatus = status) }
+                }
+        }
+    }
+
+    fun checkForUpdate() {
+        if (_uiState.value.isCheckingUpdate) return
+        _uiState.update { it.copy(isCheckingUpdate = true) }
+        viewModelScope.launch {
+            runCatching { updateRepository.checkForUpdate() }
+                .onFailure { Timber.w(it, "Manual update check failed") }
+            _uiState.update { it.copy(isCheckingUpdate = false) }
         }
     }
 

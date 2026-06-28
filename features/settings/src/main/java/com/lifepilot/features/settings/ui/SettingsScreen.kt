@@ -40,8 +40,13 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import android.content.Intent
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -53,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.lifepilot.designsystem.components.SectionHeader
 import com.lifepilot.designsystem.theme.Spacing
+import com.lifepilot.domain.model.UpdateStatus
 import com.lifepilot.features.settings.viewmodel.SettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -560,7 +566,117 @@ fun SettingsScreen(
                 }
             }
 
+            item {
+                Spacer(modifier = Modifier.height(Spacing.lg))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(Spacing.md))
+                SectionHeader(title = "APP UPDATE")
+                Spacer(modifier = Modifier.height(Spacing.sm))
+            }
+
+            item {
+                UpdateSection(
+                    status = uiState.updateStatus,
+                    isChecking = uiState.isCheckingUpdate,
+                    onCheckNow = viewModel::checkForUpdate,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = Spacing.md),
+                )
+            }
+
             item { Spacer(modifier = Modifier.height(Spacing.xxl)) }
+        }
+    }
+}
+
+@Composable
+private fun UpdateSection(
+    status: UpdateStatus,
+    isChecking: Boolean,
+    onCheckNow: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
+        shape = MaterialTheme.shapes.medium,
+        modifier = modifier,
+    ) {
+        Column(modifier = Modifier.padding(Spacing.md)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Download,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp),
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Software update",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    val subtitle = when (status) {
+                        is UpdateStatus.Unknown -> "Tap to check for updates"
+                        is UpdateStatus.Checking -> "Checking…"
+                        is UpdateStatus.UpToDate -> "You are on the latest version"
+                        is UpdateStatus.UpdateAvailable -> "Version ${status.info.latestVersion} is available"
+                        is UpdateStatus.UnableToCheck -> "Could not check — try again later"
+                    }
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (status is UpdateStatus.UpdateAvailable)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                if (isChecking) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                }
+            }
+
+            if (status is UpdateStatus.UpdateAvailable) {
+                Spacer(modifier = Modifier.height(Spacing.xs))
+                Text(
+                    text = "Released ${status.info.publishedAt.take(10)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (status.info.releaseNotes.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(Spacing.xs))
+                    Text(
+                        text = status.info.releaseNotes.lines().take(3).joinToString("\n"),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Spacer(modifier = Modifier.height(Spacing.sm))
+                FilledTonalButton(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(status.info.releaseUrl))
+                        context.startActivity(intent)
+                    },
+                ) {
+                    Text("Download Update")
+                }
+            } else {
+                Spacer(modifier = Modifier.height(Spacing.sm))
+                TextButton(
+                    onClick = onCheckNow,
+                    enabled = !isChecking,
+                ) {
+                    Text("Check now")
+                }
+            }
         }
     }
 }

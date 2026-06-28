@@ -24,4 +24,6 @@ local.properties
 *.iml
 # Gradle wrapper jar (should be committed but not the jar itself)
 !gradle/wrapper/gradle-wrapper.jar
-.github/workflows/
+# Keystores — never commit signing credentials
+*.jks
+*.keystore

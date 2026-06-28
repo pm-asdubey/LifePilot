@@ -40,6 +40,8 @@ import com.lifepilot.domain.repository.ReminderRepository
 import com.lifepilot.domain.repository.SearchRepository
 import com.lifepilot.domain.repository.TaskRepository
 import com.lifepilot.domain.repository.TimelineRepository
+import com.lifepilot.domain.repository.UpdateRepository
+import com.lifepilot.data.repository.UpdateRepositoryImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -129,4 +131,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindPromptBuilder(impl: PromptBuilderImpl): PromptBuilder
+
+    @Binds
+    @Singleton
+    abstract fun bindUpdateRepository(impl: UpdateRepositoryImpl): UpdateRepository
 }

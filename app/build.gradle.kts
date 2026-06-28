@@ -7,6 +7,35 @@ plugins {
     alias(libs.plugins.compose.compiler)
 }
 
+// ---------------------------------------------------------------------------
+// Versioning
+// Increment versionCode on every release (monotonically increasing integer).
+// versionName follows semver: MAJOR.MINOR.PATCH
+// GitHub Release tag = "v{versionName}" (e.g. v1.0.0)
+// ---------------------------------------------------------------------------
+val appVersionCode = 1
+val appVersionName = "1.0.0"
+
+// GitHub repository slug for OTA update checking.
+// Override in local.properties: github.repo=yourname/lifepilot
+// CI passes this automatically via -Pgithub.repo=${{ github.repository }}
+val githubRepo = findProperty("github.repo") as String? ?: "CONFIGURE_ME/lifepilot"
+
+// ---------------------------------------------------------------------------
+// Signing (never commit keystore or passwords)
+// Local: set KEYSTORE_PATH, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD
+//        in local.properties (already gitignored) or environment variables.
+// CI:    secrets are decoded by GitHub Actions and passed as env vars.
+// ---------------------------------------------------------------------------
+val keystorePath = System.getenv("KEYSTORE_PATH")
+    ?: findProperty("KEYSTORE_PATH") as String?
+val keystorePassword = System.getenv("KEYSTORE_PASSWORD")
+    ?: findProperty("KEYSTORE_PASSWORD") as String?
+val keyAlias = System.getenv("KEY_ALIAS")
+    ?: findProperty("KEY_ALIAS") as String?
+val keyPassword = System.getenv("KEY_PASSWORD")
+    ?: findProperty("KEY_PASSWORD") as String?
+
 android {
     namespace = "com.lifepilot.app"
     compileSdk = 35
@@ -15,13 +44,26 @@ android {
         applicationId = "com.lifepilot.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         testInstrumentationRunner = "com.lifepilot.app.HiltTestRunner"
 
         vectorDrawables {
             useSupportLibrary = true
+        }
+
+        buildConfigField("String", "GITHUB_REPO", "\"$githubRepo\"")
+    }
+
+    signingConfigs {
+        if (keystorePath != null) {
+            create("release") {
+                storeFile = file(keystorePath)
+                storePassword = keystorePassword
+                this.keyAlias = keyAlias
+                this.keyPassword = keyPassword
+            }
         }
     }
 
@@ -38,18 +80,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // Signing: configure via local.properties or environment variables.
-            // Required keys: KEYSTORE_PATH, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD
-            // Do NOT commit keystore or credentials to the repository.
-            val keystorePath = project.findProperty("KEYSTORE_PATH") as String?
-            if (keystorePath != null) {
-                signingConfig = signingConfigs.create("release").apply {
-                    storeFile = file(keystorePath)
-                    storePassword = project.findProperty("KEYSTORE_PASSWORD") as String?
-                    keyAlias = project.findProperty("KEY_ALIAS") as String?
-                    keyPassword = project.findProperty("KEY_PASSWORD") as String?
-                }
-            }
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 

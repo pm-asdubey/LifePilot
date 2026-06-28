@@ -56,6 +56,10 @@ class WorkManagerScheduler @Inject constructor(
         )
     }
 
+    fun scheduleUpdateCheck() {
+        UpdateCheckWorker.enqueue(context)
+    }
+
     fun cancelAll() {
         workManager.cancelAllWork()
     }
