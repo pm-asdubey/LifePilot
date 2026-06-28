@@ -9,10 +9,13 @@ import com.lifepilot.domain.ai.AiMessage
 import com.lifepilot.domain.ai.AiMessageRole
 import com.lifepilot.domain.engine.AttentionPriority
 import com.lifepilot.domain.engine.LifeStateEngine
+import com.lifepilot.domain.engine.PlanningEngine
+import com.lifepilot.domain.model.AiProposal
 import com.lifepilot.domain.model.MetadataSource
-import com.lifepilot.domain.model.ProposedAction
 import com.lifepilot.domain.model.ProposedField
 import com.lifepilot.domain.model.StoredMessage
+import com.lifepilot.domain.model.TaskPriority
+import com.lifepilot.domain.model.TaskSource
 import com.lifepilot.domain.model.UpdateMode
 import com.lifepilot.domain.repository.ConversationRepository
 import com.lifepilot.domain.repository.GoalRepository
@@ -51,6 +54,7 @@ class HomeViewModel @Inject constructor(
     private val reminderRepository: ReminderRepository,
     private val objectRepository: ObjectRepository,
     private val metadataRepository: MetadataRepository,
+    private val planningEngine: PlanningEngine,
     private val lifeStateEngine: LifeStateEngine,
     private val aiProviderFactory: AiProviderFactory,
     private val preferenceManager: PreferenceManager,
@@ -302,13 +306,34 @@ class HomeViewModel @Inject constructor(
     }
 
     fun approveAction() {
-        val action = _uiState.value.pendingAction ?: return
+        val proposal = _uiState.value.pendingAction ?: return
         _uiState.update { it.copy(pendingAction = null) }
         viewModelScope.launch {
             try {
-                for (field in action.fields) {
+                val confirmText = executeProposal(proposal)
+                val convId = _uiState.value.currentConversationId ?: return@launch
+                val confirmMsg = StoredMessage(
+                    messageId = UUID.randomUUID().toString(),
+                    conversationId = convId,
+                    role = "ASSISTANT",
+                    content = confirmText,
+                    timestamp = Instant.now(),
+                )
+                conversationRepository.saveMessage(confirmMsg)
+                _uiState.update { s -> s.copy(messages = s.messages + confirmMsg) }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to execute AI proposal")
+            }
+        }
+    }
+
+    private suspend fun executeProposal(proposal: AiProposal): String {
+        val profileId = preferenceManager.getActiveProfileId() ?: error("No active profile")
+        return when (proposal) {
+            is AiProposal.MetadataUpdate -> {
+                for (field in proposal.fields) {
                     val existing = if (field.mode == UpdateMode.APPEND) {
-                        metadataRepository.getMetadataByField(action.objectId, field.fieldId)?.value
+                        metadataRepository.getMetadataByField(proposal.objectId, field.fieldId)?.value
                     } else null
                     val finalValue = if (existing != null && field.mode == UpdateMode.APPEND) {
                         "$existing\n${field.value}"
@@ -316,27 +341,42 @@ class HomeViewModel @Inject constructor(
                         field.value
                     }
                     metadataRepository.upsertMetadata(
-                        objectId = action.objectId,
+                        objectId = proposal.objectId,
                         fieldId = field.fieldId,
                         value = finalValue,
                         source = MetadataSource.AI_EXTRACTED,
                         confidence = 0.9f,
                     )
                 }
-                val convId = _uiState.value.currentConversationId ?: return@launch
-                val confirmMsg = StoredMessage(
-                    messageId = UUID.randomUUID().toString(),
-                    conversationId = convId,
-                    role = "ASSISTANT",
-                    content = "Saved to ${action.objectTitle}.",
-                    timestamp = Instant.now(),
-                )
-                conversationRepository.saveMessage(confirmMsg)
-                _uiState.update { s ->
-                    s.copy(messages = s.messages + confirmMsg)
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to apply AI action")
+                "Saved to ${proposal.objectTitle}."
+            }
+            is AiProposal.GoalProposal -> {
+                planningEngine.createGoal(
+                    profileId = profileId,
+                    title = proposal.title,
+                    description = proposal.description,
+                    deadline = proposal.deadline,
+                    linkedObjectId = proposal.linkedObjectId,
+                    suggestedTaskTitles = proposal.suggestedTasks,
+                ).getOrThrow()
+                "Goal \"${proposal.title}\" added to your Planner."
+            }
+            is AiProposal.TaskCreation -> {
+                planningEngine.createTask(
+                    profileId = profileId,
+                    title = proposal.title,
+                    description = proposal.description,
+                    dueDate = proposal.dueDate,
+                    goalId = proposal.goalId,
+                    objectId = proposal.objectId,
+                    source = TaskSource.AI_PROPOSED,
+                    priority = TaskPriority.MEDIUM,
+                ).getOrThrow()
+                "Task \"${proposal.title}\" added to your Planner."
+            }
+            is AiProposal.TaskCompletion -> {
+                planningEngine.completeTask(proposal.taskId).getOrThrow()
+                "Marked \"${proposal.taskTitle}\" as complete."
             }
         }
     }
@@ -431,13 +471,13 @@ class HomeViewModel @Inject constructor(
 
     private data class ParsedResponse(
         val visibleContent: String,
-        val action: ProposedAction?,
+        val action: AiProposal?,
         val question: String?,
     )
 
     private fun parseAiResponse(raw: String): ParsedResponse {
         var content = raw
-        var action: ProposedAction? = null
+        var action: AiProposal? = null
         var question: String? = null
 
         val actionPattern = Regex("""\[LIFEPILOT_ACTION\](.*?)\[/LIFEPILOT_ACTION\]""", RegexOption.DOT_MATCHES_ALL)
@@ -457,7 +497,7 @@ class HomeViewModel @Inject constructor(
         return ParsedResponse(content.trim(), action, question)
     }
 
-    private fun parseAction(json: String): ProposedAction? {
+    private fun parseAction(json: String): AiProposal? {
         return try {
             val obj = JSONObject(json)
             val objectType = obj.optString("objectType", "")
@@ -499,8 +539,8 @@ class HomeViewModel @Inject constructor(
                     )
                 )
             }
-            ProposedAction(
-                id = UUID.randomUUID().toString(),
+            AiProposal.MetadataUpdate(
+                proposalId = UUID.randomUUID().toString(),
                 objectId = resolvedObjectId,
                 objectTitle = resolvedTitle,
                 objectType = objectType,

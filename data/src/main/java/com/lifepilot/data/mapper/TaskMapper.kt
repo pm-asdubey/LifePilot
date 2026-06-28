@@ -11,19 +11,21 @@ import java.time.ZoneId
 
 fun TaskEntity.toDomain(): Task = Task(
     taskId = taskId,
+    goalId = goalId,
     objectId = objectId,
     title = title,
     description = description,
     priority = TaskPriority.valueOf(priority),
     dueDate = dueDate?.let { LocalDate.ofInstant(Instant.ofEpochMilli(it), ZoneId.systemDefault()) },
     status = TaskStatus.valueOf(status),
-    source = TaskSource.valueOf(source),
+    source = runCatching { TaskSource.valueOf(source) }.getOrElse { TaskSource.SYSTEM },
     completedAt = completedAt?.let { Instant.ofEpochMilli(it) },
 )
 
 fun Task.toEntity(profileId: String): TaskEntity = TaskEntity(
     taskId = taskId,
     profileId = profileId,
+    goalId = goalId,
     objectId = objectId,
     title = title,
     description = description,
@@ -32,5 +34,4 @@ fun Task.toEntity(profileId: String): TaskEntity = TaskEntity(
     status = status.name,
     source = source.name,
     completedAt = completedAt?.toEpochMilli(),
-    goalId = null,
 )

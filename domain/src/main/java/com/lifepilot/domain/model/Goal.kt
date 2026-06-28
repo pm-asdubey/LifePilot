@@ -17,4 +17,11 @@ data class Goal(
     val updatedAt: Instant,
 )
 
-enum class GoalStatus { ACTIVE, COMPLETED, DISMISSED }
+enum class GoalStatus {
+    DRAFT,      // Created locally, not yet committed
+    PROPOSED,   // AI suggested, awaiting user approval
+    ACTIVE,     // User committed, in progress
+    COMPLETED,  // All tasks done, goal achieved
+    ARCHIVED,   // Intentionally put aside
+    CANCELLED,  // Abandoned
+}

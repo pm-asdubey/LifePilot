@@ -51,7 +51,7 @@ class GoalRepositoryImpl @Inject constructor(
         title = title,
         description = description,
         deadline = deadline?.let { LocalDate.ofInstant(Instant.ofEpochMilli(it), ZoneId.systemDefault()) },
-        status = GoalStatus.valueOf(status),
+        status = runCatching { GoalStatus.valueOf(status) }.getOrElse { GoalStatus.ACTIVE },
         progress = progress,
         objectId = objectId,
         notes = notes,

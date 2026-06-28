@@ -13,10 +13,12 @@ import com.lifepilot.data.repository.SearchRepositoryImpl
 import com.lifepilot.data.repository.TaskRepositoryImpl
 import com.lifepilot.data.repository.TimelineRepositoryImpl
 import com.lifepilot.data.engine.LifeStateEngineImpl
+import com.lifepilot.data.engine.PlanningEngineImpl
 import com.lifepilot.data.engine.RuleEngineImpl
 import com.lifepilot.data.ocr.MlKitOcrService
 import com.lifepilot.data.schema.SchemaEngineImpl
 import com.lifepilot.domain.engine.LifeStateEngine
+import com.lifepilot.domain.engine.PlanningEngine
 import com.lifepilot.domain.engine.RuleEngine
 import com.lifepilot.domain.engine.SchemaEngine
 import com.lifepilot.domain.ocr.OcrService
@@ -105,4 +107,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindConversationRepository(impl: ConversationRepositoryImpl): ConversationRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindPlanningEngine(impl: PlanningEngineImpl): PlanningEngine
 }

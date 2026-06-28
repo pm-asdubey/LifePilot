@@ -3,6 +3,7 @@ package com.lifepilot.features.planner.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lifepilot.data.repository.PreferenceManager
+import com.lifepilot.domain.engine.PlanningEngine
 import com.lifepilot.domain.model.Goal
 import com.lifepilot.domain.model.GoalStatus
 import com.lifepilot.domain.model.Task
@@ -30,6 +31,7 @@ import javax.inject.Inject
 class PlannerViewModel @Inject constructor(
     private val goalRepository: GoalRepository,
     private val taskRepository: TaskRepository,
+    private val planningEngine: PlanningEngine,
     private val preferenceManager: PreferenceManager,
 ) : ViewModel() {
 
@@ -99,49 +101,36 @@ class PlannerViewModel @Inject constructor(
         if (title.isBlank()) return
         viewModelScope.launch {
             val profileId = preferenceManager.getActiveProfileId() ?: return@launch
-            val now = Instant.now()
-            val goal = Goal(
-                goalId = UUID.randomUUID().toString(),
+            planningEngine.createGoal(
                 profileId = profileId,
                 title = title.trim(),
                 description = description?.trim()?.takeIf { it.isNotBlank() },
                 deadline = deadline,
-                status = GoalStatus.ACTIVE,
-                progress = 0,
-                objectId = null,
-                notes = null,
-                createdAt = now,
-                updatedAt = now,
-            )
-            runCatching { goalRepository.upsertGoal(goal) }
-                .onFailure { e -> Timber.e(e, "Failed to create goal") }
+                linkedObjectId = null,
+                suggestedTaskTitles = emptyList(),
+            ).onFailure { e -> Timber.e(e, "Failed to create goal") }
             _uiState.update { it.copy(showCreateGoalSheet = false) }
         }
     }
 
     fun completeGoal(goalId: String) {
         viewModelScope.launch {
-            runCatching { goalRepository.completeGoal(goalId) }
+            planningEngine.completeGoal(goalId)
                 .onFailure { e -> Timber.e(e, "Failed to complete goal: $goalId") }
         }
     }
 
     fun dismissGoal(goalId: String) {
         viewModelScope.launch {
-            runCatching {
-                val goal = goalRepository.getGoalById(goalId) ?: return@launch
-                goalRepository.upsertGoal(
-                    goal.copy(status = GoalStatus.DISMISSED, updatedAt = Instant.now())
-                )
-            }.onFailure { e -> Timber.e(e, "Failed to dismiss goal: $goalId") }
+            planningEngine.cancelGoal(goalId)
+                .onFailure { e -> Timber.e(e, "Failed to cancel goal: $goalId") }
         }
     }
 
     fun completeTask(taskId: String) {
         viewModelScope.launch {
-            runCatching {
-                taskRepository.updateTaskStatus(taskId, TaskStatus.COMPLETED)
-            }.onFailure { e -> Timber.e(e, "Failed to complete task: $taskId") }
+            planningEngine.completeTask(taskId)
+                .onFailure { e -> Timber.e(e, "Failed to complete task: $taskId") }
         }
     }
 

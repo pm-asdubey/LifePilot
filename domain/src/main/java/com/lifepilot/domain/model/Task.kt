@@ -5,6 +5,7 @@ import java.time.LocalDate
 
 data class Task(
     val taskId: String,
+    val goalId: String?,
     val objectId: String?,
     val title: String,
     val description: String?,
@@ -30,7 +31,12 @@ enum class TaskStatus {
 }
 
 enum class TaskSource {
-    USER,
-    RULE_ENGINE,
-    AI,
+    MANUAL,       // User created directly in Planner
+    GOAL,         // Generated when a goal was created
+    RECURRING,    // From a recurring task template
+    SYSTEM,       // From Rule Engine / Life State Engine
+    AI_PROPOSED,  // Suggested by AI, approved by user
+    RULE_ENGINE,  // Legacy alias for SYSTEM
+    AI,           // Legacy alias for AI_PROPOSED
+    USER,         // Legacy alias for MANUAL
 }

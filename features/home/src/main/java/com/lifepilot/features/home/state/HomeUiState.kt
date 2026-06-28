@@ -1,8 +1,8 @@
 package com.lifepilot.features.home.state
 
+import com.lifepilot.domain.model.AiProposal
 import com.lifepilot.domain.model.Conversation
 import com.lifepilot.domain.model.Goal
-import com.lifepilot.domain.model.ProposedAction
 import com.lifepilot.domain.model.StoredMessage
 
 data class HomeUiState(
@@ -21,7 +21,7 @@ data class HomeUiState(
     val isAiLoading: Boolean = false,
     val isAiConfigured: Boolean = false,
     val error: String? = null,
-    val pendingAction: ProposedAction? = null,
+    val pendingAction: AiProposal? = null,
     val pendingContextQuestion: String? = null,
     val showConversationHistory: Boolean = false,
     val allConversations: List<Conversation> = emptyList(),

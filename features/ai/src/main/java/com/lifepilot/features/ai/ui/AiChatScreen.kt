@@ -52,7 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.lifepilot.designsystem.components.EmptyState
 import com.lifepilot.designsystem.theme.Spacing
-import com.lifepilot.domain.model.ProposedAction
+import com.lifepilot.domain.model.AiProposal
 import com.lifepilot.features.ai.state.MessageRole
 import com.lifepilot.features.ai.viewmodel.AiChatViewModel
 
@@ -207,7 +207,7 @@ fun AiChatScreen(
 
             // Pending action proposal
             val pendingAction = state.pendingAction
-            if (pendingAction != null) {
+            if (pendingAction is AiProposal.MetadataUpdate) {
                 ActionProposalCard(
                     action = pendingAction,
                     onApprove = viewModel::approveAction,
@@ -247,7 +247,7 @@ fun AiChatScreen(
 
 @Composable
 private fun ActionProposalCard(
-    action: ProposedAction,
+    action: AiProposal.MetadataUpdate,
     onApprove: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,

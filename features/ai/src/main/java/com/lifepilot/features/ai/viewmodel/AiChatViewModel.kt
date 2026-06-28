@@ -13,7 +13,7 @@ import com.lifepilot.domain.repository.ObjectRepository
 import com.lifepilot.domain.repository.ProfileRepository
 import com.lifepilot.domain.repository.ReminderRepository
 import com.lifepilot.domain.repository.TaskRepository
-import com.lifepilot.domain.model.ProposedAction
+import com.lifepilot.domain.model.AiProposal
 import com.lifepilot.domain.model.ProposedField
 import com.lifepilot.domain.model.UpdateMode
 import com.lifepilot.features.ai.state.AiChatState
@@ -154,31 +154,39 @@ class AiChatViewModel @Inject constructor(
     }
 
     fun approveAction() {
-        val action = _state.value.pendingAction ?: return
+        val proposal = _state.value.pendingAction ?: return
         _state.update { it.copy(pendingAction = null) }
         viewModelScope.launch {
             try {
-                for (field in action.fields) {
-                    val existing = if (field.mode == UpdateMode.APPEND) {
-                        metadataRepository.getMetadataByField(action.objectId, field.fieldId)?.value
-                    } else null
-                    val finalValue = if (existing != null && field.mode == UpdateMode.APPEND) {
-                        "$existing\n${field.value}"
-                    } else {
-                        field.value
+                val confirmText = when (proposal) {
+                    is AiProposal.MetadataUpdate -> {
+                        for (field in proposal.fields) {
+                            val existing = if (field.mode == UpdateMode.APPEND) {
+                                metadataRepository.getMetadataByField(proposal.objectId, field.fieldId)?.value
+                            } else null
+                            val finalValue = if (existing != null && field.mode == UpdateMode.APPEND) {
+                                "$existing\n${field.value}"
+                            } else {
+                                field.value
+                            }
+                            metadataRepository.upsertMetadata(
+                                objectId = proposal.objectId,
+                                fieldId = field.fieldId,
+                                value = finalValue,
+                                source = MetadataSource.AI_EXTRACTED,
+                                confidence = 0.9f,
+                            )
+                        }
+                        "Saved to ${proposal.objectTitle}."
                     }
-                    metadataRepository.upsertMetadata(
-                        objectId = action.objectId,
-                        fieldId = field.fieldId,
-                        value = finalValue,
-                        source = MetadataSource.AI_EXTRACTED,
-                        confidence = 0.9f,
-                    )
+                    // Other proposal types are only handled through HomeViewModel / PlanningEngine.
+                    // AiChatViewModel is a legacy screen; redirect users to the Home AI workspace.
+                    else -> "Done."
                 }
                 val confirmMessage = ChatMessage(
                     id = UUID.randomUUID().toString(),
                     role = MessageRole.ASSISTANT,
-                    content = "Saved to ${action.objectTitle}.",
+                    content = confirmText,
                 )
                 _state.update { it.copy(messages = it.messages + confirmMessage) }
             } catch (e: Exception) {
@@ -197,13 +205,13 @@ class AiChatViewModel @Inject constructor(
 
     private data class ParsedResponse(
         val visibleContent: String,
-        val action: ProposedAction?,
+        val action: AiProposal?,
         val question: String?,
     )
 
     private fun parseAiResponse(raw: String): ParsedResponse {
         var content = raw
-        var action: ProposedAction? = null
+        var action: AiProposal? = null
         var question: String? = null
 
         val actionPattern = Regex("""\[LIFEPILOT_ACTION\](.*?)\[/LIFEPILOT_ACTION\]""", RegexOption.DOT_MATCHES_ALL)
@@ -223,7 +231,7 @@ class AiChatViewModel @Inject constructor(
         return ParsedResponse(content.trim(), action, question)
     }
 
-    private fun parseAction(json: String): ProposedAction? {
+    private fun parseAction(json: String): AiProposal? {
         return try {
             val obj = JSONObject(json)
             val objectType = obj.optString("objectType", "")
@@ -270,8 +278,8 @@ class AiChatViewModel @Inject constructor(
                     )
                 )
             }
-            ProposedAction(
-                id = UUID.randomUUID().toString(),
+            AiProposal.MetadataUpdate(
+                proposalId = UUID.randomUUID().toString(),
                 objectId = resolvedObjectId,
                 objectTitle = resolvedTitle,
                 objectType = objectType,

@@ -1,6 +1,6 @@
 package com.lifepilot.features.ai.state
 
-import com.lifepilot.domain.model.ProposedAction
+import com.lifepilot.domain.model.AiProposal
 
 data class AiChatState(
     val messages: List<ChatMessage> = emptyList(),
@@ -8,7 +8,7 @@ data class AiChatState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val isConfigured: Boolean = false,
-    val pendingAction: ProposedAction? = null,
+    val pendingAction: AiProposal? = null,
     val pendingContextQuestion: String? = null,
 )
 

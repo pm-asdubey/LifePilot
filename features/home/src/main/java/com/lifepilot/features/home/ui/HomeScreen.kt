@@ -69,7 +69,7 @@ import com.lifepilot.designsystem.components.SectionHeader
 import com.lifepilot.designsystem.theme.Spacing
 import com.lifepilot.domain.model.Conversation
 import com.lifepilot.domain.model.Goal
-import com.lifepilot.domain.model.ProposedAction
+import com.lifepilot.domain.model.AiProposal
 import com.lifepilot.domain.model.StoredMessage
 import com.lifepilot.features.home.state.AttentionItem
 import com.lifepilot.features.home.state.AttentionUrgency
@@ -466,7 +466,7 @@ private fun AiWorkspaceContent(
     messages: List<StoredMessage>,
     isLoading: Boolean,
     isConfigured: Boolean,
-    pendingAction: ProposedAction?,
+    pendingAction: AiProposal?,
     pendingContextQuestion: String?,
     onApproveAction: () -> Unit,
     onDismissAction: () -> Unit,
@@ -564,7 +564,7 @@ private fun AiWorkspaceContent(
             }
         }
 
-        if (pendingAction != null) {
+        if (pendingAction is AiProposal.MetadataUpdate) {
             ActionProposalCard(
                 action = pendingAction,
                 onApprove = onApproveAction,
@@ -647,7 +647,7 @@ private fun MessageBubble(
 
 @Composable
 private fun ActionProposalCard(
-    action: ProposedAction,
+    action: AiProposal.MetadataUpdate,
     onApprove: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
