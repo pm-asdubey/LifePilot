@@ -45,7 +45,7 @@ import com.lifepilot.data.database.entity.TimelineEntity
         ConversationEntity::class,
         ChatMessageEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class LifePilotDatabase : RoomDatabase() {
@@ -121,6 +121,16 @@ abstract class LifePilotDatabase : RoomDatabase() {
                 // Add goal_id column to tasks
                 database.execSQL("ALTER TABLE tasks ADD COLUMN goal_id TEXT")
                 database.execSQL("CREATE INDEX IF NOT EXISTS index_tasks_goal_id ON tasks(goal_id)")
+            }
+        }
+
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Add verification_status to metadata for full provenance tracking.
+                // Default UNVERIFIED preserves existing rows without data loss.
+                database.execSQL(
+                    "ALTER TABLE metadata ADD COLUMN verification_status TEXT NOT NULL DEFAULT 'UNVERIFIED'"
+                )
             }
         }
     }

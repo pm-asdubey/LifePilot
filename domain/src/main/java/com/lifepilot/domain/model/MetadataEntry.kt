@@ -11,8 +11,18 @@ data class MetadataEntry(
     val version: Int,
     val confidence: Float?,
     val source: MetadataSource,
+    val verificationStatus: VerificationStatus = VerificationStatus.UNVERIFIED,
     val updatedAt: Instant,
 )
+
+enum class VerificationStatus {
+    /** Value has not been reviewed by the user. */
+    UNVERIFIED,
+    /** User has explicitly confirmed the value is correct. */
+    VERIFIED,
+    /** Value was rejected by the user or is known to be wrong. */
+    REJECTED,
+}
 
 enum class MetadataFieldType {
     TEXT,

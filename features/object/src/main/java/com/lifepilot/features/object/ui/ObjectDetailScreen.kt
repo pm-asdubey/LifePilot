@@ -74,10 +74,12 @@ import com.lifepilot.designsystem.theme.StatusRenewalDue
 import com.lifepilot.domain.model.Document
 import com.lifepilot.domain.model.LifeObject
 import com.lifepilot.domain.model.MetadataEntry
+import com.lifepilot.domain.model.MetadataSource
 import com.lifepilot.domain.model.ObjectStatus
 import com.lifepilot.domain.model.Relationship
 import com.lifepilot.domain.model.Task
 import com.lifepilot.domain.model.TimelineEntry
+import com.lifepilot.domain.model.VerificationStatus
 import com.lifepilot.features.objectdetail.state.ObjectDetailTab
 import com.lifepilot.features.objectdetail.viewmodel.ObjectDetailViewModel
 
@@ -479,27 +481,33 @@ private fun OverviewTab(
                         .fillMaxWidth()
                         .padding(vertical = 2.dp),
                 ) {
-                    Row(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = Spacing.md, vertical = Spacing.sm),
                     ) {
-                        Text(
-                            text = entry.fieldId
-                                .replace("_", " ")
-                                .replace(Regex("([A-Z])"), " $1")
-                                .trim()
-                                .replaceFirstChar { it.uppercase() },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.weight(0.4f),
-                        )
-                        Text(
-                            text = entry.value,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.weight(0.6f),
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.Top,
+                        ) {
+                            Text(
+                                text = entry.fieldId
+                                    .replace("_", " ")
+                                    .replace(Regex("([A-Z])"), " $1")
+                                    .trim()
+                                    .replaceFirstChar { it.uppercase() },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.weight(0.4f),
+                            )
+                            Text(
+                                text = entry.value,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.weight(0.6f),
+                            )
+                        }
+                        ProvenanceBadge(entry)
                     }
                 }
             }
@@ -772,4 +780,24 @@ private fun RelationshipsTab(
             }
         }
     }
+}
+
+@Composable
+private fun ProvenanceBadge(entry: MetadataEntry) {
+    val (label, color) = when (entry.verificationStatus) {
+        VerificationStatus.VERIFIED -> "Verified" to MaterialTheme.colorScheme.tertiary
+        VerificationStatus.REJECTED -> "Rejected" to MaterialTheme.colorScheme.error
+        VerificationStatus.UNVERIFIED -> when (entry.source) {
+            MetadataSource.USER -> return // user-entered values need no badge
+            MetadataSource.OCR -> "OCR · unverified" to MaterialTheme.colorScheme.onSurfaceVariant
+            MetadataSource.AI_EXTRACTED -> "AI · unverified" to MaterialTheme.colorScheme.onSurfaceVariant
+            MetadataSource.SYSTEM -> return
+        }
+    }
+    Text(
+        text = label,
+        style = MaterialTheme.typography.labelSmall,
+        color = color.copy(alpha = 0.7f),
+        modifier = Modifier.padding(top = 2.dp),
+    )
 }

@@ -48,6 +48,9 @@ data class MetadataEntity(
     @ColumnInfo(name = "source")
     val source: String,
 
+    @ColumnInfo(name = "verification_status", defaultValue = "UNVERIFIED")
+    val verificationStatus: String = "UNVERIFIED",
+
     @ColumnInfo(name = "updated_at")
     val updatedAt: Long,
 )

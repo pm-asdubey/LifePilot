@@ -18,6 +18,9 @@ interface MetadataDao {
     @Query("SELECT * FROM metadata WHERE object_id = :objectId AND field_id = :fieldId")
     suspend fun getMetadataByField(objectId: String, fieldId: String): MetadataEntity?
 
+    @Query("SELECT * FROM metadata WHERE metadata_id = :metadataId")
+    suspend fun getMetadataById(metadataId: String): MetadataEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertMetadata(metadata: MetadataEntity)
 

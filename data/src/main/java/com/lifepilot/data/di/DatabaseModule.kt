@@ -33,7 +33,7 @@ object DatabaseModule {
             LifePilotDatabase::class.java,
             LifePilotDatabase.DATABASE_NAME,
         )
-            .addMigrations(LifePilotDatabase.MIGRATION_1_2)
+            .addMigrations(LifePilotDatabase.MIGRATION_1_2, LifePilotDatabase.MIGRATION_2_3)
             .build()
 
     @Provides

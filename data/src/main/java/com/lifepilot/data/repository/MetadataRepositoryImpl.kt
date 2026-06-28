@@ -6,6 +6,7 @@ import com.lifepilot.data.mapper.toEntity
 import com.lifepilot.domain.model.MetadataEntry
 import com.lifepilot.domain.model.MetadataFieldType
 import com.lifepilot.domain.model.MetadataSource
+import com.lifepilot.domain.model.VerificationStatus
 import com.lifepilot.domain.repository.MetadataRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -34,6 +35,7 @@ class MetadataRepositoryImpl @Inject constructor(
         value: String,
         source: MetadataSource,
         confidence: Float?,
+        verificationStatus: VerificationStatus,
     ): MetadataEntry {
         val existing = metadataDao.getMetadataByField(objectId, fieldId)
         val entry = MetadataEntry(
@@ -45,10 +47,33 @@ class MetadataRepositoryImpl @Inject constructor(
             version = (existing?.version ?: 0) + 1,
             confidence = confidence,
             source = source,
+            verificationStatus = verificationStatus,
             updatedAt = Instant.now(),
         )
         metadataDao.upsertMetadata(entry.toEntity())
         return entry
+    }
+
+    override suspend fun verifyMetadata(metadataId: String): MetadataEntry {
+        val existing = metadataDao.getMetadataById(metadataId)
+            ?: error("Metadata not found: $metadataId")
+        val updated = existing.copy(
+            verificationStatus = VerificationStatus.VERIFIED.name,
+            updatedAt = Instant.now().toEpochMilli(),
+        )
+        metadataDao.upsertMetadata(updated)
+        return updated.toDomain()
+    }
+
+    override suspend fun rejectMetadata(metadataId: String): MetadataEntry {
+        val existing = metadataDao.getMetadataById(metadataId)
+            ?: error("Metadata not found: $metadataId")
+        val updated = existing.copy(
+            verificationStatus = VerificationStatus.REJECTED.name,
+            updatedAt = Instant.now().toEpochMilli(),
+        )
+        metadataDao.upsertMetadata(updated)
+        return updated.toDomain()
     }
 
     override suspend fun upsertMetadataBatch(entries: List<MetadataEntry>): List<MetadataEntry> {
