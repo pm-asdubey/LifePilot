@@ -20,6 +20,10 @@ class WorkManagerScheduler @Inject constructor(
 ) {
     private val workManager by lazy { WorkManager.getInstance(context) }
 
+    fun scheduleMorningBrief() {
+        MorningBriefWorker.schedule(context)
+    }
+
     fun scheduleReminderEvaluation() {
         val constraints = Constraints.Builder()
             .setRequiresBatteryNotLow(true)

@@ -500,53 +500,100 @@ class HomeViewModel @Inject constructor(
     private fun parseAction(json: String): AiProposal? {
         return try {
             val obj = JSONObject(json)
-            val objectType = obj.optString("objectType", "")
-            val matchField = obj.optString("matchField", "")
-            val matchValue = obj.optString("matchValue", "")
-            val summary = obj.optString("summary", "Update suggested")
+            val actionType = obj.optString("actionType", "METADATA_UPDATE")
+            val summary = obj.optString("summary", "")
 
-            val candidateIds = objectIndex.entries
-                .filter { (_, v) -> v.second.equals(objectType, ignoreCase = true) }
-                .map { it.key }
-
-            val resolvedObjectId = when {
-                candidateIds.isEmpty() -> return null
-                candidateIds.size == 1 -> candidateIds.first()
-                matchField.isNotBlank() && matchValue.isNotBlank() -> {
-                    candidateIds.firstOrNull { id ->
-                        val title = objectIndex[id]?.first ?: ""
-                        title.contains(matchValue, ignoreCase = true) ||
-                            objectMetadataIndex[id]?.any { entry ->
-                                entry.fieldId.equals(matchField, ignoreCase = true) &&
-                                    entry.value.contains(matchValue, ignoreCase = true)
-                            } == true
-                    } ?: candidateIds.first()
-                }
-                else -> candidateIds.first()
-            }
-            val resolvedTitle = objectIndex[resolvedObjectId]?.first ?: objectType
-
-            val fieldsArray = obj.optJSONArray("fields") ?: return null
-            val fields = mutableListOf<ProposedField>()
-            for (i in 0 until fieldsArray.length()) {
-                val fieldObj = fieldsArray.getJSONObject(i)
-                fields.add(
-                    ProposedField(
-                        fieldId = fieldObj.getString("fieldId"),
-                        displayName = fieldObj.optString("displayName", fieldObj.getString("fieldId")),
-                        value = fieldObj.getString("value"),
-                        mode = if (fieldObj.optString("mode") == "append") UpdateMode.APPEND else UpdateMode.SET,
+            when (actionType.uppercase()) {
+                "GOAL_PROPOSAL" -> {
+                    val tasksArray = obj.optJSONArray("suggestedTasks")
+                    val tasks = buildList {
+                        if (tasksArray != null) {
+                            for (i in 0 until tasksArray.length()) add(tasksArray.getString(i))
+                        }
+                    }
+                    val deadlineStr = obj.optString("deadline", "").takeIf { it.isNotBlank() && it != "null" }
+                    AiProposal.GoalProposal(
+                        proposalId = UUID.randomUUID().toString(),
+                        summary = summary,
+                        title = obj.optString("title", "New goal"),
+                        description = obj.optString("description", "").takeIf { it.isNotBlank() && it != "null" },
+                        deadline = deadlineStr?.let { runCatching { java.time.LocalDate.parse(it) }.getOrNull() },
+                        estimatedWeeks = obj.optInt("estimatedWeeks", 0).takeIf { it > 0 },
+                        suggestedTasks = tasks,
+                        linkedObjectId = obj.optString("linkedObjectId", "").takeIf { it.isNotBlank() && it != "null" },
                     )
-                )
+                }
+                "TASK_CREATION" -> {
+                    val dueDateStr = obj.optString("dueDate", "").takeIf { it.isNotBlank() && it != "null" }
+                    AiProposal.TaskCreation(
+                        proposalId = UUID.randomUUID().toString(),
+                        summary = summary,
+                        title = obj.optString("title", "New task"),
+                        description = obj.optString("description", "").takeIf { it.isNotBlank() && it != "null" },
+                        dueDate = dueDateStr?.let { runCatching { java.time.LocalDate.parse(it) }.getOrNull() },
+                        goalId = obj.optString("goalId", "").takeIf { it.isNotBlank() && it != "null" },
+                        objectId = obj.optString("objectId", "").takeIf { it.isNotBlank() && it != "null" },
+                    )
+                }
+                "TASK_COMPLETION" -> {
+                    AiProposal.TaskCompletion(
+                        proposalId = UUID.randomUUID().toString(),
+                        summary = summary,
+                        taskId = obj.optString("taskId", ""),
+                        taskTitle = obj.optString("taskTitle", "task"),
+                        goalId = obj.optString("goalId", "").takeIf { it.isNotBlank() && it != "null" },
+                    )
+                }
+                else -> {
+                    // METADATA_UPDATE (default)
+                    val objectType = obj.optString("objectType", "")
+                    val matchField = obj.optString("matchField", "")
+                    val matchValue = obj.optString("matchValue", "")
+
+                    val candidateIds = objectIndex.entries
+                        .filter { (_, v) -> v.second.equals(objectType, ignoreCase = true) }
+                        .map { it.key }
+
+                    val resolvedObjectId = when {
+                        candidateIds.isEmpty() -> return null
+                        candidateIds.size == 1 -> candidateIds.first()
+                        matchField.isNotBlank() && matchValue.isNotBlank() -> {
+                            candidateIds.firstOrNull { id ->
+                                val title = objectIndex[id]?.first ?: ""
+                                title.contains(matchValue, ignoreCase = true) ||
+                                    objectMetadataIndex[id]?.any { entry ->
+                                        entry.fieldId.equals(matchField, ignoreCase = true) &&
+                                            entry.value.contains(matchValue, ignoreCase = true)
+                                    } == true
+                            } ?: candidateIds.first()
+                        }
+                        else -> candidateIds.first()
+                    }
+                    val resolvedTitle = objectIndex[resolvedObjectId]?.first ?: objectType
+
+                    val fieldsArray = obj.optJSONArray("fields") ?: return null
+                    val fields = mutableListOf<ProposedField>()
+                    for (i in 0 until fieldsArray.length()) {
+                        val fieldObj = fieldsArray.getJSONObject(i)
+                        fields.add(
+                            ProposedField(
+                                fieldId = fieldObj.getString("fieldId"),
+                                displayName = fieldObj.optString("displayName", fieldObj.getString("fieldId")),
+                                value = fieldObj.getString("value"),
+                                mode = if (fieldObj.optString("mode") == "append") UpdateMode.APPEND else UpdateMode.SET,
+                            )
+                        )
+                    }
+                    AiProposal.MetadataUpdate(
+                        proposalId = UUID.randomUUID().toString(),
+                        objectId = resolvedObjectId,
+                        objectTitle = resolvedTitle,
+                        objectType = objectType,
+                        summary = summary.ifBlank { "Update suggested" },
+                        fields = fields,
+                    )
+                }
             }
-            AiProposal.MetadataUpdate(
-                proposalId = UUID.randomUUID().toString(),
-                objectId = resolvedObjectId,
-                objectTitle = resolvedTitle,
-                objectType = objectType,
-                summary = summary,
-                fields = fields,
-            )
         } catch (e: Exception) {
             Timber.w(e, "Failed to parse LIFEPILOT_ACTION block")
             null
@@ -592,21 +639,58 @@ class HomeViewModel @Inject constructor(
             appendLine("Be concise, practical, and focused on actionable insights.")
             appendLine("Today's date: ${java.time.LocalDate.now()}")
             appendLine()
-            appendLine("IMPORTANT — DETECTING LIFE EVENTS:")
-            appendLine("When the user mentions ANY life event that affects a tracked record, you MUST:")
-            appendLine("1. Respond helpfully in plain language.")
-            appendLine("2. Identify which tracked record this event relates to.")
-            appendLine("3. Append ONE structured update block in this EXACT format:")
+            appendLine("IMPORTANT — DETECTING LIFE EVENTS AND PLANS:")
+            appendLine("When the user mentions a life event or plan, respond helpfully and append ONE structured block.")
             appendLine()
+            appendLine("ACTION TYPES:")
+            appendLine()
+            appendLine("1. Update a tracked record (use when an event affects an existing record):")
             appendLine("[LIFEPILOT_ACTION]")
             appendLine("{")
-            appendLine("  \"objectType\": \"<exact objectType from the record>\",")
+            appendLine("  \"actionType\": \"METADATA_UPDATE\",")
+            appendLine("  \"objectType\": \"<exact objectType>\",")
             appendLine("  \"matchField\": \"<field used to identify the record>\",")
             appendLine("  \"matchValue\": \"<value of that field>\",")
-            appendLine("  \"summary\": \"<one-line human description of what changed>\",")
-            appendLine("  \"fields\": [")
-            appendLine("    {\"fieldId\": \"notes\", \"displayName\": \"Notes\", \"value\": \"<what happened, dated>\", \"mode\": \"append\"}")
-            appendLine("  ]")
+            appendLine("  \"summary\": \"<one-line human description>\",")
+            appendLine("  \"fields\": [{\"fieldId\": \"notes\", \"displayName\": \"Notes\", \"value\": \"<what happened>\", \"mode\": \"append\"}]")
+            appendLine("}")
+            appendLine("[/LIFEPILOT_ACTION]")
+            appendLine()
+            appendLine("2. Propose a new Goal (use when user mentions a significant plan or ambition):")
+            appendLine("[LIFEPILOT_ACTION]")
+            appendLine("{")
+            appendLine("  \"actionType\": \"GOAL_PROPOSAL\",")
+            appendLine("  \"summary\": \"<why this goal matters>\",")
+            appendLine("  \"title\": \"<goal title>\",")
+            appendLine("  \"description\": \"<goal description>\",")
+            appendLine("  \"deadline\": \"<YYYY-MM-DD or null>\",")
+            appendLine("  \"estimatedWeeks\": <number or null>,")
+            appendLine("  \"suggestedTasks\": [\"<task 1>\", \"<task 2>\"],")
+            appendLine("  \"linkedObjectId\": \"<objectId or null>\"")
+            appendLine("}")
+            appendLine("[/LIFEPILOT_ACTION]")
+            appendLine()
+            appendLine("3. Create a new Task (use when user mentions a one-off action to track):")
+            appendLine("[LIFEPILOT_ACTION]")
+            appendLine("{")
+            appendLine("  \"actionType\": \"TASK_CREATION\",")
+            appendLine("  \"summary\": \"<why this task matters>\",")
+            appendLine("  \"title\": \"<task title>\",")
+            appendLine("  \"description\": \"<optional detail>\",")
+            appendLine("  \"dueDate\": \"<YYYY-MM-DD or null>\",")
+            appendLine("  \"goalId\": \"<goalId or null>\",")
+            appendLine("  \"objectId\": \"<objectId or null>\"")
+            appendLine("}")
+            appendLine("[/LIFEPILOT_ACTION]")
+            appendLine()
+            appendLine("4. Complete an existing Task (use when user says they finished something tracked):")
+            appendLine("[LIFEPILOT_ACTION]")
+            appendLine("{")
+            appendLine("  \"actionType\": \"TASK_COMPLETION\",")
+            appendLine("  \"summary\": \"<confirmation message>\",")
+            appendLine("  \"taskId\": \"<taskId>\",")
+            appendLine("  \"taskTitle\": \"<task title>\",")
+            appendLine("  \"goalId\": \"<goalId or null>\"")
             appendLine("}")
             appendLine("[/LIFEPILOT_ACTION]")
             appendLine()
@@ -614,10 +698,11 @@ class HomeViewModel @Inject constructor(
             appendLine("[ASK]<the question to ask the user>[/ASK]")
             appendLine()
             appendLine("Rules:")
-            appendLine("Only include [LIFEPILOT_ACTION] when a clear life event affecting a tracked record is detected.")
-            appendLine("Only include [ASK] when more context would meaningfully improve the profile.")
+            appendLine("Include [LIFEPILOT_ACTION] only when a clear event, plan, task or completion is detected.")
+            appendLine("Include [ASK] only when more context would meaningfully improve the profile.")
             appendLine("Never include both [LIFEPILOT_ACTION] and [ASK] in the same response.")
             appendLine("Never make up data. Only use what the user tells you.")
+            appendLine("Prefer GOAL_PROPOSAL for multi-step plans; TASK_CREATION for single actions.")
             appendLine()
             appendLine("USER LIFE DATA:")
             if (profile != null) appendLine("Profile: ${profile.displayName}")

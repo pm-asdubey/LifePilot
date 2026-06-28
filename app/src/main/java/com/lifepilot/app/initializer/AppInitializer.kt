@@ -27,6 +27,7 @@ class AppInitializer @Inject constructor(
     fun initialize() {
         notificationHelper.createNotificationChannels()
         workManagerScheduler.scheduleReminderEvaluation()
+        workManagerScheduler.scheduleMorningBrief()
 
         scope.launch {
             try {

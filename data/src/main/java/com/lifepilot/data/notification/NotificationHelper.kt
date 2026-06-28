@@ -22,6 +22,7 @@ class NotificationHelper @Inject constructor(
     companion object {
         const val CHANNEL_REMINDERS = "lifepilot_reminders"
         const val CHANNEL_GENERAL = "lifepilot_general"
+        const val CHANNEL_MORNING_BRIEF = "lifepilot_morning_brief"
     }
 
     fun createNotificationChannels() {
@@ -44,8 +45,17 @@ class NotificationHelper @Inject constructor(
             description = "General app notifications"
         }
 
+        val morningBriefChannel = NotificationChannel(
+            CHANNEL_MORNING_BRIEF,
+            "Morning Brief",
+            NotificationManager.IMPORTANCE_DEFAULT,
+        ).apply {
+            description = "Daily planning summary at 9 AM"
+        }
+
         manager.createNotificationChannel(remindersChannel)
         manager.createNotificationChannel(generalChannel)
+        manager.createNotificationChannel(morningBriefChannel)
         Timber.d("Notification channels created")
     }
 

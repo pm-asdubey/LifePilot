@@ -65,7 +65,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.lifepilot.designsystem.components.EmptyState
+import com.lifepilot.designsystem.components.GoalProposalCard
 import com.lifepilot.designsystem.components.SectionHeader
+import com.lifepilot.designsystem.components.TaskCompletionCard
+import com.lifepilot.designsystem.components.TaskCreationCard
 import com.lifepilot.designsystem.theme.Spacing
 import com.lifepilot.domain.model.Conversation
 import com.lifepilot.domain.model.Goal
@@ -564,15 +567,43 @@ private fun AiWorkspaceContent(
             }
         }
 
-        if (pendingAction is AiProposal.MetadataUpdate) {
-            ActionProposalCard(
+        val cardModifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = Spacing.md, vertical = Spacing.xs)
+        when (pendingAction) {
+            is AiProposal.MetadataUpdate -> ActionProposalCard(
                 action = pendingAction,
                 onApprove = onApproveAction,
                 onDismiss = onDismissAction,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = Spacing.md, vertical = Spacing.xs),
+                modifier = cardModifier,
             )
+            is AiProposal.GoalProposal -> GoalProposalCard(
+                title = pendingAction.title,
+                description = pendingAction.description,
+                deadline = pendingAction.deadline?.toString(),
+                suggestedTasks = pendingAction.suggestedTasks,
+                summary = pendingAction.summary,
+                onApprove = onApproveAction,
+                onDismiss = onDismissAction,
+                modifier = cardModifier,
+            )
+            is AiProposal.TaskCompletion -> TaskCompletionCard(
+                taskTitle = pendingAction.taskTitle,
+                summary = pendingAction.summary,
+                onApprove = onApproveAction,
+                onDismiss = onDismissAction,
+                modifier = cardModifier,
+            )
+            is AiProposal.TaskCreation -> TaskCreationCard(
+                taskTitle = pendingAction.title,
+                description = pendingAction.description,
+                dueDate = pendingAction.dueDate?.toString(),
+                summary = pendingAction.summary,
+                onApprove = onApproveAction,
+                onDismiss = onDismissAction,
+                modifier = cardModifier,
+            )
+            null -> Unit
         }
 
         if (pendingContextQuestion != null && pendingAction == null) {
