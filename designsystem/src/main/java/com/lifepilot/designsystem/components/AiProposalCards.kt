@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.CheckCircleOutline
 import androidx.compose.material.icons.outlined.Close
@@ -262,6 +263,84 @@ fun TaskCreationCard(
                 }
                 FilledTonalButton(onClick = onApprove) {
                     Text("Add task")
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Card shown when AI proposes creating a new tracked Record (Object).
+ */
+@Composable
+fun ObjectCreationCard(
+    objectType: String,
+    domain: String,
+    title: String,
+    summary: String,
+    onApprove: () -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        shape = MaterialTheme.shapes.medium,
+        modifier = modifier,
+    ) {
+        Column(modifier = Modifier.padding(Spacing.md)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Outlined.AddCircleOutline,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(modifier = Modifier.width(Spacing.xs))
+                Text(
+                    text = "Add to your records?",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
+                    Icon(
+                        imageVector = Icons.Outlined.Close,
+                        contentDescription = "Dismiss",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = "$objectType · $domain",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            )
+            if (summary.isNotBlank()) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = summary,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                )
+            }
+            Spacer(modifier = Modifier.height(Spacing.sm))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(Spacing.xs, Alignment.End),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                TextButton(onClick = onDismiss) {
+                    Text("Skip", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
+                }
+                FilledTonalButton(onClick = onApprove) {
+                    Text("Add record")
                 }
             }
         }

@@ -63,8 +63,7 @@ class HomeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    // AI context cached for session
-    private var cachedSystemPrompt: String? = null
+    // Updated per-message with intelligent retrieval; always rebuilt from live data
     private var objectIndex: Map<String, Pair<String, String>> = emptyMap()
     private var objectMetadataIndex: Map<String, List<com.lifepilot.domain.model.MetadataEntry>> = emptyMap()
 
@@ -229,8 +228,8 @@ class HomeViewModel @Inject constructor(
                     _uiState.update { it.copy(conversationTitle = autoTitle) }
                 }
 
-                // Build AI context
-                val systemPrompt = cachedSystemPrompt ?: buildSystemPrompt().also { cachedSystemPrompt = it }
+                // Build AI context with intelligent retrieval scoped to user's query intent
+                val systemPrompt = buildSystemPrompt(userQuery = text)
                 val history = _uiState.value.messages
                     .dropLast(1) // exclude current user message
                     .filter { it.conversationId == conversation.conversationId }
@@ -378,6 +377,26 @@ class HomeViewModel @Inject constructor(
                 planningEngine.completeTask(proposal.taskId).getOrThrow()
                 "Marked \"${proposal.taskTitle}\" as complete."
             }
+            is AiProposal.ObjectCreation -> {
+                val createdObject = objectRepository.createObject(
+                    profileId = profileId,
+                    objectType = proposal.objectType,
+                    domain = proposal.domain,
+                    title = proposal.title,
+                    description = proposal.initialNotes,
+                )
+                val notes = proposal.initialNotes
+                if (!notes.isNullOrBlank()) {
+                    metadataRepository.upsertMetadata(
+                        objectId = createdObject.objectId,
+                        fieldId = "notes",
+                        value = notes,
+                        source = MetadataSource.AI_EXTRACTED,
+                        confidence = 0.8f,
+                    )
+                }
+                "\"${proposal.title}\" added to your records."
+            }
         }
     }
 
@@ -390,7 +409,6 @@ class HomeViewModel @Inject constructor(
     }
 
     fun startNewChat() {
-        cachedSystemPrompt = null
         _uiState.update {
             it.copy(
                 mode = HomeMode.DAILY_BRIEF,
@@ -544,6 +562,21 @@ class HomeViewModel @Inject constructor(
                         goalId = obj.optString("goalId", "").takeIf { it.isNotBlank() && it != "null" },
                     )
                 }
+                "OBJECT_CREATION" -> {
+                    AiProposal.ObjectCreation(
+                        proposalId = UUID.randomUUID().toString(),
+                        summary = summary,
+                        objectType = obj.optString("objectType", "Record"),
+                        domain = obj.optString("domain", "General"),
+                        title = obj.optString("title", "New record"),
+                        initialNotes = run {
+                            val fields = obj.optJSONArray("fields")
+                            if (fields != null && fields.length() > 0) {
+                                fields.getJSONObject(0).optString("value", "").takeIf { it.isNotBlank() }
+                            } else null
+                        },
+                    )
+                }
                 else -> {
                     // METADATA_UPDATE (default)
                     val objectType = obj.optString("objectType", "")
@@ -600,7 +633,7 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private suspend fun buildSystemPrompt(): String {
+    private suspend fun buildSystemPrompt(userQuery: String = ""): String {
         val profile = profileRepository.observeActiveProfile()
             .catch { }
             .firstOrNull()
@@ -611,14 +644,22 @@ class HomeViewModel @Inject constructor(
                 .firstOrNull()
                 ?: emptyList()
         } ?: emptyList()
-        val objects = allObjects.take(30)
 
-        val metadataByObject = runCatching {
-            metadataRepository.getMetadataForObjects(objects.map { it.objectId })
+        // Always keep objectIndex current for parseAction() matching
+        val allMetadata = runCatching {
+            metadataRepository.getMetadataForObjects(allObjects.map { it.objectId })
         }.getOrElse { emptyMap() }
+        objectIndex = allObjects.associate { it.objectId to (it.title to it.objectType) }
+        objectMetadataIndex = allMetadata
 
-        objectIndex = objects.associate { it.objectId to (it.title to it.objectType) }
-        objectMetadataIndex = metadataByObject
+        // Intelligent retrieval: score objects by relevance to user query
+        val objects = if (userQuery.isBlank()) {
+            allObjects.take(5) // General context: show most recently active
+        } else {
+            selectRelevantObjects(userQuery, allObjects, allMetadata, maxObjects = 5)
+        }
+
+        val metadataByObject = allMetadata.filterKeys { it in objects.map { o -> o.objectId }.toSet() }
 
         val pendingTasks = profile?.let {
             taskRepository.observePendingTasks(it.profileId)
@@ -697,18 +738,31 @@ class HomeViewModel @Inject constructor(
             appendLine("If you need information to give better help, append ONE question block:")
             appendLine("[ASK]<the question to ask the user>[/ASK]")
             appendLine()
+            appendLine("5. Create a new record (use when user mentions a life entity not yet tracked):")
+            appendLine("[LIFEPILOT_ACTION]")
+            appendLine("{")
+            appendLine("  \"actionType\": \"OBJECT_CREATION\",")
+            appendLine("  \"summary\": \"<why this record matters>\",")
+            appendLine("  \"objectType\": \"<type e.g. Vehicle, Property, Job, Insurance>\",")
+            appendLine("  \"domain\": \"<domain e.g. Career, Property, Finance, Health, Identity, Travel>\",")
+            appendLine("  \"title\": \"<record title>\",")
+            appendLine("  \"fields\": [{\"fieldId\": \"notes\", \"displayName\": \"Notes\", \"value\": \"<initial context>\"}]")
+            appendLine("}")
+            appendLine("[/LIFEPILOT_ACTION]")
+            appendLine()
             appendLine("Rules:")
-            appendLine("Include [LIFEPILOT_ACTION] only when a clear event, plan, task or completion is detected.")
+            appendLine("Include [LIFEPILOT_ACTION] only when a clear event, plan, task, completion, or new life entity is detected.")
             appendLine("Include [ASK] only when more context would meaningfully improve the profile.")
             appendLine("Never include both [LIFEPILOT_ACTION] and [ASK] in the same response.")
             appendLine("Never make up data. Only use what the user tells you.")
             appendLine("Prefer GOAL_PROPOSAL for multi-step plans; TASK_CREATION for single actions.")
+            appendLine("Use OBJECT_CREATION only when a significant life entity doesn't yet have a record.")
             appendLine()
             appendLine("USER LIFE DATA:")
             if (profile != null) appendLine("Profile: ${profile.displayName}")
             appendLine()
-            val objectLabel = if (allObjects.size > 30) "Records (showing 30 of ${allObjects.size})" else "Records (${objects.size} total)"
-            appendLine("$objectLabel:")
+            val objectLabel = "Relevant records (${objects.size} of ${allObjects.size} total):"
+            appendLine(objectLabel)
             objects.forEach { obj ->
                 appendLine("  - [id=${obj.objectId}] ${obj.title} [type=${obj.objectType}, domain=${obj.domain}, status=${obj.status}]")
                 val metadata = metadataByObject[obj.objectId] ?: emptyList()
@@ -729,6 +783,49 @@ class HomeViewModel @Inject constructor(
                 appendLine("  - ${reminder.title} [due=${reminder.triggerDate}, priority=${reminder.priority}]")
             }
         }
+    }
+
+    /**
+     * Scores all objects against the user's query and returns the top N most relevant.
+     * Uses simple keyword matching against title, type, domain, and metadata values.
+     * This is intentionally lightweight — the full semantic search happens at the AI layer.
+     */
+    private fun selectRelevantObjects(
+        query: String,
+        allObjects: List<com.lifepilot.domain.model.LifeObject>,
+        allMetadata: Map<String, List<com.lifepilot.domain.model.MetadataEntry>>,
+        maxObjects: Int,
+    ): List<com.lifepilot.domain.model.LifeObject> {
+        val tokens = query.lowercase().split(" ", ",", ".", "?", "!").filter { it.length > 2 }
+        if (tokens.isEmpty()) return allObjects.take(maxObjects)
+
+        return allObjects
+            .map { obj ->
+                var score = 0f
+                val titleLower = obj.title.lowercase()
+                val typeLower = obj.objectType.lowercase()
+                val domainLower = obj.domain.lowercase()
+
+                tokens.forEach { token ->
+                    if (titleLower.contains(token)) score += 3f
+                    if (typeLower.contains(token)) score += 2f
+                    if (domainLower.contains(token)) score += 1.5f
+                }
+
+                val metadata = allMetadata[obj.objectId] ?: emptyList()
+                metadata.take(10).forEach { entry ->
+                    tokens.forEach { token ->
+                        if (entry.value.lowercase().contains(token)) score += 0.5f
+                        if (entry.fieldId.lowercase().contains(token)) score += 0.3f
+                    }
+                }
+                obj to score
+            }
+            .filter { (_, score) -> score > 0f }
+            .sortedByDescending { (_, score) -> score }
+            .take(maxObjects)
+            .map { (obj, _) -> obj }
+            .ifEmpty { allObjects.take(maxObjects) } // fallback to top N if no matches
     }
 
     private fun mapActionType(actionType: String): AttentionType {

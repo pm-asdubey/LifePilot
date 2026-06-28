@@ -54,6 +54,16 @@ sealed class AiProposal {
         val goalId: String?,
         val objectId: String?,
     ) : AiProposal()
+
+    /** Create a new tracked Object (record) when the user mentions a new life entity. */
+    data class ObjectCreation(
+        override val proposalId: String,
+        override val summary: String,
+        val objectType: String,
+        val domain: String,
+        val title: String,
+        val initialNotes: String?,
+    ) : AiProposal()
 }
 
 // ── Supporting types ──────────────────────────────────────────────────────────

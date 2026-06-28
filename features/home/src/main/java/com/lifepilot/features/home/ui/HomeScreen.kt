@@ -66,6 +66,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.lifepilot.designsystem.components.EmptyState
 import com.lifepilot.designsystem.components.GoalProposalCard
+import com.lifepilot.designsystem.components.ObjectCreationCard
 import com.lifepilot.designsystem.components.SectionHeader
 import com.lifepilot.designsystem.components.TaskCompletionCard
 import com.lifepilot.designsystem.components.TaskCreationCard
@@ -598,6 +599,15 @@ private fun AiWorkspaceContent(
                 taskTitle = pendingAction.title,
                 description = pendingAction.description,
                 dueDate = pendingAction.dueDate?.toString(),
+                summary = pendingAction.summary,
+                onApprove = onApproveAction,
+                onDismiss = onDismissAction,
+                modifier = cardModifier,
+            )
+            is AiProposal.ObjectCreation -> ObjectCreationCard(
+                objectType = pendingAction.objectType,
+                domain = pendingAction.domain,
+                title = pendingAction.title,
                 summary = pendingAction.summary,
                 onApprove = onApproveAction,
                 onDismiss = onDismissAction,
