@@ -6,552 +6,316 @@
 
 # Purpose
 
-The AI Retrieval Pipeline converts natural language questions into accurate, explainable responses using the Life State Engine.
+The AI Retrieval Pipeline converts natural language questions into accurate, grounded responses by retrieving structured data from the Life State Engine before calling the LLM.
 
-The LLM never has direct access to the entire database.
-
-Instead, the pipeline retrieves only the relevant information required to answer the user's question.
-
-This minimizes hallucinations, improves speed, reduces token usage, and ensures every response is grounded in structured data.
+The LLM never has direct access to the entire database. Only the objects most relevant to the current query are included in the prompt. This minimises hallucinations, reduces token usage, and ensures every AI response is traceable to stored structured data.
 
 ---
 
 # Philosophy
 
-The AI should never behave like a personal memory.
+AI retrieves. It does not remember.
 
-It should behave like an intelligent analyst.
-
-It reasons over structured information rather than relying on conversation history.
-
-Every answer should be reproducible.
+Every response is generated from structured data retrieved at query time. Conversation history provides conversational continuity only. Facts always come from the Life State Engine.
 
 If the same Life State exists tomorrow, the same question should produce the same factual answer.
 
 ---
 
-# High-Level Pipeline
+# Entry Point
+
+All AI interaction enters through `HomeViewModel.sendMessage()`.
+
+There is one AI entry point in the application. The standalone `features/ai` module and `AiChatViewModel` have been removed. See ADR-008.
+
+---
+
+# Full Pipeline
 
 ```text
-User Question
-
-↓
-
-Intent Detection
-
-↓
-
-Entity Recognition
-
-↓
-
-Object Retrieval
-
-↓
-
-Relationship Expansion
-
-↓
-
-Timeline Retrieval
-
-↓
-
-Document Retrieval
-
-↓
-
-Metadata Retrieval
-
-↓
-
-Task Retrieval
-
-↓
-
-Context Assembly
-
-↓
-
-LLM Response
-
-↓
-
-Source Attribution
+User Message
+    ↓
+HomeViewModel.sendMessage()
+    ↓
+RetrievalEngine.retrieve(profileId, userQuery)
+    ↓
+PromptBuilder.build(context, userQuery)
+    ↓
+AiProvider.complete(systemPrompt, userMessage, history)
+    ↓
+parseAiResponse() → AiProposal?
+    ↓
+User reviews proposal card (in AI_WORKSPACE mode)
+    ↓
+executeProposal()
+    ↓
+PlanningEngine / MetadataRepository / ObjectRepository
+    ↓
+Life State Updated
 ```
 
-Every stage has a single responsibility.
+---
+
+# Stage 1 — RetrievalEngine
+
+**Interface:** `domain/engine/RetrievalEngine.kt`
+
+```kotlin
+interface RetrievalEngine {
+    suspend fun retrieve(profileId: String, userQuery: String): RetrievalContext
+}
+```
+
+**Implementation:** `data/engine/RetrievalEngineImpl.kt`
+
+**Algorithm:**
+
+The engine scores all objects belonging to the profile using keyword matching against the user's query:
+
+| Field | Score Per Matching Keyword |
+|-------|---------------------------|
+| Object title | 3.0 |
+| Object type | 2.0 |
+| Object domain | 1.5 |
+| Metadata values | 0.5 |
+
+Objects with a score above zero are ranked descending. The top 5 are selected.
+
+For each selected object, `ObjectReasoner.buildSnapshot()` is called to produce a rich `ObjectSnapshot`.
+
+The engine also fetches:
+- All object index entries (title + type + domain) for the low-cost index section of the prompt
+- Up to 10 pending tasks for the profile
+- Up to 10 upcoming reminders (next 30 days)
+
+The result is a `RetrievalContext` that becomes the sole input to `PromptBuilder`.
 
 ---
 
-# Step 1 — User Question
+# Stage 2 — ObjectReasoner
 
-Examples
+**Interface:** `domain/engine/ObjectReasoner.kt`
 
-* Show my passport.
-* What expires next month?
-* Which interviews did I have in March?
-* Do I still have active loans?
-* What should I do after leaving my job?
-* Show documents related to my house.
+```kotlin
+interface ObjectReasoner {
+    suspend fun buildSnapshot(profileId: String, objectId: String): ObjectSnapshot?
+}
+```
 
-Questions may be:
+**Implementation:** `data/engine/ObjectReasonerImpl.kt`
 
-* factual
-* analytical
-* historical
-* comparative
-* predictive
-* procedural
-
----
-
-# Step 2 — Intent Detection
-
-The system determines what the user wants.
-
-Supported intents include:
-
-Retrieve Object
-
-Example
-
-Show my passport.
+For each object the `RetrievalEngine` selects, `ObjectReasoner`:
+1. Fetches all metadata entries for the object
+2. Queries the pending task count for the object
+3. Queries the document count for the object
+4. Parses the `ai_context` metadata field into an `AiObjectContext` (if present)
+5. Returns an `ObjectSnapshot`
 
 ---
 
-Find Documents
+# Domain Models
 
-Example
+## RetrievalContext
 
-Show all insurance documents.
+The complete input to `PromptBuilder`. Contains everything needed to build the system prompt.
 
----
+```kotlin
+data class RetrievalContext(
+    val profileId: String,
+    val profileName: String,
+    val relevantSnapshots: List<ObjectSnapshot>,   // up to 5 rich snapshots
+    val totalObjectCount: Int,
+    val allObjectIndex: List<ObjectIndexEntry>,    // lightweight index of all objects
+    val allObjectMetadata: Map<String, List<MetadataEntry>>,
+    val pendingTasks: List<Task>,                  // up to 10
+    val upcomingReminders: List<Reminder>          // up to 10, next 30 days
+)
+```
 
-Timeline Query
+## ObjectSnapshot
 
-Example
+The per-object view passed from `RetrievalEngine` to `PromptBuilder`.
 
-What happened last week?
+```kotlin
+data class ObjectSnapshot(
+    val objectId: String,
+    val title: String,
+    val objectType: String,
+    val domain: String,
+    val status: String,
+    val metadata: List<MetadataEntry>,
+    val aiContext: AiObjectContext?,
+    val pendingTaskCount: Int,
+    val documentCount: Int,
+    val relevanceScore: Float
+)
+```
 
----
+## AiObjectContext
 
-Task Query
+Structured AI analysis stored per object in the `ai_context` metadata field as JSON. Allows the AI to include prior reasoning without re-analysing the object from scratch each time.
 
-Example
+```kotlin
+data class AiObjectContext(
+    val summary: String,
+    val importantFacts: List<String>,
+    val currentSituation: String,
+    val suggestions: List<String>,
+    val lastUpdated: Instant,
+    val confidence: Float
+)
+```
 
-What should I do today?
-
----
-
-Reminder Query
-
-Example
-
-What expires next?
-
----
-
-Relationship Query
-
-Example
-
-Which documents belong to my property?
-
----
-
-Summary Query
-
-Example
-
-Summarize my career.
-
----
-
-Comparison Query
-
-Example
-
-Compare my current salary with my previous job.
-
----
-
-Recommendation Query
-
-Example
-
-What should I update after renewing my passport?
+Stored in the `metadata` table with `fieldId = "ai_context"`. Displayed in Object Detail as a distinct "AI Context" card (not in the regular Details list).
 
 ---
 
-# Step 3 — Entity Recognition
+# Stage 3 — PromptBuilder
 
-Extract referenced entities.
+**Interface:** `domain/engine/PromptBuilder.kt`
 
-Example
+```kotlin
+interface PromptBuilder {
+    fun build(context: RetrievalContext, userQuery: String): String
+}
+```
 
-"What expires next month?"
+**Implementation:** `data/engine/PromptBuilderImpl.kt`
 
-Entities
+Pure formatting — no I/O, no coroutine, no database access. Takes a `RetrievalContext` and formats it into a structured system prompt using `buildString { }`.
 
-* Expiry
-* Time Range
-
-Example
-
-"Show Dad's passport."
-
-Entities
-
-* Dad
-* Passport
-
-Example
-
-"What happened after I joined Google?"
-
-Entities
-
-* Job
-* Company
-* Timeline
+The prompt includes:
+- Profile name and total object count
+- Lightweight index of all objects (for broad awareness)
+- Full `ObjectSnapshot` detail for the top 5 relevant objects
+- Per-object `AiObjectContext` if available
+- Pending tasks and upcoming reminders
+- Explicit instructions on the 5 supported `AiProposal` action types with JSON examples
 
 ---
 
-# Step 4 — Object Retrieval
+# Stage 4 — LLM Completion
 
-Retrieve matching Objects.
+`AiProvider.complete(systemPrompt, userMessage, history)` is called with the formatted prompt, the user's message, and prior conversation turns.
 
-Search order:
-
-1. Exact match
-2. Alias match
-3. Semantic match
-4. Relationship expansion
-
-Returned data:
-
-* Object ID
-* Title
-* Status
-* Domain
-* Confidence
+The LLM produces a natural language response and optionally a structured JSON action block representing an `AiProposal`.
 
 ---
 
-# Step 5 — Relationship Expansion
+# Stage 5 — Response Parsing
 
-Expand outward from retrieved Objects.
+`parseAiResponse()` extracts an `AiProposal` from the LLM response if one is present.
 
-Example
+## AiProposal
 
-Passport
+`AiProposal` is a sealed class replacing the legacy `ProposedAction`. It represents every mutation the AI may suggest.
 
-↓
+```kotlin
+sealed class AiProposal {
+    data class MetadataUpdate(
+        val proposalId: String, val summary: String,
+        val objectId: String, val objectTitle: String,
+        val objectType: String, val fields: List<ProposedField>
+    ) : AiProposal()
 
-Visa
+    data class GoalProposal(
+        val proposalId: String, val summary: String,
+        val title: String, val description: String,
+        val deadline: LocalDate?, val estimatedWeeks: Int?,
+        val suggestedTasks: List<String>, val linkedObjectId: String?
+    ) : AiProposal()
 
-↓
+    data class TaskCompletion(
+        val proposalId: String, val summary: String,
+        val taskId: String, val taskTitle: String, val goalId: String?
+    ) : AiProposal()
 
-Travel
+    data class TaskCreation(
+        val proposalId: String, val summary: String,
+        val title: String, val description: String,
+        val dueDate: LocalDate?, val goalId: String?, val objectId: String?
+    ) : AiProposal()
 
-↓
-
-Insurance
-
-↓
-
-Tickets
-
-The expansion depth should be configurable.
-
-Default:
-
-Depth = 2
-
-The user may explicitly request broader context.
-
----
-
-# Step 6 — Timeline Retrieval
-
-Retrieve relevant historical events.
-
-Examples
-
-* Promotions
-* Renewals
-* Purchases
-* Interviews
-* Applications
-
-Events should be returned chronologically.
+    data class ObjectCreation(
+        val proposalId: String, val summary: String,
+        val objectType: String, val domain: String,
+        val title: String, val initialNotes: String
+    ) : AiProposal()
+}
+```
 
 ---
 
-# Step 7 — Document Retrieval
+# Stage 6 — User Verification
 
-Retrieve supporting evidence.
+Proposal cards are rendered in the AI Workspace:
 
-Priority order:
+| Proposal Type | Card Component |
+|--------------|----------------|
+| `MetadataUpdate` | `ActionProposalCard` |
+| `GoalProposal` | `GoalProposalCard` |
+| `TaskCompletion` | `TaskCompletionCard` |
+| `TaskCreation` | `TaskCreationCard` |
+| `ObjectCreation` | `ObjectCreationCard` |
 
-1. Explicitly linked documents
-2. Related documents through relationships
-3. Semantically relevant documents
-
-Original documents are never modified.
-
-Only references are retrieved.
-
----
-
-# Step 8 — Metadata Retrieval
-
-Retrieve structured information.
-
-Examples
-
-Passport
-
-* Number
-* Expiry
-* Country
-
-Loan
-
-* Principal
-* Interest
-* Balance
-
-Property
-
-* Address
-* Purchase Date
-
-Only relevant metadata should be included.
+All cards are defined in `designsystem/`. The user must explicitly approve or dismiss each proposal. AI suggestions never auto-apply to the Life State.
 
 ---
 
-# Step 9 — Task Retrieval
+# Stage 7 — Proposal Execution
 
-Retrieve active tasks.
+`executeProposal()` routes approved proposals to the appropriate mutation path:
 
-Example
+| Proposal Type | Executed Via |
+|--------------|-------------|
+| `MetadataUpdate` | `MetadataRepository.upsertMetadata()` |
+| `GoalProposal` | `PlanningEngine.createGoal()` |
+| `TaskCompletion` | `PlanningEngine.completeTask()` |
+| `TaskCreation` | `PlanningEngine.createTask()` |
+| `ObjectCreation` | `ObjectRepository.createObject()` |
 
-User asks:
-
-"I left my job."
-
-Retrieve:
-
-* Update Resume
-* Update LinkedIn
-* Review Insurance
-* Apply to Companies
-
-The AI should combine facts with actionable next steps.
+`PlanningEngine` is the single mutation path for all Planner operations. No ViewModel writes directly to `GoalRepository` or `TaskRepository` for mutations.
 
 ---
 
-# Step 10 — Context Assembly
+# Privacy
 
-The retrieval engine creates a structured context package.
-
-Example
-
-Question
-
-↓
-
-Relevant Objects
-
-↓
-
-Relevant Metadata
-
-↓
-
-Relevant Events
-
-↓
-
-Relevant Relationships
-
-↓
-
-Relevant Documents
-
-↓
-
-Relevant Tasks
-
-↓
-
-Relevant Reminders
-
-↓
-
-Final Context
-
-Only this context is sent to the LLM.
-
-The LLM should never receive the full database.
-
----
-
-# Step 11 — Response Generation
-
-The LLM produces:
-
-* Natural language
-* Bullet points
-* Tables
-* Recommendations
-* Checklists
-
-Responses must never invent facts.
-
-Unknown information should be acknowledged rather than guessed.
-
----
-
-# Step 12 — Source Attribution
-
-Every factual statement should map back to its origin.
-
-Possible sources:
-
-* Object Metadata
-* Timeline Event
-* Uploaded Document
-* User-entered Data
-* AI Suggestion (if explicitly marked)
-
-The UI should be able to display "Why am I seeing this?" for any AI-generated answer.
-
----
-
-# Context Budget
-
-The retrieval engine should minimize token usage.
-
-Priority order:
-
-1. Object Metadata
-2. Active State
-3. Relationships
-4. Timeline
-5. Tasks
-6. Document Summaries
-7. Raw OCR (only if required)
-
-Large documents should be summarized before inclusion.
-
----
-
-# Conversation Memory
-
-The LLM's conversation memory is temporary.
-
-The Life State Engine is permanent.
-
-Conversation history should only provide conversational continuity.
-
-Facts always come from the Life State Engine.
-
----
-
-# Retrieval Modes
-
-## Fast Mode
-
-Optimized for quick answers.
-
-* Minimal relationship expansion
-* Metadata only
-* No document parsing
-
-Target latency: < 1 second (excluding LLM inference)
-
----
-
-## Standard Mode
-
-Default mode.
-
-Includes:
-
-* Objects
-* Metadata
-* Relationships
-* Timeline
-* Tasks
-
----
-
-## Deep Analysis Mode
-
-Used for complex questions.
-
-Includes:
-
-* Expanded relationship graph
-* Multiple object comparison
-* Document summaries
-* Historical trends
-
-Reserved for user-requested analysis.
-
----
-
-# Privacy Rules
-
-The retrieval engine should only retrieve information for the currently selected Profile unless the query explicitly references another Profile.
-
-Example
-
-"Show Dad's passport."
-
-Only then should the retrieval scope include Dad's Profile.
+The retrieval engine only retrieves information belonging to the currently active profile. Cross-profile queries are not supported in Version 1.
 
 ---
 
 # Error Handling
 
-If retrieval returns no relevant information:
-
-* Explain that no matching data exists.
-* Suggest nearby Objects if appropriate.
-* Never fabricate missing facts.
-
-If multiple Objects match:
-
-* Ask the user for clarification.
-* Present likely matches.
+- If retrieval returns no scored objects, the prompt includes only the lightweight object index and pending tasks.
+- If the LLM response contains no parseable `AiProposal`, only the natural language response is displayed.
+- If no AI provider is configured, the `OfflineAiProvider` returns a setup prompt.
 
 ---
 
 # Future Compatibility
 
-The retrieval pipeline should support future capabilities such as:
+The pipeline is designed for forward compatibility:
 
-* Hybrid semantic + keyword search
-* On-device embedding models
-* Knowledge graph traversal
-* Tool calling
-* Multi-modal reasoning
-* Federated cloud retrieval
-
-These enhancements should replace individual stages without changing the overall pipeline.
+| Future Capability | Extension Point |
+|------------------|----------------|
+| Semantic / embedding search | Replace `RetrievalEngineImpl` scoring |
+| On-device AI | Implement `AiProvider` backed by on-device model |
+| Multiple AI providers | Already abstracted behind `AiProvider` |
+| Tool calling | Extend `AiProposal` sealed class |
+| Multi-modal | Add image context to `ObjectSnapshot` |
 
 ---
 
 # Summary
 
-The AI Retrieval Pipeline ensures that every AI response is grounded in the Life State Engine.
-
-The retrieval engine decides *what* information is relevant.
-
-The LLM decides *how* to explain it.
-
-This separation keeps AI accurate, efficient, explainable, and maintainable while allowing future improvements without redesigning the core architecture.
+| Stage | Responsibility | Location |
+|-------|---------------|----------|
+| Entry | `HomeViewModel.sendMessage()` | `features/home` |
+| Scoring | `RetrievalEngineImpl` | `data/engine` |
+| Snapshot | `ObjectReasonerImpl` | `data/engine` |
+| Formatting | `PromptBuilderImpl` | `data/engine` |
+| Inference | `AiProvider` | `data/ai/providers` |
+| Parsing | `parseAiResponse()` | `features/home` |
+| Verification | Proposal cards | `designsystem` |
+| Execution | `executeProposal()` | `features/home` |
+| Mutation | `PlanningEngine` / repositories | `data` |

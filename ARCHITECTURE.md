@@ -25,15 +25,17 @@ LifePilot/
 ├── data/                   # Android-specific implementations (Room, DataStore, WorkManager)
 ├── designsystem/           # Shared Compose components and Material 3 theme
 └── features/
-    ├── home/               # Dashboard screen
-    ├── library/            # Object list and management
-    ├── search/             # Universal search
+    ├── home/               # Dashboard + AI Workspace (dual-mode home screen)
+    ├── library/            # Domain-grouped Object Tree with sticky section headers
+    ├── search/             # Universal search (Objects, Metadata, Documents, Goals, Tasks)
     ├── timeline/           # Activity timeline
     ├── object/             # Object detail, creation, metadata editing, verification
     ├── document/           # Document viewer
-    ├── ai/                 # AI chat interface
+    ├── planner/            # Goals and planning interface
     └── settings/           # Settings, profile, export/import
 ```
+
+The `features/ai` module has been removed. All AI interaction is now routed through `features/home` (Home AI Workspace). See ADR-008.
 
 ### Module Dependencies
 
@@ -42,9 +44,14 @@ app
 ├── domain
 ├── data
 ├── designsystem
-└── features/*
-    ├── domain
-    └── designsystem
+├── features/home
+├── features/library
+├── features/search
+├── features/object
+├── features/document
+├── features/settings
+├── features/timeline
+└── features/planner
 
 data
 ├── domain
@@ -173,7 +180,7 @@ Room 2.6.1 with SQLite on-device storage.
 ### Key Design Decisions
 
 - **Soft delete:** Objects are marked `deleted = 1` rather than physically removed. File cleanup is handled separately.
-- **No schema versions beyond 1.0:** Version 1 is the first release. Future schema changes require Room migrations with the exported schema JSON as reference.
+- **Current database version: 3.** MIGRATION_1_2 added `goals`, `conversations`, and `chat_messages` tables and a `goal_id` column to `tasks`. MIGRATION_2_3 added `verification_status TEXT NOT NULL DEFAULT 'UNVERIFIED'` to the `metadata` table.
 - **`exportSchema = true`:** Schema JSON is exported to `data/schemas/` and should be committed to track schema history.
 
 ---
@@ -212,18 +219,50 @@ Provider selection is driven by `PreferenceManager.getAiProvider()`. The selecte
 
 API keys are stored using Android Keystore AES-256-GCM encryption via `EncryptedKeyStorage`. Keys are never committed to the repository and are entered at runtime in Settings > AI Provider.
 
-### Context Building
+### AI Pipeline
 
-When a user sends a message, the AI system prompt is built from:
-- Active profile name
-- Up to 30 most-recently-updated objects (title, type, domain, status)
-- Up to 5 metadata fields per object (batch-fetched in a single query)
-- Up to 10 pending tasks
-- Up to 10 upcoming reminders (next 30 days)
+All AI interaction enters through `HomeViewModel.sendMessage()`. The pipeline is:
 
-The system prompt is cached per conversation session. Clearing the chat resets the cache.
+```
+User Message
+    ↓
+HomeViewModel.sendMessage()
+    ↓
+RetrievalEngine.retrieve(profileId, userQuery)
+    — keyword scoring (title=3pt, type=2pt, domain=1.5pt, metadata=0.5pt)
+    — max 5 objects selected
+    — ObjectReasoner.buildSnapshot() called per object
+    ↓
+PromptBuilder.build(context, userQuery)
+    — pure string formatting, no I/O
+    — formats RetrievalContext into structured system prompt
+    ↓
+AiProvider.complete(systemPrompt, userMessage, history)
+    ↓
+parseAiResponse() → AiProposal?
+    ↓
+User reviews proposal card
+    ↓
+executeProposal() → PlanningEngine / MetadataRepository / ObjectRepository
+```
 
-**Design constraint:** AI never persists data. It suggests; the user verifies; the system stores.
+**Domain engine interfaces** (in `domain/engine/`):
+- `RetrievalEngine` — selects up to 5 relevant objects per request using keyword scoring
+- `PromptBuilder` — pure formatting, builds the system prompt from a `RetrievalContext`
+- `ObjectReasoner` — builds a canonical `ObjectSnapshot` for a single object (metadata, task count, document count, stored `AiObjectContext`)
+
+**Data implementations** (in `data/engine/`):
+- `RetrievalEngineImpl`, `PromptBuilderImpl`, `ObjectReasonerImpl`
+
+**Design constraint:** AI never persists data. It suggests (`AiProposal`); the user verifies; the system stores via `PlanningEngine` or the appropriate repository.
+
+### Home Screen AI Workspace
+
+The Home screen operates in two modes:
+- `DAILY_BRIEF` — attention items, active goals, recent conversations
+- `AI_WORKSPACE` — conversation thread + structured proposal cards
+
+Sending the first message in a session transitions to `AI_WORKSPACE`. `startNewChat()` returns to `DAILY_BRIEF`.
 
 ---
 
@@ -255,7 +294,7 @@ Navigation uses Jetpack Navigation Compose with typed routes.
 
 **Deep links:** The `lifepilot://` custom scheme is used for notification deep links (e.g., `lifepilot://object/{objectId}`).
 
-**Bottom navigation:** 5 tabs — Home, Library, Search, Ask AI, Profile (Settings).
+**Bottom navigation:** 4 tabs — Home (includes AI Workspace), Library, Search, Settings. The standalone Ask AI tab has been removed; AI is accessed directly from the Home screen.
 
 ---
 
@@ -281,6 +320,7 @@ WorkManager is used for all background tasks.
 |--------|----------|---------|
 | `DocumentOcrWorker` | One-shot, on document upload | ML Kit OCR processing |
 | `ReminderEvaluationWorker` | Periodic, every 6 hours | Evaluate reminder rules |
+| `MorningBriefWorker` | Periodic, daily at 9 AM | Shows notification with pending task count and active goal count |
 
 WorkManager is initialized manually (not via Jetpack Startup — disabled in manifest) to allow Hilt injection via `HiltWorkerFactory`.
 

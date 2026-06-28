@@ -25,7 +25,7 @@ Every release should strengthen one or more of these pillars:
 
 # Version 1.0 — Foundation
 
-**Status: Alpha — Implementation ~97% complete**
+**Status: Release Candidate — Architecture Stabilization complete**
 
 ## Goal
 
@@ -34,47 +34,56 @@ Build a stable offline-first platform capable of managing a person's administrat
 ### Core Platform
 
 * ✅ Offline-first architecture
-* ✅ Local SQLite database (Room)
+* ✅ Local SQLite database (Room, version 3)
 * ✅ File Storage Service
-* ✅ Schema Engine (JSON-driven, 12+ schemas)
+* ✅ Schema Engine (JSON-driven, 17 schemas)
 * ✅ Rule Engine (reminder/task evaluation)
-* ✅ Search Engine (cross-index with metadata)
+* ✅ Search Engine (Objects, Metadata, Documents, Goals, Tasks)
 * ✅ Life State Engine (full pipeline)
+* ✅ RetrievalEngine (keyword scoring, max 5 objects per AI request)
+* ✅ PromptBuilder (pure formatting, no I/O)
+* ✅ ObjectReasoner (per-object canonical AI snapshot)
+* ✅ PlanningEngine (single mutation path for all goal and task changes)
 
 ### User Features
 
 * ✅ Profiles
 * ✅ Objects (create, view, archive, delete)
-* ✅ Documents (upload, view, OCR)
+* ✅ Documents (upload, view, OCR, PDF rendering)
 * ✅ Timeline (grouped, filterable)
-* ✅ Tasks (generated, completable)
+* ✅ Tasks (generated, completable, goal-linked)
+* ✅ Goals (created manually or via AI proposal, with status lifecycle)
 * ✅ Reminders (rule-driven, notifications)
-* ✅ Universal Search
+* ✅ Universal Search (Objects, Metadata, Documents, Goals, Tasks)
 * ✅ Dashboard (attention items, domain distribution)
 * ✅ Object Relationships
+* ✅ Library: Domain-grouped Object Tree with sticky section headers
+* ✅ Metadata Provenance (source, verification status, ProvenanceBadge)
 
 ### AI Features
 
 * ✅ OCR (ML Kit)
 * ✅ Metadata Extraction (AI-powered with user verification)
-* ✅ AI Chat (structured context from life state)
+* ✅ AI Workspace (Home screen, dual-mode: Daily Brief / AI Workspace)
+* ✅ Structured AI proposals (MetadataUpdate, GoalProposal, TaskCreation, TaskCompletion, ObjectCreation)
+* ✅ AiObjectContext (per-object structured AI analysis, stored in metadata)
+* ✅ MorningBrief daily notification (9 AM, pending tasks + active goals)
 * ⬜ Document Classification (deferred to 1.1)
-* ⬜ AI Summaries (deferred to 1.1)
+* ⬜ AI Summaries on demand (deferred to 1.1)
 
 ### Infrastructure
 
 * ✅ Export (JSON with full payload)
 * ✅ Import (with manifest validation)
 * ✅ Security (biometric lock, Keystore encryption)
-* ✅ Notifications (WorkManager periodic reminders)
-
-### Remaining for 1.0 GA
-
-* ✅ PDF document rendering (Android PdfRenderer)
+* ✅ Notifications (WorkManager: ReminderEvaluation every 6h, MorningBrief daily 9 AM)
 * ✅ Animated screen transitions (slide+fade)
 * ✅ Pull-to-refresh on list screens
 * ✅ Multi-select bulk operations (archive/delete)
 * ✅ Haptic feedback on key actions
+
+### Remaining for 1.0 GA
+
 * ⬜ Play Store listing assets
 
 ---

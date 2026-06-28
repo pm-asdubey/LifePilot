@@ -60,7 +60,7 @@ Repositories must never contain business rules.
 
 # Repository Overview
 
-LifePilot defines the following repositories.
+LifePilot defines the following repositories and domain engines.
 
 ```text
 ProfileRepository
@@ -75,6 +75,8 @@ EventRepository
 
 TaskRepository
 
+GoalRepository
+
 RelationshipRepository
 
 ReminderRepository
@@ -88,7 +90,19 @@ BackupRepository
 AIRepository
 ```
 
-Each repository owns a single aggregate.
+Domain engines (also bound in `RepositoryModule`):
+
+```text
+PlanningEngine
+
+RetrievalEngine
+
+PromptBuilder
+
+ObjectReasoner
+```
+
+Each repository owns a single aggregate. Domain engines coordinate across repositories according to business rules.
 
 ---
 
@@ -153,20 +167,28 @@ Objects are the primary aggregate root.
 Responsibilities
 
 * Read Metadata
-* Update Metadata
-* Validate Metadata
+* Upsert Metadata (with verificationStatus parameter)
+* Verify or reject individual entries
 * Retrieve Metadata History
 
 Example operations
 
 ```kotlin
-saveMetadata()
+upsertMetadata(entry, verificationStatus)
 
-getMetadata()
+upsertMetadataBatch(entries)
 
-observeMetadata()
+getMetadata(objectId)
 
-metadataHistory()
+getMetadataForObjects(objectIds)   // batch fetch — avoids N+1 queries
+
+observeMetadata(objectId)
+
+verifyMetadata(metadataId)         // transitions to VERIFIED
+
+rejectMetadata(metadataId)         // transitions to REJECTED
+
+metadataHistory(objectId, fieldId)
 ```
 
 ---
@@ -374,6 +396,82 @@ generateInsight()
 
 answerQuestion()
 ```
+
+---
+
+# PlanningEngine
+
+**Interface:** `domain/engine/PlanningEngine.kt`
+
+`PlanningEngine` is the single mutation path for all Planner operations. No ViewModel or feature code writes directly to `GoalRepository` or `TaskRepository` for mutations. This enforces a single, auditable entry point for all goal and task state changes.
+
+Responsibilities
+
+* Create, activate, complete, and archive Goals
+* Create and complete Tasks (standalone and goal-linked)
+* Execute `AiProposal.GoalProposal` and `AiProposal.TaskCreation` proposals after user approval
+
+Example operations
+
+```kotlin
+createGoal(profileId, title, description, deadline, estimatedWeeks, linkedObjectId): Goal
+
+completeGoal(goalId)
+
+archiveGoal(goalId)
+
+createTask(profileId, objectId, goalId, title, description, dueDate, source): Task
+
+completeTask(taskId)
+
+cancelTask(taskId)
+```
+
+---
+
+# RetrievalEngine
+
+**Interface:** `domain/engine/RetrievalEngine.kt`
+
+Selects the objects most relevant to a user's query using keyword scoring. Returns a `RetrievalContext` that is the sole input to `PromptBuilder`.
+
+```kotlin
+suspend fun retrieve(profileId: String, userQuery: String): RetrievalContext
+```
+
+Implementation: `data/engine/RetrievalEngineImpl.kt`
+
+Scoring weights: title = 3pt, type = 2pt, domain = 1.5pt, metadata values = 0.5pt per matching keyword. Maximum 5 objects returned.
+
+---
+
+# PromptBuilder
+
+**Interface:** `domain/engine/PromptBuilder.kt`
+
+Pure formatting — no I/O, no coroutines, no database access. Converts a `RetrievalContext` and the user's query into a structured system prompt string.
+
+```kotlin
+fun build(context: RetrievalContext, userQuery: String): String
+```
+
+Implementation: `data/engine/PromptBuilderImpl.kt`
+
+---
+
+# ObjectReasoner
+
+**Interface:** `domain/engine/ObjectReasoner.kt`
+
+Builds a rich `ObjectSnapshot` for a single object. Called by `RetrievalEngine` for each of the top-scored objects.
+
+```kotlin
+suspend fun buildSnapshot(profileId: String, objectId: String): ObjectSnapshot?
+```
+
+Implementation: `data/engine/ObjectReasonerImpl.kt`
+
+Fetches: all metadata, pending task count, document count, and parses `AiObjectContext` from the `ai_context` metadata field.
 
 ---
 

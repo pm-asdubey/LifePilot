@@ -52,7 +52,7 @@ lifepilot.db
 Version
 
 ```text
-1
+3
 ```
 
 Export schema
@@ -61,20 +61,20 @@ Export schema
 exportSchema = true
 ```
 
-Schema history should be committed to version control.
+Schema history is committed to `data/schemas/` in version control.
 
 ---
 
 # Entity Overview
 
-Version 1 contains the following entities.
+The current schema (version 3) contains the following entities.
 
 ```text
 ProfileEntity
 
 ObjectEntity
 
-MetadataEntity
+MetadataEntity          ← includes verification_status column (added v2→3)
 
 DocumentEntity
 
@@ -82,13 +82,19 @@ DocumentVersionEntity
 
 EventEntity
 
-TaskEntity
+TaskEntity              ← includes goal_id column (added v1→2)
+
+GoalEntity              ← added v1→2
 
 RelationshipEntity
 
 ReminderEntity
 
 TimelineEntity
+
+ConversationEntity      ← added v1→2
+
+ChatMessageEntity       ← added v1→2
 
 SearchIndexEntity
 
@@ -189,6 +195,7 @@ Fields
 * version
 * confidence
 * source
+* verificationStatus   ← TEXT NOT NULL DEFAULT 'UNVERIFIED' (added MIGRATION_2_3)
 * updatedAt
 
 Indexes
@@ -196,7 +203,7 @@ Indexes
 * objectId
 * fieldId
 
-Metadata is stored vertically to support dynamic schemas.
+Metadata is stored vertically to support dynamic schemas. The special `fieldId = "ai_context"` stores `AiObjectContext` JSON.
 
 ---
 
@@ -295,14 +302,15 @@ Primary Key
 taskId
 ```
 
-Foreign Key
+Foreign Keys
 
-ObjectEntity
+ObjectEntity, GoalEntity (nullable)
 
 Fields
 
 * taskId
 * objectId
+* goalId        ← nullable FK to GoalEntity (added MIGRATION_1_2)
 * title
 * description
 * priority
@@ -315,6 +323,98 @@ Indexes
 
 * dueDate
 * status
+
+---
+
+# GoalEntity
+
+Added in MIGRATION_1_2.
+
+Table: `goals`
+
+Primary Key
+
+```text
+goalId
+```
+
+Foreign Key
+
+ProfileEntity
+
+Fields
+
+* goalId
+* profileId
+* title
+* description
+* deadline
+* estimatedWeeks
+* status          ← GoalStatus: DRAFT, PROPOSED, ACTIVE, COMPLETED, ARCHIVED, CANCELLED
+* linkedObjectId  ← nullable FK to ObjectEntity
+* createdAt
+* updatedAt
+
+Indexes
+
+* profileId
+* status
+
+---
+
+# ConversationEntity
+
+Added in MIGRATION_1_2.
+
+Table: `conversations`
+
+Stores AI conversation sessions.
+
+Primary Key
+
+```text
+conversationId
+```
+
+Foreign Key
+
+ProfileEntity
+
+Fields
+
+* conversationId
+* profileId
+* title
+* createdAt
+* updatedAt
+
+---
+
+# ChatMessageEntity
+
+Added in MIGRATION_1_2.
+
+Table: `chat_messages`
+
+Stores individual messages within a conversation.
+
+Primary Key
+
+```text
+messageId
+```
+
+Foreign Key
+
+ConversationEntity
+
+Fields
+
+* messageId
+* conversationId
+* role           ← USER or ASSISTANT
+* content
+* timestamp
 
 ---
 
@@ -514,6 +614,25 @@ Every schema change requires:
 4. Updated exported schema.
 
 Destructive migrations are prohibited in production builds.
+
+---
+
+# Migration History
+
+## MIGRATION_1_2 (DB version 1 → 2)
+
+Added:
+
+* `goals` table (`GoalEntity`) with columns: `goalId`, `profileId`, `title`, `description`, `deadline`, `estimatedWeeks`, `status`, `linkedObjectId`, `createdAt`, `updatedAt`
+* `conversations` table (`ConversationEntity`) with columns: `conversationId`, `profileId`, `title`, `createdAt`, `updatedAt`
+* `chat_messages` table (`ChatMessageEntity`) with columns: `messageId`, `conversationId`, `role`, `content`, `timestamp`
+* `goal_id TEXT` column (nullable) to the `tasks` table
+
+## MIGRATION_2_3 (DB version 2 → 3)
+
+Added:
+
+* `verification_status TEXT NOT NULL DEFAULT 'UNVERIFIED'` column to the `metadata` table
 
 ---
 

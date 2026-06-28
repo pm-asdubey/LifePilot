@@ -114,19 +114,19 @@ Subfolders
 ```text
 domain/
 
-entities/
+engine/           ← Engine interfaces (RetrievalEngine, PromptBuilder, ObjectReasoner,
+                     PlanningEngine, LifeStateEngine, RuleEngine, SchemaEngine)
 
-usecases/
+model/            ← Domain models (AiObjectContext, ObjectSnapshot, RetrievalContext,
+                     AiProposal, Goal, Task, MetadataEntry, VerificationStatus, ...)
 
-services/
+usecase/
 
-rules/
+repository/       ← Repository interfaces
 
-repositories/
+service/
 
-models/
-
-events/
+rule/
 ```
 
 This module must not depend on Android.
@@ -150,6 +150,13 @@ datasources/
 
 repositories/
 
+engine/           ← Domain engine implementations
+    RetrievalEngineImpl.kt
+    PromptBuilderImpl.kt
+    ObjectReasonerImpl.kt
+    LifeStateEngineImpl.kt
+    RuleEngineImpl.kt
+
 filesystem/
 
 ocr/
@@ -157,6 +164,8 @@ ocr/
 ai/
 
 search/
+
+schema/
 
 preferences/
 
@@ -173,31 +182,27 @@ Never business rules.
 
 Each user-facing feature lives in its own module.
 
-Example
-
 ```text
 features/
 
-home/
+home/         ← Dashboard + AI Workspace (dual-mode); all AI interaction enters here
 
-library/
+library/      ← Domain-grouped Object Tree with sticky section headers
 
-search/
+search/       ← Universal search: Objects, Metadata, Documents, Goals, Tasks
 
 timeline/
 
-settings/
-
-profile/
+planner/      ← Goals and planning interface (PlanningEngine mutations only)
 
 object/
 
 document/
 
-task/
-
-reminder/
+settings/
 ```
+
+Note: `features/ai` has been removed. AI interaction is handled entirely within `features/home`. See ADR-008.
 
 Each feature follows the same structure.
 

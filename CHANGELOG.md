@@ -4,6 +4,45 @@ All notable changes to LifePilot are documented here.
 
 ---
 
+## [Unreleased] — Architecture Stabilization Pass
+
+### Added
+
+- `RetrievalEngine` domain interface and `RetrievalEngineImpl` — keyword scoring (title=3pt, type=2pt, domain=1.5pt, metadata=0.5pt), selects max 5 objects per AI request
+- `PromptBuilder` domain interface and `PromptBuilderImpl` — pure string formatting, no I/O, converts `RetrievalContext` into a structured system prompt
+- `ObjectReasoner` domain interface and `ObjectReasonerImpl` — builds `ObjectSnapshot` per object (metadata, task count, document count, `AiObjectContext`)
+- `AiObjectContext` domain model — structured AI analysis stored as JSON in `metadata` table under `fieldId = "ai_context"`
+- `ObjectSnapshot` domain model — per-object view passed from `RetrievalEngine` to `PromptBuilder`
+- `RetrievalContext` domain model — complete input to `PromptBuilder` (snapshots, task index, reminder index, full object index)
+- `AiProposal` sealed class replacing legacy `ProposedAction`: `MetadataUpdate`, `GoalProposal`, `TaskCompletion`, `TaskCreation`, `ObjectCreation`
+- `PlanningEngine` domain interface — single mutation path for all goal and task state changes (`createGoal`, `completeGoal`, `archiveGoal`, `createTask`, `completeTask`, `cancelTask`)
+- `GoalStatus` enum expanded: `DRAFT`, `PROPOSED`, `ACTIVE`, `COMPLETED`, `ARCHIVED`, `CANCELLED`
+- `TaskSource` enum expanded: `MANUAL`, `GOAL`, `RECURRING`, `SYSTEM`, `AI_PROPOSED` (legacy `USER`, `RULE_ENGINE`, `AI` retained)
+- `Task.goalId: String?` field linking tasks to goals
+- `VerificationStatus` enum: `UNVERIFIED`, `VERIFIED`, `REJECTED`
+- `MetadataEntry.verificationStatus` field (default `UNVERIFIED`)
+- `MetadataRepository.verifyMetadata()` and `rejectMetadata()` methods; `upsertMetadata` now accepts `verificationStatus` parameter
+- `MetadataRepository.getMetadataForObjects()` batch fetch method
+- `MIGRATION_2_3` — adds `verification_status TEXT NOT NULL DEFAULT 'UNVERIFIED'` to `metadata` table; DB version now 3
+- `MIGRATION_1_2` — adds `goals`, `conversations`, `chat_messages` tables and `goal_id` column to `tasks` table; DB version 2
+- `GoalEntity`, `ConversationEntity`, `ChatMessageEntity` Room entities
+- Home screen dual-mode: `DAILY_BRIEF` (attention items, goals, recent conversations) and `AI_WORKSPACE` (conversation + proposal cards)
+- Structured proposal cards in `designsystem/`: `GoalProposalCard`, `TaskCompletionCard`, `TaskCreationCard`, `ObjectCreationCard`, `ActionProposalCard` (MetadataUpdate)
+- AI Workspace in `HomeViewModel` — single AI entry point: `sendMessage()` → `RetrievalEngine` → `PromptBuilder` → `AiProvider` → `parseAiResponse()` → proposal card → `executeProposal()`
+- `MorningBriefWorker` — WorkManager periodic job, fires daily at 9 AM, shows notification with pending task count and active goal count
+- Library screen: domain-grouped Object Tree with sticky section headers when no domain filter is selected
+- Search expanded to include Goals and Tasks in addition to Objects, Metadata, Documents
+- Object Detail: `ai_context` metadata field rendered as a distinct `secondaryContainer` "AI Context" card (not in the regular Details list)
+- Object Detail: `ProvenanceBadge` on every metadata entry showing source and verification status
+- DI bindings added to `RepositoryModule` for `ObjectReasoner`, `RetrievalEngine`, `PromptBuilder`, `PlanningEngine`
+- ADR-008 documenting all Architecture Stabilization Pass decisions
+
+### Removed
+
+- `features/ai` module (`AiChatViewModel`, `AiChatScreen`) detached from `app/build.gradle.kts`; all AI interaction now routes through `HomeViewModel`
+
+---
+
 ## [1.0.0-rc1] — Release Candidate
 
 ### Release Prep
