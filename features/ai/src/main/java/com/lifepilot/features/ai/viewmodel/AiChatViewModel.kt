@@ -48,6 +48,8 @@ class AiChatViewModel @Inject constructor(
     private var cachedSystemPrompt: String? = null
     // objectId -> (title, type) for action matching
     private var objectIndex: Map<String, Pair<String, String>> = emptyMap()
+    // objectId -> metadata entries for field-based matching
+    private var objectMetadataIndex: Map<String, List<com.lifepilot.domain.model.MetadataEntry>> = emptyMap()
 
     init {
         viewModelScope.launch {
@@ -229,12 +231,30 @@ class AiChatViewModel @Inject constructor(
             val matchValue = obj.optString("matchValue", "")
             val summary = obj.optString("summary", "Update suggested")
 
-            // Find the matching object by type and field value
-            val matchedObjectId = objectIndex.entries.firstOrNull { (_, v) ->
-                v.second.equals(objectType, ignoreCase = true)
-            }?.key
+            // Collect all objects of the right type
+            val candidateIds = objectIndex.entries
+                .filter { (_, v) -> v.second.equals(objectType, ignoreCase = true) }
+                .map { it.key }
 
-            val resolvedObjectId = matchedObjectId ?: return null
+            val resolvedObjectId = when {
+                candidateIds.isEmpty() -> return null
+                // Single match — no need to check field
+                candidateIds.size == 1 -> candidateIds.first()
+                // Multiple matches — try to pick the right one via matchField+matchValue
+                matchField.isNotBlank() && matchValue.isNotBlank() -> {
+                    candidateIds.firstOrNull { id ->
+                        // Check object title
+                        val title = objectIndex[id]?.first ?: ""
+                        title.contains(matchValue, ignoreCase = true) ||
+                            // Check metadata fields
+                            objectMetadataIndex[id]?.any { entry ->
+                                entry.fieldId.equals(matchField, ignoreCase = true) &&
+                                    entry.value.contains(matchValue, ignoreCase = true)
+                            } == true
+                    } ?: candidateIds.first()
+                }
+                else -> candidateIds.first()
+            }
             val resolvedTitle = objectIndex[resolvedObjectId]?.first ?: objectType
 
             val fieldsArray = obj.optJSONArray("fields") ?: return null
@@ -277,12 +297,13 @@ class AiChatViewModel @Inject constructor(
         } ?: emptyList()
         val objects = allObjects.take(30)
 
-        // Build objectIndex for later action resolution
-        objectIndex = objects.associate { it.objectId to (it.title to it.objectType) }
-
         val metadataByObject = runCatching {
             metadataRepository.getMetadataForObjects(objects.map { it.objectId })
         }.getOrElse { emptyMap() }
+
+        // Build indexes for later action resolution
+        objectIndex = objects.associate { it.objectId to (it.title to it.objectType) }
+        objectMetadataIndex = metadataByObject
 
         val pendingTasks = profile?.let {
             taskRepository.observePendingTasks(it.profileId)
@@ -304,32 +325,55 @@ class AiChatViewModel @Inject constructor(
             appendLine("Today's date: ${java.time.LocalDate.now()}")
             appendLine()
             appendLine("IMPORTANT — DETECTING LIFE EVENTS:")
-            appendLine("When the user mentions a life event (e.g. job interview, received offer, started a job, signed a lease,")
-            appendLine("bought insurance, renewed passport, received a visa), you MUST:")
+            appendLine("When the user mentions ANY life event that affects a tracked record, you MUST:")
             appendLine("1. Respond helpfully in plain language.")
-            appendLine("2. Identify which tracked record this event relates to (look at the objects list below).")
-            appendLine("3. If a matching record exists, append ONE structured update block in this EXACT format:")
+            appendLine("2. Identify which tracked record this event relates to (look at the records list below).")
+            appendLine("3. Append ONE structured update block in this EXACT format:")
             appendLine()
             appendLine("[LIFEPILOT_ACTION]")
             appendLine("{")
-            appendLine("  \"objectType\": \"<type>\",")
-            appendLine("  \"matchField\": \"companyName\",")
-            appendLine("  \"matchValue\": \"<value>\",")
-            appendLine("  \"summary\": \"<one-line human description of the update>\",")
+            appendLine("  \"objectType\": \"<exact objectType from the record>\",")
+            appendLine("  \"matchField\": \"<field used to identify the record, e.g. companyName, policyNumber, destination>\",")
+            appendLine("  \"matchValue\": \"<value of that field>\",")
+            appendLine("  \"summary\": \"<one-line human description of what changed>\",")
             appendLine("  \"fields\": [")
-            appendLine("    {\"fieldId\": \"career_notes\", \"displayName\": \"Career Notes\", \"value\": \"<what happened>\", \"mode\": \"append\"},")
-            appendLine("    {\"fieldId\": \"interview_status\", \"displayName\": \"Interview Status\", \"value\": \"IN_PROGRESS\", \"mode\": \"set\"}")
+            appendLine("    {\"fieldId\": \"notes\", \"displayName\": \"Notes\", \"value\": \"<what happened, dated>\", \"mode\": \"append\"}")
             appendLine("  ]")
             appendLine("}")
             appendLine("[/LIFEPILOT_ACTION]")
             appendLine()
+            appendLine("Life events by record type (these are examples, not exhaustive):")
+            appendLine("  Job: interview scheduled/done, offer received, joined, resigned, got a promotion, salary changed")
+            appendLine("       → use career_notes field (mode: append) + interview_status field (mode: set) where relevant")
+            appendLine("  Passport: renewed, lost, applied for new, visa stamped")
+            appendLine("  Insurance: renewed, claimed, premium changed, policy lapsed")
+            appendLine("  Property: rented out, sold, refinanced, renovation started")
+            appendLine("  Vehicle: serviced, MOT done, insured, sold, registration renewed")
+            appendLine("  Travel: trip booked, visa approved, flight changed, trip completed")
+            appendLine("  Health: doctor visit, diagnosis, medication changed, test result received")
+            appendLine("  Education: enrolled, exam taken, result received, graduated")
+            appendLine("  Investment: bought, sold, value changed, dividends received")
+            appendLine("  Loan: EMI paid, pre-closed, interest rate changed")
+            appendLine("  Tax: filed, refund received, notice received")
+            appendLine("  Subscription: renewed, cancelled, plan upgraded")
+            appendLine("  Bank Account: opened, closed, account details changed")
+            appendLine("  Pension: contribution changed, retirement date updated")
+            appendLine("  Utilities: provider changed, tariff updated, contract renewed")
+            appendLine("  Will: updated, witnessed, executor changed")
+            appendLine()
+            appendLine("For Job records, prefer the career_notes field (mode: append) over the generic notes field.")
+            appendLine("For all other records, use the notes field (mode: append) to log what happened.")
+            appendLine("Also update specific structured fields where they exist (e.g. expiryDate, status).")
+            appendLine()
             appendLine("If you need information to give better help, append ONE question block:")
             appendLine("[ASK]<the question to ask the user>[/ASK]")
             appendLine()
+            appendLine("Rules:")
             appendLine("Only include [LIFEPILOT_ACTION] when a clear life event affecting a tracked record is detected.")
             appendLine("Only include [ASK] when more context would meaningfully improve the profile.")
             appendLine("Never include both [LIFEPILOT_ACTION] and [ASK] in the same response.")
             appendLine("Never make up data. Only use what the user tells you.")
+            appendLine("If no matching record exists in the list, do NOT emit a LIFEPILOT_ACTION block.")
             appendLine()
             appendLine("USER LIFE DATA:")
             if (profile != null) {

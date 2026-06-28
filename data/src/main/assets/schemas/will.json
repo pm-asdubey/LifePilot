@@ -58,24 +58,72 @@
       "searchable": false,
       "aiExtractable": false,
       "validationRules": []
+    },
+    {
+      "fieldId": "notes",
+      "displayName": "Notes",
+      "fieldType": "MULTILINE_TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": false,
+      "aiWritable": true,
+      "validationRules": []
     }
   ],
   "lifecycle": {
     "initialState": "DRAFT",
     "states": [
-      { "stateId": "DRAFT", "displayName": "Draft" },
-      { "stateId": "SIGNED", "displayName": "Signed" },
-      { "stateId": "OUTDATED", "displayName": "Outdated" }
+      {
+        "stateId": "DRAFT",
+        "displayName": "Draft"
+      },
+      {
+        "stateId": "SIGNED",
+        "displayName": "Signed"
+      },
+      {
+        "stateId": "OUTDATED",
+        "displayName": "Outdated"
+      }
     ],
     "transitions": [
-      { "fromState": "DRAFT", "toState": "SIGNED", "trigger": "SIGNED", "label": "Signed" },
-      { "fromState": "SIGNED", "toState": "OUTDATED", "trigger": "REVIEW_OVERDUE", "label": "Outdated" },
-      { "fromState": "OUTDATED", "toState": "SIGNED", "trigger": "UPDATED", "label": "Updated & Signed" }
+      {
+        "fromState": "DRAFT",
+        "toState": "SIGNED",
+        "trigger": "SIGNED",
+        "label": "Signed"
+      },
+      {
+        "fromState": "SIGNED",
+        "toState": "OUTDATED",
+        "trigger": "REVIEW_OVERDUE",
+        "label": "Outdated"
+      },
+      {
+        "fromState": "OUTDATED",
+        "toState": "SIGNED",
+        "trigger": "UPDATED",
+        "label": "Updated & Signed"
+      }
     ]
   },
   "aiConfig": {
-    "extractableFields": ["solicitor_name", "date_signed", "executor_name"],
-    "classificationHints": ["will", "testament", "probate", "executor", "beneficiary"]
+    "extractableFields": [
+      "solicitor_name",
+      "date_signed",
+      "executor_name"
+    ],
+    "classificationHints": [
+      "will",
+      "testament",
+      "probate",
+      "executor",
+      "beneficiary"
+    ],
+    "aiWritableFields": [
+      "notes"
+    ]
   },
   "reminderRules": [
     {

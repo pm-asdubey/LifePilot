@@ -15,7 +15,10 @@
       "searchable": true,
       "aiExtractable": true,
       "validationRules": [
-        { "ruleType": "REQUIRED", "message": "Licence number is required" }
+        {
+          "ruleType": "REQUIRED",
+          "message": "Licence number is required"
+        }
       ]
     },
     {
@@ -27,7 +30,10 @@
       "searchable": true,
       "aiExtractable": true,
       "validationRules": [
-        { "ruleType": "REQUIRED", "message": "Full name is required" }
+        {
+          "ruleType": "REQUIRED",
+          "message": "Full name is required"
+        }
       ]
     },
     {
@@ -90,19 +96,59 @@
       "searchable": false,
       "aiExtractable": true,
       "validationRules": []
+    },
+    {
+      "fieldId": "notes",
+      "displayName": "Notes",
+      "fieldType": "MULTILINE_TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": false,
+      "aiWritable": true,
+      "validationRules": []
     }
   ],
   "lifecycle": {
     "states": [
-      { "stateId": "ACTIVE", "displayName": "Active" },
-      { "stateId": "RENEWAL_DUE", "displayName": "Renewal Due" },
-      { "stateId": "EXPIRED", "displayName": "Expired", "isFinal": false },
-      { "stateId": "ARCHIVED", "displayName": "Archived", "isFinal": true }
+      {
+        "stateId": "ACTIVE",
+        "displayName": "Active"
+      },
+      {
+        "stateId": "RENEWAL_DUE",
+        "displayName": "Renewal Due"
+      },
+      {
+        "stateId": "EXPIRED",
+        "displayName": "Expired",
+        "isFinal": false
+      },
+      {
+        "stateId": "ARCHIVED",
+        "displayName": "Archived",
+        "isFinal": true
+      }
     ],
     "transitions": [
-      { "fromState": "ACTIVE", "toState": "RENEWAL_DUE", "trigger": "EXPIRY_APPROACHING", "label": "Expiry Approaching" },
-      { "fromState": "RENEWAL_DUE", "toState": "EXPIRED", "trigger": "EXPIRED", "label": "Expired" },
-      { "fromState": "EXPIRED", "toState": "ACTIVE", "trigger": "RENEWED", "label": "Renewed" }
+      {
+        "fromState": "ACTIVE",
+        "toState": "RENEWAL_DUE",
+        "trigger": "EXPIRY_APPROACHING",
+        "label": "Expiry Approaching"
+      },
+      {
+        "fromState": "RENEWAL_DUE",
+        "toState": "EXPIRED",
+        "trigger": "EXPIRED",
+        "label": "Expired"
+      },
+      {
+        "fromState": "EXPIRED",
+        "toState": "ACTIVE",
+        "trigger": "RENEWED",
+        "label": "Renewed"
+      }
     ],
     "initialState": "ACTIVE"
   },
@@ -125,12 +171,40 @@
     }
   ],
   "searchConfig": {
-    "primaryFields": ["licenceNumber", "fullName"],
-    "fullTextFields": ["fullName", "address"],
-    "filterableFields": ["issuingAuthority", "licenceCategories"]
+    "primaryFields": [
+      "licenceNumber",
+      "fullName"
+    ],
+    "fullTextFields": [
+      "fullName",
+      "address"
+    ],
+    "filterableFields": [
+      "issuingAuthority",
+      "licenceCategories"
+    ]
   },
   "aiConfig": {
-    "extractableFields": ["licenceNumber", "fullName", "dateOfBirth", "issueDate", "expiryDate", "issuingAuthority", "licenceCategories", "address"],
-    "classificationHints": ["driving licence", "driver license", "DVLA", "DMV", "licence number", "DL"]
+    "extractableFields": [
+      "licenceNumber",
+      "fullName",
+      "dateOfBirth",
+      "issueDate",
+      "expiryDate",
+      "issuingAuthority",
+      "licenceCategories",
+      "address"
+    ],
+    "classificationHints": [
+      "driving licence",
+      "driver license",
+      "DVLA",
+      "DMV",
+      "licence number",
+      "DL"
+    ],
+    "aiWritableFields": [
+      "notes"
+    ]
   }
 }

@@ -15,7 +15,10 @@
       "searchable": true,
       "aiExtractable": true,
       "validationRules": [
-        { "ruleType": "REQUIRED", "message": "Policy name is required" }
+        {
+          "ruleType": "REQUIRED",
+          "message": "Policy name is required"
+        }
       ]
     },
     {
@@ -46,7 +49,14 @@
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "enumValues": ["HEALTH", "LIFE", "VEHICLE", "HOME", "TRAVEL", "OTHER"],
+      "enumValues": [
+        "HEALTH",
+        "LIFE",
+        "VEHICLE",
+        "HOME",
+        "TRAVEL",
+        "OTHER"
+      ],
       "validationRules": []
     },
     {
@@ -88,19 +98,58 @@
       "searchable": false,
       "aiExtractable": true,
       "validationRules": []
+    },
+    {
+      "fieldId": "notes",
+      "displayName": "Notes",
+      "fieldType": "MULTILINE_TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": false,
+      "aiWritable": true,
+      "validationRules": []
     }
   ],
   "lifecycle": {
     "states": [
-      { "stateId": "ACTIVE", "displayName": "Active" },
-      { "stateId": "RENEWAL_DUE", "displayName": "Renewal Due" },
-      { "stateId": "EXPIRED", "displayName": "Expired" },
-      { "stateId": "ARCHIVED", "displayName": "Archived", "isFinal": true }
+      {
+        "stateId": "ACTIVE",
+        "displayName": "Active"
+      },
+      {
+        "stateId": "RENEWAL_DUE",
+        "displayName": "Renewal Due"
+      },
+      {
+        "stateId": "EXPIRED",
+        "displayName": "Expired"
+      },
+      {
+        "stateId": "ARCHIVED",
+        "displayName": "Archived",
+        "isFinal": true
+      }
     ],
     "transitions": [
-      { "fromState": "ACTIVE", "toState": "RENEWAL_DUE", "trigger": "EXPIRY_APPROACHING", "label": "Renewal Due" },
-      { "fromState": "RENEWAL_DUE", "toState": "EXPIRED", "trigger": "EXPIRED", "label": "Expired" },
-      { "fromState": "RENEWAL_DUE", "toState": "ACTIVE", "trigger": "RENEWED", "label": "Renewed" }
+      {
+        "fromState": "ACTIVE",
+        "toState": "RENEWAL_DUE",
+        "trigger": "EXPIRY_APPROACHING",
+        "label": "Renewal Due"
+      },
+      {
+        "fromState": "RENEWAL_DUE",
+        "toState": "EXPIRED",
+        "trigger": "EXPIRED",
+        "label": "Expired"
+      },
+      {
+        "fromState": "RENEWAL_DUE",
+        "toState": "ACTIVE",
+        "trigger": "RENEWED",
+        "label": "Renewed"
+      }
     ],
     "initialState": "ACTIVE"
   },
@@ -123,12 +172,37 @@
     }
   ],
   "searchConfig": {
-    "primaryFields": ["policyName", "policyNumber", "insurer"],
-    "fullTextFields": ["policyName", "insurer"],
-    "filterableFields": ["insuranceType"]
+    "primaryFields": [
+      "policyName",
+      "policyNumber",
+      "insurer"
+    ],
+    "fullTextFields": [
+      "policyName",
+      "insurer"
+    ],
+    "filterableFields": [
+      "insuranceType"
+    ]
   },
   "aiConfig": {
-    "extractableFields": ["policyName", "policyNumber", "insurer", "insuranceType", "startDate", "expiryDate", "sumInsured"],
-    "classificationHints": ["insurance policy", "premium receipt", "policy schedule", "renewal notice"]
+    "extractableFields": [
+      "policyName",
+      "policyNumber",
+      "insurer",
+      "insuranceType",
+      "startDate",
+      "expiryDate",
+      "sumInsured"
+    ],
+    "classificationHints": [
+      "insurance policy",
+      "premium receipt",
+      "policy schedule",
+      "renewal notice"
+    ],
+    "aiWritableFields": [
+      "notes"
+    ]
   }
 }

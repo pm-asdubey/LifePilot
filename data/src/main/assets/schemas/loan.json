@@ -14,7 +14,13 @@
       "editable": true,
       "searchable": true,
       "aiExtractable": true,
-      "validationRules": [{"ruleType": "min_length", "parameter": "2", "message": "Lender name required"}]
+      "validationRules": [
+        {
+          "ruleType": "min_length",
+          "parameter": "2",
+          "message": "Lender name required"
+        }
+      ]
     },
     {
       "fieldId": "loan_type",
@@ -25,7 +31,15 @@
       "searchable": true,
       "aiExtractable": true,
       "validationRules": [],
-      "enumValues": ["HOME", "PERSONAL", "VEHICLE", "EDUCATION", "BUSINESS", "CREDIT_CARD", "OTHER"]
+      "enumValues": [
+        "HOME",
+        "PERSONAL",
+        "VEHICLE",
+        "EDUCATION",
+        "BUSINESS",
+        "CREDIT_CARD",
+        "OTHER"
+      ]
     },
     {
       "fieldId": "loan_amount",
@@ -69,23 +83,52 @@
     },
     {
       "fieldId": "emi_due_day",
-      "displayName": "EMI Due Day (1–31)",
+      "displayName": "EMI Due Day (1\u201331)",
       "fieldType": "NUMBER",
       "required": false,
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": [{"ruleType": "range", "parameter": "1,31", "message": "Must be 1–31"}]
+      "validationRules": [
+        {
+          "ruleType": "range",
+          "parameter": "1,31",
+          "message": "Must be 1\u201331"
+        }
+      ]
+    },
+    {
+      "fieldId": "notes",
+      "displayName": "Notes",
+      "fieldType": "MULTILINE_TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": false,
+      "aiWritable": true,
+      "validationRules": []
     }
   ],
   "lifecycle": {
     "initialState": "active",
     "states": [
-      {"stateId": "active", "displayName": "Active"},
-      {"stateId": "closed", "displayName": "Closed", "isFinal": true}
+      {
+        "stateId": "active",
+        "displayName": "Active"
+      },
+      {
+        "stateId": "closed",
+        "displayName": "Closed",
+        "isFinal": true
+      }
     ],
     "transitions": [
-      {"fromState": "active", "toState": "closed", "trigger": "REPAID", "label": "Mark as Repaid"}
+      {
+        "fromState": "active",
+        "toState": "closed",
+        "trigger": "REPAID",
+        "label": "Mark as Repaid"
+      }
     ]
   },
   "reminderRules": [
@@ -99,12 +142,38 @@
     }
   ],
   "searchConfig": {
-    "primaryFields": ["lender", "loan_type"],
-    "fullTextFields": ["lender", "loan_type"],
-    "filterableFields": ["loan_type"]
+    "primaryFields": [
+      "lender",
+      "loan_type"
+    ],
+    "fullTextFields": [
+      "lender",
+      "loan_type"
+    ],
+    "filterableFields": [
+      "loan_type"
+    ]
   },
   "aiConfig": {
-    "extractableFields": ["lender", "loan_type", "loan_amount", "interest_rate", "start_date", "end_date", "emi_due_day"],
-    "classificationHints": ["loan agreement", "repayment schedule", "EMI", "mortgage", "credit", "outstanding"]
+    "extractableFields": [
+      "lender",
+      "loan_type",
+      "loan_amount",
+      "interest_rate",
+      "start_date",
+      "end_date",
+      "emi_due_day"
+    ],
+    "classificationHints": [
+      "loan agreement",
+      "repayment schedule",
+      "EMI",
+      "mortgage",
+      "credit",
+      "outstanding"
+    ],
+    "aiWritableFields": [
+      "notes"
+    ]
   }
 }

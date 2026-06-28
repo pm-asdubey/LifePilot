@@ -15,7 +15,10 @@
       "searchable": true,
       "aiExtractable": true,
       "validationRules": [
-        { "ruleType": "REQUIRED", "message": "Property name is required" }
+        {
+          "ruleType": "REQUIRED",
+          "message": "Property name is required"
+        }
       ]
     },
     {
@@ -36,7 +39,13 @@
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "enumValues": ["APARTMENT", "HOUSE", "LAND", "COMMERCIAL", "OTHER"],
+      "enumValues": [
+        "APARTMENT",
+        "HOUSE",
+        "LAND",
+        "COMMERCIAL",
+        "OTHER"
+      ],
       "validationRules": []
     },
     {
@@ -68,26 +77,71 @@
       "searchable": true,
       "aiExtractable": true,
       "validationRules": []
+    },
+    {
+      "fieldId": "notes",
+      "displayName": "Notes",
+      "fieldType": "MULTILINE_TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": false,
+      "aiWritable": true,
+      "validationRules": []
     }
   ],
   "lifecycle": {
     "states": [
-      { "stateId": "ACTIVE", "displayName": "Owned" },
-      { "stateId": "SOLD", "displayName": "Sold", "isFinal": true }
+      {
+        "stateId": "ACTIVE",
+        "displayName": "Owned"
+      },
+      {
+        "stateId": "SOLD",
+        "displayName": "Sold",
+        "isFinal": true
+      }
     ],
     "transitions": [
-      { "fromState": "ACTIVE", "toState": "SOLD", "trigger": "SOLD", "label": "Property Sold" }
+      {
+        "fromState": "ACTIVE",
+        "toState": "SOLD",
+        "trigger": "SOLD",
+        "label": "Property Sold"
+      }
     ],
     "initialState": "ACTIVE"
   },
   "reminderRules": [],
   "searchConfig": {
-    "primaryFields": ["propertyName", "address"],
-    "fullTextFields": ["propertyName", "address"],
-    "filterableFields": ["propertyType"]
+    "primaryFields": [
+      "propertyName",
+      "address"
+    ],
+    "fullTextFields": [
+      "propertyName",
+      "address"
+    ],
+    "filterableFields": [
+      "propertyType"
+    ]
   },
   "aiConfig": {
-    "extractableFields": ["propertyName", "address", "propertyType", "purchaseDate", "registrationNumber"],
-    "classificationHints": ["sale deed", "property registration", "house deed", "land record"]
+    "extractableFields": [
+      "propertyName",
+      "address",
+      "propertyType",
+      "purchaseDate",
+      "registrationNumber"
+    ],
+    "classificationHints": [
+      "sale deed",
+      "property registration",
+      "house deed",
+      "land record"
+    ],
+    "aiWritableFields": [
+      "notes"
+    ]
   }
 }

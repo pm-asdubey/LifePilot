@@ -14,7 +14,13 @@
       "editable": true,
       "searchable": true,
       "aiExtractable": true,
-      "validationRules": [{"ruleType": "min_length", "parameter": "2", "message": "Bank name required"}]
+      "validationRules": [
+        {
+          "ruleType": "min_length",
+          "parameter": "2",
+          "message": "Bank name required"
+        }
+      ]
     },
     {
       "fieldId": "account_type",
@@ -25,7 +31,14 @@
       "searchable": true,
       "aiExtractable": true,
       "validationRules": [],
-      "enumValues": ["CURRENT", "SAVINGS", "JOINT", "BUSINESS", "FIXED_DEPOSIT", "OTHER"]
+      "enumValues": [
+        "CURRENT",
+        "SAVINGS",
+        "JOINT",
+        "BUSINESS",
+        "FIXED_DEPOSIT",
+        "OTHER"
+      ]
     },
     {
       "fieldId": "account_number_last4",
@@ -35,8 +48,14 @@
       "editable": true,
       "searchable": false,
       "aiExtractable": false,
-      "validationRules": [{"ruleType": "max_length", "parameter": "4", "message": "Enter last 4 digits only"}],
-      "hint": "For identification only — do not store full account number"
+      "validationRules": [
+        {
+          "ruleType": "max_length",
+          "parameter": "4",
+          "message": "Enter last 4 digits only"
+        }
+      ],
+      "hint": "For identification only \u2014 do not store full account number"
     },
     {
       "fieldId": "branch",
@@ -67,26 +86,73 @@
       "searchable": false,
       "aiExtractable": true,
       "validationRules": []
+    },
+    {
+      "fieldId": "notes",
+      "displayName": "Notes",
+      "fieldType": "MULTILINE_TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": false,
+      "aiWritable": true,
+      "validationRules": []
     }
   ],
   "lifecycle": {
     "initialState": "active",
     "states": [
-      {"stateId": "active", "displayName": "Active"},
-      {"stateId": "closed", "displayName": "Closed", "isFinal": true}
+      {
+        "stateId": "active",
+        "displayName": "Active"
+      },
+      {
+        "stateId": "closed",
+        "displayName": "Closed",
+        "isFinal": true
+      }
     ],
     "transitions": [
-      {"fromState": "active", "toState": "closed", "trigger": "CLOSE_ACCOUNT", "label": "Close Account"}
+      {
+        "fromState": "active",
+        "toState": "closed",
+        "trigger": "CLOSE_ACCOUNT",
+        "label": "Close Account"
+      }
     ]
   },
   "reminderRules": [],
   "searchConfig": {
-    "primaryFields": ["bank_name", "account_type"],
-    "fullTextFields": ["bank_name", "account_type", "branch"],
-    "filterableFields": ["account_type"]
+    "primaryFields": [
+      "bank_name",
+      "account_type"
+    ],
+    "fullTextFields": [
+      "bank_name",
+      "account_type",
+      "branch"
+    ],
+    "filterableFields": [
+      "account_type"
+    ]
   },
   "aiConfig": {
-    "extractableFields": ["bank_name", "account_type", "branch", "ifsc_sort_swift", "currency"],
-    "classificationHints": ["bank statement", "account", "balance", "passbook", "cheque book"]
+    "extractableFields": [
+      "bank_name",
+      "account_type",
+      "branch",
+      "ifsc_sort_swift",
+      "currency"
+    ],
+    "classificationHints": [
+      "bank statement",
+      "account",
+      "balance",
+      "passbook",
+      "cheque book"
+    ],
+    "aiWritableFields": [
+      "notes"
+    ]
   }
 }

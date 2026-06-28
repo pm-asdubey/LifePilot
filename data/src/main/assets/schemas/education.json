@@ -14,7 +14,13 @@
       "editable": true,
       "searchable": true,
       "aiExtractable": true,
-      "validationRules": [{"ruleType": "min_length", "parameter": "2", "message": "Institution name required"}]
+      "validationRules": [
+        {
+          "ruleType": "min_length",
+          "parameter": "2",
+          "message": "Institution name required"
+        }
+      ]
     },
     {
       "fieldId": "degree",
@@ -75,28 +81,85 @@
       "searchable": false,
       "aiExtractable": true,
       "validationRules": []
+    },
+    {
+      "fieldId": "notes",
+      "displayName": "Notes",
+      "fieldType": "MULTILINE_TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": false,
+      "aiWritable": true,
+      "validationRules": []
     }
   ],
   "lifecycle": {
     "initialState": "active",
     "states": [
-      {"stateId": "active", "displayName": "Active"},
-      {"stateId": "completed", "displayName": "Completed"},
-      {"stateId": "archived", "displayName": "Archived", "isFinal": true}
+      {
+        "stateId": "active",
+        "displayName": "Active"
+      },
+      {
+        "stateId": "completed",
+        "displayName": "Completed"
+      },
+      {
+        "stateId": "archived",
+        "displayName": "Archived",
+        "isFinal": true
+      }
     ],
     "transitions": [
-      {"fromState": "active", "toState": "completed", "trigger": "GRADUATED", "label": "Mark as Completed"},
-      {"fromState": "completed", "toState": "archived", "trigger": "ARCHIVE", "label": "Archive"}
+      {
+        "fromState": "active",
+        "toState": "completed",
+        "trigger": "GRADUATED",
+        "label": "Mark as Completed"
+      },
+      {
+        "fromState": "completed",
+        "toState": "archived",
+        "trigger": "ARCHIVE",
+        "label": "Archive"
+      }
     ]
   },
   "reminderRules": [],
   "searchConfig": {
-    "primaryFields": ["institution", "degree"],
-    "fullTextFields": ["institution", "degree", "field_of_study"],
-    "filterableFields": ["field_of_study"]
+    "primaryFields": [
+      "institution",
+      "degree"
+    ],
+    "fullTextFields": [
+      "institution",
+      "degree",
+      "field_of_study"
+    ],
+    "filterableFields": [
+      "field_of_study"
+    ]
   },
   "aiConfig": {
-    "extractableFields": ["institution", "degree", "field_of_study", "start_date", "end_date", "grade", "certificate_number"],
-    "classificationHints": ["degree", "diploma", "transcript", "certificate", "graduation"]
+    "extractableFields": [
+      "institution",
+      "degree",
+      "field_of_study",
+      "start_date",
+      "end_date",
+      "grade",
+      "certificate_number"
+    ],
+    "classificationHints": [
+      "degree",
+      "diploma",
+      "transcript",
+      "certificate",
+      "graduation"
+    ],
+    "aiWritableFields": [
+      "notes"
+    ]
   }
 }

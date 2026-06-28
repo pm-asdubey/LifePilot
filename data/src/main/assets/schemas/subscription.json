@@ -6,31 +6,191 @@
   "description": "Software, streaming, or service subscriptions",
   "schemaVersion": 1,
   "fields": [
-    {"fieldId": "service_name","displayName": "Service Name","fieldType": "TEXT","required": true,"editable": true,"searchable": true,"aiExtractable": true,"validationRules": [],"placeholder": "Netflix, Spotify, etc."},
-    {"fieldId": "plan_name","displayName": "Plan","fieldType": "TEXT","required": false,"editable": true,"searchable": false,"aiExtractable": true,"validationRules": [],"placeholder": "Premium, Basic, etc."},
-    {"fieldId": "billing_cycle","displayName": "Billing Cycle","fieldType": "ENUM","required": true,"editable": true,"searchable": false,"aiExtractable": true,"validationRules": [],"enumValues": ["MONTHLY","QUARTERLY","ANNUALLY","WEEKLY"]},
-    {"fieldId": "amount","displayName": "Amount","fieldType": "NUMBER","required": true,"editable": true,"searchable": false,"aiExtractable": true,"validationRules": [],"placeholder": "9.99"},
-    {"fieldId": "currency","displayName": "Currency","fieldType": "TEXT","required": false,"editable": true,"searchable": false,"aiExtractable": true,"validationRules": [],"placeholder": "USD"},
-    {"fieldId": "renewal_date","displayName": "Next Renewal Date","fieldType": "DATE","required": true,"editable": true,"searchable": false,"aiExtractable": true,"validationRules": [],"placeholder": "YYYY-MM-DD"},
-    {"fieldId": "status","displayName": "Status","fieldType": "ENUM","required": true,"editable": true,"searchable": false,"aiExtractable": false,"validationRules": [],"enumValues": ["ACTIVE","PAUSED","CANCELLED","TRIAL"]},
-    {"fieldId": "payment_method","displayName": "Payment Method","fieldType": "TEXT","required": false,"editable": true,"searchable": false,"aiExtractable": false,"validationRules": [],"placeholder": "Visa ending 1234"}
+    {
+      "fieldId": "service_name",
+      "displayName": "Service Name",
+      "fieldType": "TEXT",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "Netflix, Spotify, etc."
+    },
+    {
+      "fieldId": "plan_name",
+      "displayName": "Plan",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "Premium, Basic, etc."
+    },
+    {
+      "fieldId": "billing_cycle",
+      "displayName": "Billing Cycle",
+      "fieldType": "ENUM",
+      "required": true,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "enumValues": [
+        "MONTHLY",
+        "QUARTERLY",
+        "ANNUALLY",
+        "WEEKLY"
+      ]
+    },
+    {
+      "fieldId": "amount",
+      "displayName": "Amount",
+      "fieldType": "NUMBER",
+      "required": true,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "9.99"
+    },
+    {
+      "fieldId": "currency",
+      "displayName": "Currency",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "USD"
+    },
+    {
+      "fieldId": "renewal_date",
+      "displayName": "Next Renewal Date",
+      "fieldType": "DATE",
+      "required": true,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "YYYY-MM-DD"
+    },
+    {
+      "fieldId": "status",
+      "displayName": "Status",
+      "fieldType": "ENUM",
+      "required": true,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "enumValues": [
+        "ACTIVE",
+        "PAUSED",
+        "CANCELLED",
+        "TRIAL"
+      ]
+    },
+    {
+      "fieldId": "payment_method",
+      "displayName": "Payment Method",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "placeholder": "Visa ending 1234"
+    },
+    {
+      "fieldId": "notes",
+      "displayName": "Notes",
+      "fieldType": "MULTILINE_TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": false,
+      "aiWritable": true,
+      "validationRules": []
+    }
   ],
   "lifecycle": {
     "states": [
-      {"stateId": "ACTIVE","displayName": "Active"},
-      {"stateId": "PAUSED","displayName": "Paused"},
-      {"stateId": "CANCELLED","displayName": "Cancelled","isFinal": true}
+      {
+        "stateId": "ACTIVE",
+        "displayName": "Active"
+      },
+      {
+        "stateId": "PAUSED",
+        "displayName": "Paused"
+      },
+      {
+        "stateId": "CANCELLED",
+        "displayName": "Cancelled",
+        "isFinal": true
+      }
     ],
     "transitions": [
-      {"fromState": "ACTIVE","toState": "PAUSED","trigger": "PAUSE","label": "Paused"},
-      {"fromState": "PAUSED","toState": "ACTIVE","trigger": "RESUME","label": "Resumed"},
-      {"fromState": "ACTIVE","toState": "CANCELLED","trigger": "CANCEL","label": "Cancelled"}
+      {
+        "fromState": "ACTIVE",
+        "toState": "PAUSED",
+        "trigger": "PAUSE",
+        "label": "Paused"
+      },
+      {
+        "fromState": "PAUSED",
+        "toState": "ACTIVE",
+        "trigger": "RESUME",
+        "label": "Resumed"
+      },
+      {
+        "fromState": "ACTIVE",
+        "toState": "CANCELLED",
+        "trigger": "CANCEL",
+        "label": "Cancelled"
+      }
     ],
     "initialState": "ACTIVE"
   },
   "reminderRules": [
-    {"ruleId": "renewal_reminder","title": "Renewal Reminder","triggerField": "renewal_date","offsetDays": -7,"priority": "MEDIUM","messageTemplate": "Subscription renewal approaching"}
+    {
+      "ruleId": "renewal_reminder",
+      "title": "Renewal Reminder",
+      "triggerField": "renewal_date",
+      "offsetDays": -7,
+      "priority": "MEDIUM",
+      "messageTemplate": "Subscription renewal approaching"
+    }
   ],
-  "searchConfig": {"primaryFields": ["service_name","plan_name"],"fullTextFields": ["service_name"],"filterableFields": ["billing_cycle","status"]},
-  "aiConfig": {"extractableFields": ["service_name","billing_cycle","amount","renewal_date"],"classificationHints": ["subscription","renewal","billing"]}
+  "searchConfig": {
+    "primaryFields": [
+      "service_name",
+      "plan_name"
+    ],
+    "fullTextFields": [
+      "service_name"
+    ],
+    "filterableFields": [
+      "billing_cycle",
+      "status"
+    ]
+  },
+  "aiConfig": {
+    "extractableFields": [
+      "service_name",
+      "billing_cycle",
+      "amount",
+      "renewal_date"
+    ],
+    "classificationHints": [
+      "subscription",
+      "renewal",
+      "billing"
+    ],
+    "aiWritableFields": [
+      "notes"
+    ]
+  }
 }

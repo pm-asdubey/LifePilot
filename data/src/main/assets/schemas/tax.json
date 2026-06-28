@@ -6,32 +6,193 @@
   "description": "Annual income tax filing or tax-related document",
   "schemaVersion": 1,
   "fields": [
-    {"fieldId": "tax_year","displayName": "Tax Year","fieldType": "TEXT","required": true,"editable": true,"searchable": true,"aiExtractable": true,"validationRules": [],"placeholder": "2024-25"},
-    {"fieldId": "filing_status","displayName": "Filing Status","fieldType": "ENUM","required": true,"editable": true,"searchable": false,"aiExtractable": false,"validationRules": [],"enumValues": ["NOT_FILED","FILED","ASSESSED","REFUND_RECEIVED","TAX_DUE"]},
-    {"fieldId": "filing_date","displayName": "Filing Date","fieldType": "DATE","required": false,"editable": true,"searchable": false,"aiExtractable": true,"validationRules": [],"placeholder": "YYYY-MM-DD"},
-    {"fieldId": "due_date","displayName": "Due Date","fieldType": "DATE","required": false,"editable": true,"searchable": false,"aiExtractable": true,"validationRules": [],"placeholder": "YYYY-MM-DD"},
-    {"fieldId": "income_total","displayName": "Total Income","fieldType": "NUMBER","required": false,"editable": true,"searchable": false,"aiExtractable": true,"validationRules": [],"placeholder": "50000"},
-    {"fieldId": "tax_paid","displayName": "Tax Paid","fieldType": "NUMBER","required": false,"editable": true,"searchable": false,"aiExtractable": true,"validationRules": [],"placeholder": "12000"},
-    {"fieldId": "refund_amount","displayName": "Refund Amount","fieldType": "NUMBER","required": false,"editable": true,"searchable": false,"aiExtractable": true,"validationRules": [],"placeholder": "0"},
-    {"fieldId": "reference_number","displayName": "Reference / UTR Number","fieldType": "TEXT","required": false,"editable": true,"searchable": false,"aiExtractable": true,"validationRules": [],"placeholder": "UTR or national reference"}
+    {
+      "fieldId": "tax_year",
+      "displayName": "Tax Year",
+      "fieldType": "TEXT",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "2024-25"
+    },
+    {
+      "fieldId": "filing_status",
+      "displayName": "Filing Status",
+      "fieldType": "ENUM",
+      "required": true,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "enumValues": [
+        "NOT_FILED",
+        "FILED",
+        "ASSESSED",
+        "REFUND_RECEIVED",
+        "TAX_DUE"
+      ]
+    },
+    {
+      "fieldId": "filing_date",
+      "displayName": "Filing Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "YYYY-MM-DD"
+    },
+    {
+      "fieldId": "due_date",
+      "displayName": "Due Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "YYYY-MM-DD"
+    },
+    {
+      "fieldId": "income_total",
+      "displayName": "Total Income",
+      "fieldType": "NUMBER",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "50000"
+    },
+    {
+      "fieldId": "tax_paid",
+      "displayName": "Tax Paid",
+      "fieldType": "NUMBER",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "12000"
+    },
+    {
+      "fieldId": "refund_amount",
+      "displayName": "Refund Amount",
+      "fieldType": "NUMBER",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "0"
+    },
+    {
+      "fieldId": "reference_number",
+      "displayName": "Reference / UTR Number",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "UTR or national reference"
+    },
+    {
+      "fieldId": "notes",
+      "displayName": "Notes",
+      "fieldType": "MULTILINE_TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": false,
+      "aiWritable": true,
+      "validationRules": []
+    }
   ],
   "lifecycle": {
     "states": [
-      {"stateId": "PENDING","displayName": "Pending"},
-      {"stateId": "FILED","displayName": "Filed"},
-      {"stateId": "ASSESSED","displayName": "Assessed"},
-      {"stateId": "CLOSED","displayName": "Closed","isFinal": true}
+      {
+        "stateId": "PENDING",
+        "displayName": "Pending"
+      },
+      {
+        "stateId": "FILED",
+        "displayName": "Filed"
+      },
+      {
+        "stateId": "ASSESSED",
+        "displayName": "Assessed"
+      },
+      {
+        "stateId": "CLOSED",
+        "displayName": "Closed",
+        "isFinal": true
+      }
     ],
     "transitions": [
-      {"fromState": "PENDING","toState": "FILED","trigger": "FILED","label": "Filed"},
-      {"fromState": "FILED","toState": "ASSESSED","trigger": "ASSESSED","label": "Assessment Received"},
-      {"fromState": "ASSESSED","toState": "CLOSED","trigger": "CLOSED","label": "Closed"}
+      {
+        "fromState": "PENDING",
+        "toState": "FILED",
+        "trigger": "FILED",
+        "label": "Filed"
+      },
+      {
+        "fromState": "FILED",
+        "toState": "ASSESSED",
+        "trigger": "ASSESSED",
+        "label": "Assessment Received"
+      },
+      {
+        "fromState": "ASSESSED",
+        "toState": "CLOSED",
+        "trigger": "CLOSED",
+        "label": "Closed"
+      }
     ],
     "initialState": "PENDING"
   },
   "reminderRules": [
-    {"ruleId": "tax_filing_reminder","title": "Tax Filing Due","triggerField": "due_date","offsetDays": -30,"priority": "HIGH","messageTemplate": "Tax filing due in 30 days"}
+    {
+      "ruleId": "tax_filing_reminder",
+      "title": "Tax Filing Due",
+      "triggerField": "due_date",
+      "offsetDays": -30,
+      "priority": "HIGH",
+      "messageTemplate": "Tax filing due in 30 days"
+    }
   ],
-  "searchConfig": {"primaryFields": ["tax_year","reference_number"],"fullTextFields": ["tax_year","reference_number"],"filterableFields": ["filing_status"]},
-  "aiConfig": {"extractableFields": ["tax_year","filing_date","income_total","tax_paid","reference_number"],"classificationHints": ["tax","income","filing","UTR"]}
+  "searchConfig": {
+    "primaryFields": [
+      "tax_year",
+      "reference_number"
+    ],
+    "fullTextFields": [
+      "tax_year",
+      "reference_number"
+    ],
+    "filterableFields": [
+      "filing_status"
+    ]
+  },
+  "aiConfig": {
+    "extractableFields": [
+      "tax_year",
+      "filing_date",
+      "income_total",
+      "tax_paid",
+      "reference_number"
+    ],
+    "classificationHints": [
+      "tax",
+      "income",
+      "filing",
+      "UTR"
+    ],
+    "aiWritableFields": [
+      "notes"
+    ]
+  }
 }

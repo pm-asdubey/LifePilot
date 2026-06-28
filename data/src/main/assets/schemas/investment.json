@@ -6,33 +6,203 @@
   "description": "Stocks, mutual funds, pension, or other investment",
   "schemaVersion": 1,
   "fields": [
-    {"fieldId": "investment_type","displayName": "Investment Type","fieldType": "ENUM","required": true,"editable": true,"searchable": false,"aiExtractable": false,"validationRules": [],"enumValues": ["STOCKS","MUTUAL_FUND","ETF","PENSION","BONDS","FIXED_DEPOSIT","CRYPTOCURRENCY","REAL_ESTATE"]},
-    {"fieldId": "provider","displayName": "Provider / Institution","fieldType": "TEXT","required": true,"editable": true,"searchable": true,"aiExtractable": true,"validationRules": [],"placeholder": "Vanguard, Fidelity, etc."},
-    {"fieldId": "account_number","displayName": "Account / Reference","fieldType": "TEXT","required": false,"editable": true,"searchable": false,"aiExtractable": true,"validationRules": [],"placeholder": "ACC123"},
-    {"fieldId": "start_date","displayName": "Start Date","fieldType": "DATE","required": false,"editable": true,"searchable": false,"aiExtractable": true,"validationRules": [],"placeholder": "YYYY-MM-DD"},
-    {"fieldId": "maturity_date","displayName": "Maturity Date","fieldType": "DATE","required": false,"editable": true,"searchable": false,"aiExtractable": true,"validationRules": [],"placeholder": "YYYY-MM-DD"},
-    {"fieldId": "initial_amount","displayName": "Initial Amount","fieldType": "NUMBER","required": false,"editable": true,"searchable": false,"aiExtractable": true,"validationRules": [],"placeholder": "10000"},
-    {"fieldId": "current_value","displayName": "Current Value","fieldType": "NUMBER","required": false,"editable": true,"searchable": false,"aiExtractable": false,"validationRules": [],"placeholder": "12500"},
-    {"fieldId": "currency","displayName": "Currency","fieldType": "TEXT","required": false,"editable": true,"searchable": false,"aiExtractable": true,"validationRules": [],"placeholder": "USD"}
+    {
+      "fieldId": "investment_type",
+      "displayName": "Investment Type",
+      "fieldType": "ENUM",
+      "required": true,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "enumValues": [
+        "STOCKS",
+        "MUTUAL_FUND",
+        "ETF",
+        "PENSION",
+        "BONDS",
+        "FIXED_DEPOSIT",
+        "CRYPTOCURRENCY",
+        "REAL_ESTATE"
+      ]
+    },
+    {
+      "fieldId": "provider",
+      "displayName": "Provider / Institution",
+      "fieldType": "TEXT",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "Vanguard, Fidelity, etc."
+    },
+    {
+      "fieldId": "account_number",
+      "displayName": "Account / Reference",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "ACC123"
+    },
+    {
+      "fieldId": "start_date",
+      "displayName": "Start Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "YYYY-MM-DD"
+    },
+    {
+      "fieldId": "maturity_date",
+      "displayName": "Maturity Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "YYYY-MM-DD"
+    },
+    {
+      "fieldId": "initial_amount",
+      "displayName": "Initial Amount",
+      "fieldType": "NUMBER",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "10000"
+    },
+    {
+      "fieldId": "current_value",
+      "displayName": "Current Value",
+      "fieldType": "NUMBER",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "placeholder": "12500"
+    },
+    {
+      "fieldId": "currency",
+      "displayName": "Currency",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "USD"
+    },
+    {
+      "fieldId": "notes",
+      "displayName": "Notes",
+      "fieldType": "MULTILINE_TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": false,
+      "aiWritable": true,
+      "validationRules": []
+    }
   ],
   "lifecycle": {
     "states": [
-      {"stateId": "ACTIVE","displayName": "Active"},
-      {"stateId": "MATURED","displayName": "Matured"},
-      {"stateId": "CLOSED","displayName": "Closed","isFinal": true},
-      {"stateId": "SUSPENDED","displayName": "Suspended"}
+      {
+        "stateId": "ACTIVE",
+        "displayName": "Active"
+      },
+      {
+        "stateId": "MATURED",
+        "displayName": "Matured"
+      },
+      {
+        "stateId": "CLOSED",
+        "displayName": "Closed",
+        "isFinal": true
+      },
+      {
+        "stateId": "SUSPENDED",
+        "displayName": "Suspended"
+      }
     ],
     "transitions": [
-      {"fromState": "ACTIVE","toState": "MATURED","trigger": "MATURED","label": "Matured"},
-      {"fromState": "MATURED","toState": "CLOSED","trigger": "CLOSED","label": "Closed"},
-      {"fromState": "ACTIVE","toState": "SUSPENDED","trigger": "SUSPENDED","label": "Suspended"},
-      {"fromState": "SUSPENDED","toState": "ACTIVE","trigger": "RESUMED","label": "Resumed"}
+      {
+        "fromState": "ACTIVE",
+        "toState": "MATURED",
+        "trigger": "MATURED",
+        "label": "Matured"
+      },
+      {
+        "fromState": "MATURED",
+        "toState": "CLOSED",
+        "trigger": "CLOSED",
+        "label": "Closed"
+      },
+      {
+        "fromState": "ACTIVE",
+        "toState": "SUSPENDED",
+        "trigger": "SUSPENDED",
+        "label": "Suspended"
+      },
+      {
+        "fromState": "SUSPENDED",
+        "toState": "ACTIVE",
+        "trigger": "RESUMED",
+        "label": "Resumed"
+      }
     ],
     "initialState": "ACTIVE"
   },
   "reminderRules": [
-    {"ruleId": "maturity_reminder","title": "Investment Maturity","triggerField": "maturity_date","offsetDays": -30,"priority": "HIGH","messageTemplate": "Investment matures in 30 days"}
+    {
+      "ruleId": "maturity_reminder",
+      "title": "Investment Maturity",
+      "triggerField": "maturity_date",
+      "offsetDays": -30,
+      "priority": "HIGH",
+      "messageTemplate": "Investment matures in 30 days"
+    }
   ],
-  "searchConfig": {"primaryFields": ["provider","account_number"],"fullTextFields": ["provider","account_number"],"filterableFields": ["investment_type"]},
-  "aiConfig": {"extractableFields": ["investment_type","provider","start_date","maturity_date","initial_amount"],"classificationHints": ["investment","portfolio","fund","pension","stocks"]}
+  "searchConfig": {
+    "primaryFields": [
+      "provider",
+      "account_number"
+    ],
+    "fullTextFields": [
+      "provider",
+      "account_number"
+    ],
+    "filterableFields": [
+      "investment_type"
+    ]
+  },
+  "aiConfig": {
+    "extractableFields": [
+      "investment_type",
+      "provider",
+      "start_date",
+      "maturity_date",
+      "initial_amount"
+    ],
+    "classificationHints": [
+      "investment",
+      "portfolio",
+      "fund",
+      "pension",
+      "stocks"
+    ],
+    "aiWritableFields": [
+      "notes"
+    ]
+  }
 }

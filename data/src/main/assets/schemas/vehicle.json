@@ -6,33 +6,213 @@
   "description": "Car, motorcycle, or other registered vehicle",
   "schemaVersion": 1,
   "fields": [
-    {"fieldId": "make","displayName": "Make","fieldType": "TEXT","required": true,"editable": true,"searchable": true,"aiExtractable": true,"validationRules": [],"placeholder": "Toyota, Honda, etc."},
-    {"fieldId": "model","displayName": "Model","fieldType": "TEXT","required": true,"editable": true,"searchable": true,"aiExtractable": true,"validationRules": [],"placeholder": "Corolla, Civic, etc."},
-    {"fieldId": "year","displayName": "Year","fieldType": "NUMBER","required": true,"editable": true,"searchable": false,"aiExtractable": true,"validationRules": [],"placeholder": "2020"},
-    {"fieldId": "registration_number","displayName": "Registration Number","fieldType": "TEXT","required": false,"editable": true,"searchable": true,"aiExtractable": true,"validationRules": [],"placeholder": "AB12 CDE"},
-    {"fieldId": "vin","displayName": "VIN","fieldType": "TEXT","required": false,"editable": true,"searchable": false,"aiExtractable": true,"validationRules": [],"placeholder": "17-character VIN"},
-    {"fieldId": "fuel_type","displayName": "Fuel Type","fieldType": "ENUM","required": false,"editable": true,"searchable": false,"aiExtractable": false,"validationRules": [],"enumValues": ["PETROL","DIESEL","ELECTRIC","HYBRID","LPG"]},
-    {"fieldId": "insurance_expiry","displayName": "Insurance Expiry","fieldType": "DATE","required": false,"editable": true,"searchable": false,"aiExtractable": true,"validationRules": [],"placeholder": "YYYY-MM-DD"},
-    {"fieldId": "mot_due","displayName": "MOT / Roadworthy Due","fieldType": "DATE","required": false,"editable": true,"searchable": false,"aiExtractable": true,"validationRules": [],"placeholder": "YYYY-MM-DD"},
-    {"fieldId": "tax_due","displayName": "Road Tax Due","fieldType": "DATE","required": false,"editable": true,"searchable": false,"aiExtractable": true,"validationRules": [],"placeholder": "YYYY-MM-DD"}
+    {
+      "fieldId": "make",
+      "displayName": "Make",
+      "fieldType": "TEXT",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "Toyota, Honda, etc."
+    },
+    {
+      "fieldId": "model",
+      "displayName": "Model",
+      "fieldType": "TEXT",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "Corolla, Civic, etc."
+    },
+    {
+      "fieldId": "year",
+      "displayName": "Year",
+      "fieldType": "NUMBER",
+      "required": true,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "2020"
+    },
+    {
+      "fieldId": "registration_number",
+      "displayName": "Registration Number",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "AB12 CDE"
+    },
+    {
+      "fieldId": "vin",
+      "displayName": "VIN",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "17-character VIN"
+    },
+    {
+      "fieldId": "fuel_type",
+      "displayName": "Fuel Type",
+      "fieldType": "ENUM",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "enumValues": [
+        "PETROL",
+        "DIESEL",
+        "ELECTRIC",
+        "HYBRID",
+        "LPG"
+      ]
+    },
+    {
+      "fieldId": "insurance_expiry",
+      "displayName": "Insurance Expiry",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "YYYY-MM-DD"
+    },
+    {
+      "fieldId": "mot_due",
+      "displayName": "MOT / Roadworthy Due",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "YYYY-MM-DD"
+    },
+    {
+      "fieldId": "tax_due",
+      "displayName": "Road Tax Due",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "YYYY-MM-DD"
+    },
+    {
+      "fieldId": "notes",
+      "displayName": "Notes",
+      "fieldType": "MULTILINE_TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": false,
+      "aiWritable": true,
+      "validationRules": []
+    }
   ],
   "lifecycle": {
     "states": [
-      {"stateId": "OWNED","displayName": "Owned"},
-      {"stateId": "SOLD","displayName": "Sold","isFinal": true},
-      {"stateId": "SCRAPPED","displayName": "Scrapped","isFinal": true}
+      {
+        "stateId": "OWNED",
+        "displayName": "Owned"
+      },
+      {
+        "stateId": "SOLD",
+        "displayName": "Sold",
+        "isFinal": true
+      },
+      {
+        "stateId": "SCRAPPED",
+        "displayName": "Scrapped",
+        "isFinal": true
+      }
     ],
     "transitions": [
-      {"fromState": "OWNED","toState": "SOLD","trigger": "SOLD","label": "Sold"},
-      {"fromState": "OWNED","toState": "SCRAPPED","trigger": "SCRAPPED","label": "Scrapped"}
+      {
+        "fromState": "OWNED",
+        "toState": "SOLD",
+        "trigger": "SOLD",
+        "label": "Sold"
+      },
+      {
+        "fromState": "OWNED",
+        "toState": "SCRAPPED",
+        "trigger": "SCRAPPED",
+        "label": "Scrapped"
+      }
     ],
     "initialState": "OWNED"
   },
   "reminderRules": [
-    {"ruleId": "insurance_reminder","title": "Insurance Renewal","triggerField": "insurance_expiry","offsetDays": -30,"priority": "HIGH","messageTemplate": "Vehicle insurance expires in 30 days"},
-    {"ruleId": "mot_reminder","title": "MOT Due","triggerField": "mot_due","offsetDays": -30,"priority": "HIGH","messageTemplate": "Vehicle MOT due in 30 days"},
-    {"ruleId": "road_tax_reminder","title": "Road Tax Due","triggerField": "tax_due","offsetDays": -14,"priority": "MEDIUM","messageTemplate": "Road tax renewal due in 14 days"}
+    {
+      "ruleId": "insurance_reminder",
+      "title": "Insurance Renewal",
+      "triggerField": "insurance_expiry",
+      "offsetDays": -30,
+      "priority": "HIGH",
+      "messageTemplate": "Vehicle insurance expires in 30 days"
+    },
+    {
+      "ruleId": "mot_reminder",
+      "title": "MOT Due",
+      "triggerField": "mot_due",
+      "offsetDays": -30,
+      "priority": "HIGH",
+      "messageTemplate": "Vehicle MOT due in 30 days"
+    },
+    {
+      "ruleId": "road_tax_reminder",
+      "title": "Road Tax Due",
+      "triggerField": "tax_due",
+      "offsetDays": -14,
+      "priority": "MEDIUM",
+      "messageTemplate": "Road tax renewal due in 14 days"
+    }
   ],
-  "searchConfig": {"primaryFields": ["make","model","registration_number"],"fullTextFields": ["make","model","registration_number"],"filterableFields": ["fuel_type"]},
-  "aiConfig": {"extractableFields": ["make","model","year","registration_number","vin"],"classificationHints": ["vehicle","car","registration","insurance"]}
+  "searchConfig": {
+    "primaryFields": [
+      "make",
+      "model",
+      "registration_number"
+    ],
+    "fullTextFields": [
+      "make",
+      "model",
+      "registration_number"
+    ],
+    "filterableFields": [
+      "fuel_type"
+    ]
+  },
+  "aiConfig": {
+    "extractableFields": [
+      "make",
+      "model",
+      "year",
+      "registration_number",
+      "vin"
+    ],
+    "classificationHints": [
+      "vehicle",
+      "car",
+      "registration",
+      "insurance"
+    ],
+    "aiWritableFields": [
+      "notes"
+    ]
+  }
 }

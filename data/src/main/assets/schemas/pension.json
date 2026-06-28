@@ -95,27 +95,92 @@
       "searchable": false,
       "aiExtractable": false,
       "validationRules": []
+    },
+    {
+      "fieldId": "notes",
+      "displayName": "Notes",
+      "fieldType": "MULTILINE_TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": false,
+      "aiWritable": true,
+      "validationRules": []
     }
   ],
   "lifecycle": {
     "initialState": "ACTIVE",
     "states": [
-      { "stateId": "ACTIVE", "displayName": "Active" },
-      { "stateId": "DEFERRED", "displayName": "Deferred" },
-      { "stateId": "IN_DRAWDOWN", "displayName": "In Drawdown" },
-      { "stateId": "CLOSED", "displayName": "Closed", "isFinal": true }
+      {
+        "stateId": "ACTIVE",
+        "displayName": "Active"
+      },
+      {
+        "stateId": "DEFERRED",
+        "displayName": "Deferred"
+      },
+      {
+        "stateId": "IN_DRAWDOWN",
+        "displayName": "In Drawdown"
+      },
+      {
+        "stateId": "CLOSED",
+        "displayName": "Closed",
+        "isFinal": true
+      }
     ],
     "transitions": [
-      { "fromState": "ACTIVE", "toState": "DEFERRED", "trigger": "LEFT_EMPLOYER", "label": "Deferred" },
-      { "fromState": "ACTIVE", "toState": "IN_DRAWDOWN", "trigger": "DRAWDOWN_STARTED", "label": "Started Drawdown" },
-      { "fromState": "DEFERRED", "toState": "IN_DRAWDOWN", "trigger": "DRAWDOWN_STARTED", "label": "Started Drawdown" },
-      { "fromState": "IN_DRAWDOWN", "toState": "CLOSED", "trigger": "FULLY_WITHDRAWN", "label": "Closed" },
-      { "fromState": "ACTIVE", "toState": "CLOSED", "trigger": "CLOSED", "label": "Closed" }
+      {
+        "fromState": "ACTIVE",
+        "toState": "DEFERRED",
+        "trigger": "LEFT_EMPLOYER",
+        "label": "Deferred"
+      },
+      {
+        "fromState": "ACTIVE",
+        "toState": "IN_DRAWDOWN",
+        "trigger": "DRAWDOWN_STARTED",
+        "label": "Started Drawdown"
+      },
+      {
+        "fromState": "DEFERRED",
+        "toState": "IN_DRAWDOWN",
+        "trigger": "DRAWDOWN_STARTED",
+        "label": "Started Drawdown"
+      },
+      {
+        "fromState": "IN_DRAWDOWN",
+        "toState": "CLOSED",
+        "trigger": "FULLY_WITHDRAWN",
+        "label": "Closed"
+      },
+      {
+        "fromState": "ACTIVE",
+        "toState": "CLOSED",
+        "trigger": "CLOSED",
+        "label": "Closed"
+      }
     ]
   },
   "aiConfig": {
-    "extractableFields": ["provider_name", "scheme_name", "policy_number", "pension_type", "start_date"],
-    "classificationHints": ["pension", "retirement", "drawdown", "SIPP", "defined benefit", "defined contribution"]
+    "extractableFields": [
+      "provider_name",
+      "scheme_name",
+      "policy_number",
+      "pension_type",
+      "start_date"
+    ],
+    "classificationHints": [
+      "pension",
+      "retirement",
+      "drawdown",
+      "SIPP",
+      "defined benefit",
+      "defined contribution"
+    ],
+    "aiWritableFields": [
+      "notes"
+    ]
   },
   "reminderRules": []
 }

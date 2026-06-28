@@ -15,7 +15,15 @@
       "searchable": true,
       "aiExtractable": true,
       "validationRules": [],
-      "enumValues": ["PRESCRIPTION", "TEST_RESULT", "DIAGNOSIS", "VACCINATION", "SURGERY", "CONSULTATION", "OTHER"]
+      "enumValues": [
+        "PRESCRIPTION",
+        "TEST_RESULT",
+        "DIAGNOSIS",
+        "VACCINATION",
+        "SURGERY",
+        "CONSULTATION",
+        "OTHER"
+      ]
     },
     {
       "fieldId": "provider",
@@ -45,27 +53,66 @@
       "editable": true,
       "searchable": true,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "aiWritable": true
     }
   ],
   "lifecycle": {
     "initialState": "active",
     "states": [
-      {"stateId": "active", "displayName": "Active"},
-      {"stateId": "archived", "displayName": "Archived", "isFinal": true}
+      {
+        "stateId": "active",
+        "displayName": "Active"
+      },
+      {
+        "stateId": "archived",
+        "displayName": "Archived",
+        "isFinal": true
+      }
     ],
     "transitions": [
-      {"fromState": "active", "toState": "archived", "trigger": "ARCHIVE", "label": "Archive"}
+      {
+        "fromState": "active",
+        "toState": "archived",
+        "trigger": "ARCHIVE",
+        "label": "Archive"
+      }
     ]
   },
   "reminderRules": [],
   "searchConfig": {
-    "primaryFields": ["record_type", "provider"],
-    "fullTextFields": ["record_type", "provider", "notes"],
-    "filterableFields": ["record_type"]
+    "primaryFields": [
+      "record_type",
+      "provider"
+    ],
+    "fullTextFields": [
+      "record_type",
+      "provider",
+      "notes"
+    ],
+    "filterableFields": [
+      "record_type"
+    ]
   },
   "aiConfig": {
-    "extractableFields": ["record_type", "provider", "date", "notes"],
-    "classificationHints": ["prescription", "diagnosis", "test result", "lab", "medical", "doctor", "hospital", "vaccination"]
+    "extractableFields": [
+      "record_type",
+      "provider",
+      "date",
+      "notes"
+    ],
+    "classificationHints": [
+      "prescription",
+      "diagnosis",
+      "test result",
+      "lab",
+      "medical",
+      "doctor",
+      "hospital",
+      "vaccination"
+    ],
+    "aiWritableFields": [
+      "notes"
+    ]
   }
 }

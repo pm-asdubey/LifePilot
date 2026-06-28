@@ -269,7 +269,7 @@ private fun ActionProposalCard(
                 )
                 Spacer(modifier = Modifier.width(Spacing.xs))
                 Text(
-                    text = "Update "${action.objectTitle}"?",
+                    text = "Update \"${action.objectTitle}\"?",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                     modifier = Modifier.weight(1f),
