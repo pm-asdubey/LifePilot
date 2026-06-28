@@ -3,8 +3,10 @@ package com.lifepilot.data.di
 import android.content.Context
 import androidx.room.Room
 import com.lifepilot.data.database.LifePilotDatabase
+import com.lifepilot.data.database.dao.ConversationDao
 import com.lifepilot.data.database.dao.DocumentDao
 import com.lifepilot.data.database.dao.EventDao
+import com.lifepilot.data.database.dao.GoalDao
 import com.lifepilot.data.database.dao.MetadataDao
 import com.lifepilot.data.database.dao.ObjectDao
 import com.lifepilot.data.database.dao.ProfileDao
@@ -30,7 +32,9 @@ object DatabaseModule {
             context,
             LifePilotDatabase::class.java,
             LifePilotDatabase.DATABASE_NAME,
-        ).build()
+        )
+            .addMigrations(LifePilotDatabase.MIGRATION_1_2)
+            .build()
 
     @Provides
     fun provideProfileDao(db: LifePilotDatabase): ProfileDao = db.profileDao()
@@ -58,4 +62,10 @@ object DatabaseModule {
 
     @Provides
     fun provideRelationshipDao(db: LifePilotDatabase): RelationshipDao = db.relationshipDao()
+
+    @Provides
+    fun provideGoalDao(db: LifePilotDatabase): GoalDao = db.goalDao()
+
+    @Provides
+    fun provideConversationDao(db: LifePilotDatabase): ConversationDao = db.conversationDao()
 }

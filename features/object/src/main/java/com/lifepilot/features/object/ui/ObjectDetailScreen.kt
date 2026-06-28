@@ -89,6 +89,7 @@ fun ObjectDetailScreen(
     onEditMetadata: (String) -> Unit = {},
     onVerifyDocument: (objectId: String, versionId: String) -> Unit = { _, _ -> },
     onArchived: () -> Unit = {},
+    onAskAiAboutObject: (objectId: String, objectType: String, title: String) -> Unit = { _, _, _ -> },
     modifier: Modifier = Modifier,
     viewModel: ObjectDetailViewModel = hiltViewModel(),
 ) {
@@ -309,6 +310,9 @@ fun ObjectDetailScreen(
                 ObjectDetailTab.OVERVIEW -> OverviewTab(
                     metadata = obj.metadata,
                     description = obj.description,
+                    onAskAiAbout = {
+                        onAskAiAboutObject(obj.objectId, obj.objectType, obj.title)
+                    },
                 )
                 ObjectDetailTab.DOCUMENTS -> DocumentsTab(
                     documents = uiState.documents,
@@ -390,6 +394,7 @@ private fun AiFoundDetailsBanner(
 private fun OverviewTab(
     metadata: List<MetadataEntry>,
     description: String?,
+    onAskAiAbout: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -466,6 +471,36 @@ private fun OverviewTab(
                     title = "No details yet",
                     description = "Upload documents to fill this in automatically.",
                 )
+            }
+        }
+        // Ask AI entry point
+        item {
+            Spacer(modifier = Modifier.height(Spacing.lg))
+            Card(
+                onClick = onAskAiAbout,
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                ),
+                shape = MaterialTheme.shapes.medium,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Row(
+                    modifier = Modifier.padding(Spacing.md),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.AutoAwesome,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Text(
+                        text = "Ask AI about this record",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
             }
         }
     }

@@ -1,5 +1,7 @@
 package com.lifepilot.features.ai.state
 
+import com.lifepilot.domain.model.ProposedAction
+
 data class AiChatState(
     val messages: List<ChatMessage> = emptyList(),
     val inputText: String = "",
@@ -23,21 +25,3 @@ enum class MessageRole {
     ASSISTANT,
     SYSTEM,
 }
-
-data class ProposedAction(
-    val id: String,
-    val objectId: String,
-    val objectTitle: String,
-    val objectType: String,
-    val summary: String,
-    val fields: List<ProposedField>,
-)
-
-data class ProposedField(
-    val fieldId: String,
-    val displayName: String,
-    val value: String,
-    val mode: UpdateMode = UpdateMode.SET,
-)
-
-enum class UpdateMode { SET, APPEND }

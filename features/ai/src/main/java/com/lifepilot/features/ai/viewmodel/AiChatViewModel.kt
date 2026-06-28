@@ -13,12 +13,12 @@ import com.lifepilot.domain.repository.ObjectRepository
 import com.lifepilot.domain.repository.ProfileRepository
 import com.lifepilot.domain.repository.ReminderRepository
 import com.lifepilot.domain.repository.TaskRepository
+import com.lifepilot.domain.model.ProposedAction
+import com.lifepilot.domain.model.ProposedField
+import com.lifepilot.domain.model.UpdateMode
 import com.lifepilot.features.ai.state.AiChatState
 import com.lifepilot.features.ai.state.ChatMessage
 import com.lifepilot.features.ai.state.MessageRole
-import com.lifepilot.features.ai.state.ProposedAction
-import com.lifepilot.features.ai.state.ProposedField
-import com.lifepilot.features.ai.state.UpdateMode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

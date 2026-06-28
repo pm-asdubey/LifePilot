@@ -1,16 +1,14 @@
 package com.lifepilot.app.navigation
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryBooks
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.LibraryBooks
 import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Search
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.lifepilot.designsystem.components.BottomNavDestination
 
@@ -28,25 +26,19 @@ enum class TopLevelDestination(
     ),
     LIBRARY(
         route = "library",
-        label = "Records",
+        label = "Library",
         selectedIcon = Icons.Filled.LibraryBooks,
         unselectedIcon = Icons.Outlined.LibraryBooks,
     ),
-    SEARCH(
-        route = "search",
-        label = "Search",
-        selectedIcon = Icons.Filled.Search,
-        unselectedIcon = Icons.Outlined.Search,
-    ),
-    AI(
-        route = "ai",
-        label = "Ask",
-        selectedIcon = Icons.Filled.AutoAwesome,
-        unselectedIcon = Icons.Outlined.AutoAwesome,
+    PLANNER(
+        route = "planner",
+        label = "Planner",
+        selectedIcon = Icons.Filled.CalendarMonth,
+        unselectedIcon = Icons.Outlined.CalendarMonth,
     ),
     SETTINGS(
         route = "settings",
-        label = "Profile",
+        label = "Settings",
         selectedIcon = Icons.Filled.Person,
         unselectedIcon = Icons.Outlined.Person,
     ),

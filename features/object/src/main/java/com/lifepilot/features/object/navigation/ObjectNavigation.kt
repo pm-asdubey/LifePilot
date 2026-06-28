@@ -36,6 +36,12 @@ fun NavGraphBuilder.objectDetailScreen(navController: NavController) {
                 navController.navigate("object/$objectId/verify/$versionId")
             },
             onArchived = { navController.popBackStack() },
+            onAskAiAboutObject = { _, _, _ ->
+                navController.navigate("home") {
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            },
         )
 
         val targetId = uploadTargetObjectId

@@ -52,8 +52,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.lifepilot.designsystem.components.EmptyState
 import com.lifepilot.designsystem.theme.Spacing
+import com.lifepilot.domain.model.ProposedAction
 import com.lifepilot.features.ai.state.MessageRole
-import com.lifepilot.features.ai.state.ProposedAction
 import com.lifepilot.features.ai.viewmodel.AiChatViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)

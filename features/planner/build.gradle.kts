@@ -8,7 +8,7 @@ plugins {
 }
 
 android {
-    namespace = "com.lifepilot.features.home"
+    namespace = "com.lifepilot.features.planner"
     compileSdk = 35
 
     defaultConfig {
@@ -41,7 +41,6 @@ dependencies {
     implementation(project(":domain"))
     implementation(project(":data"))
     implementation(project(":designsystem"))
-    implementation(project(":features:object"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.navigation.compose)

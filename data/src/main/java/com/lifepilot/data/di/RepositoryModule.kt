@@ -1,7 +1,9 @@
 package com.lifepilot.data.di
 
+import com.lifepilot.data.repository.ConversationRepositoryImpl
 import com.lifepilot.data.repository.DocumentRepositoryImpl
 import com.lifepilot.data.repository.EventRepositoryImpl
+import com.lifepilot.data.repository.GoalRepositoryImpl
 import com.lifepilot.data.repository.RelationshipRepositoryImpl
 import com.lifepilot.data.repository.MetadataRepositoryImpl
 import com.lifepilot.data.repository.ObjectRepositoryImpl
@@ -18,8 +20,10 @@ import com.lifepilot.domain.engine.LifeStateEngine
 import com.lifepilot.domain.engine.RuleEngine
 import com.lifepilot.domain.engine.SchemaEngine
 import com.lifepilot.domain.ocr.OcrService
+import com.lifepilot.domain.repository.ConversationRepository
 import com.lifepilot.domain.repository.DocumentRepository
 import com.lifepilot.domain.repository.EventRepository
+import com.lifepilot.domain.repository.GoalRepository
 import com.lifepilot.domain.repository.RelationshipRepository
 import com.lifepilot.domain.repository.MetadataRepository
 import com.lifepilot.domain.repository.ObjectRepository
@@ -93,4 +97,12 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindOcrService(impl: MlKitOcrService): OcrService
+
+    @Binds
+    @Singleton
+    abstract fun bindGoalRepository(impl: GoalRepositoryImpl): GoalRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindConversationRepository(impl: ConversationRepositoryImpl): ConversationRepository
 }

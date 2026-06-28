@@ -32,4 +32,5 @@ fun Task.toEntity(profileId: String): TaskEntity = TaskEntity(
     status = status.name,
     source = source.name,
     completedAt = completedAt?.toEpochMilli(),
+    goalId = null,
 )

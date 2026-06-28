@@ -17,14 +17,13 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.lifepilot.app.navigation.TopLevelDestination.HOME
 import com.lifepilot.designsystem.components.LifePilotBottomNavBar
-import com.lifepilot.features.ai.navigation.aiChatScreen
 import com.lifepilot.features.document.navigation.documentViewerScreen
 import com.lifepilot.features.home.navigation.homeScreen
 import com.lifepilot.features.library.navigation.libraryScreen
 import com.lifepilot.features.objectdetail.navigation.objectDetailScreen
+import com.lifepilot.features.planner.navigation.plannerScreen
 import com.lifepilot.features.search.navigation.searchScreen
 import com.lifepilot.features.settings.navigation.settingsScreen
-import com.lifepilot.features.timeline.navigation.timelineScreen
 
 @Composable
 fun LifePilotNavHost(deepLinkObjectId: String? = null) {
@@ -73,12 +72,11 @@ fun LifePilotNavHost(deepLinkObjectId: String? = null) {
         ) {
             homeScreen(navController = navController)
             libraryScreen(navController = navController)
-            searchScreen(navController = navController)
-            aiChatScreen(navController = navController)
+            plannerScreen(navController = navController)
             settingsScreen(navController = navController)
             objectDetailScreen(navController = navController)
             documentViewerScreen(navController = navController)
-            timelineScreen(navController = navController)
+            searchScreen(navController = navController)
         }
     }
 }

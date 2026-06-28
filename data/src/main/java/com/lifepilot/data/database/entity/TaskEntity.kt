@@ -12,6 +12,7 @@ import androidx.room.PrimaryKey
         Index(value = ["due_date"]),
         Index(value = ["status"]),
         Index(value = ["profile_id"]),
+        Index(value = ["goal_id"]),
     ]
 )
 data class TaskEntity(
@@ -45,4 +46,7 @@ data class TaskEntity(
 
     @ColumnInfo(name = "completed_at")
     val completedAt: Long?,
+
+    @ColumnInfo(name = "goal_id")
+    val goalId: String? = null,
 )

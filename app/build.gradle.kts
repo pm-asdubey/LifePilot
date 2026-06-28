@@ -96,6 +96,7 @@ dependencies {
     implementation(project(":features:settings"))
     implementation(project(":features:timeline"))
     implementation(project(":features:ai"))
+    implementation(project(":features:planner"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
