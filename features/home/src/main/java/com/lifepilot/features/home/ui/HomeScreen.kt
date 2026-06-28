@@ -1,5 +1,11 @@
 package com.lifepilot.features.home.ui
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,7 +28,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.outlined.AutoAwesome
@@ -36,7 +41,6 @@ import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -60,12 +64,16 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.lifepilot.designsystem.components.AiThinkingIndicator
 import com.lifepilot.designsystem.components.EmptyState
 import com.lifepilot.designsystem.components.GoalProposalCard
+import com.lifepilot.designsystem.components.HomeBriefSkeleton
 import com.lifepilot.designsystem.components.ObjectCreationCard
 import com.lifepilot.designsystem.components.SectionHeader
 import com.lifepilot.designsystem.components.TaskCompletionCard
@@ -129,29 +137,44 @@ fun HomeScreen(
                 .padding(innerPadding)
                 .imePadding(),
         ) {
-            when (uiState.mode) {
-                HomeMode.DAILY_BRIEF -> DailyBriefContent(
-                    uiState = uiState,
-                    onItemClick = { item ->
-                        item.objectId?.let { onNavigateToObject(it) }
-                    },
-                    onGoalClick = { onNavigateToPlanner() },
-                    onResumeConversation = { viewModel.resumeConversation(it.conversationId) },
-                    onViewAllConversations = viewModel::showConversationHistory,
-                    modifier = Modifier.weight(1f),
-                )
-                HomeMode.AI_WORKSPACE -> AiWorkspaceContent(
-                    messages = uiState.messages,
-                    isLoading = uiState.isAiLoading,
-                    isConfigured = uiState.isAiConfigured,
-                    pendingAction = uiState.pendingAction,
-                    pendingContextQuestion = uiState.pendingContextQuestion,
-                    onApproveAction = viewModel::approveAction,
-                    onDismissAction = viewModel::dismissAction,
-                    onDismissContextQuestion = viewModel::dismissContextQuestion,
-                    onNavigateToSettings = onNavigateToSettings,
-                    modifier = Modifier.weight(1f),
-                )
+            AnimatedContent(
+                targetState = uiState.mode,
+                transitionSpec = {
+                    if (targetState == HomeMode.AI_WORKSPACE) {
+                        (slideInVertically { it / 3 } + fadeIn(initialAlpha = 0f)) togetherWith
+                            (slideOutVertically { -it / 6 } + fadeOut())
+                    } else {
+                        (slideInVertically { -it / 3 } + fadeIn(initialAlpha = 0f)) togetherWith
+                            (slideOutVertically { it / 6 } + fadeOut())
+                    }
+                },
+                modifier = Modifier.weight(1f),
+                label = "home_mode",
+            ) { mode ->
+                when (mode) {
+                    HomeMode.DAILY_BRIEF -> DailyBriefContent(
+                        uiState = uiState,
+                        onItemClick = { item ->
+                            item.objectId?.let { onNavigateToObject(it) }
+                        },
+                        onGoalClick = { onNavigateToPlanner() },
+                        onResumeConversation = { viewModel.resumeConversation(it.conversationId) },
+                        onViewAllConversations = viewModel::showConversationHistory,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    HomeMode.AI_WORKSPACE -> AiWorkspaceContent(
+                        messages = uiState.messages,
+                        isLoading = uiState.isAiLoading,
+                        isConfigured = uiState.isAiConfigured,
+                        pendingAction = uiState.pendingAction,
+                        pendingContextQuestion = uiState.pendingContextQuestion,
+                        onApproveAction = viewModel::approveAction,
+                        onDismissAction = viewModel::dismissAction,
+                        onDismissContextQuestion = viewModel::dismissContextQuestion,
+                        onNavigateToSettings = onNavigateToSettings,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
             }
 
             // AI input bar — always visible
@@ -252,11 +275,16 @@ private fun DailyBriefContent(
         uiState.activeGoals.isNotEmpty() ||
         uiState.recentConversations.isNotEmpty()
 
+    if (uiState.isLoadingBrief) {
+        HomeBriefSkeleton(modifier = modifier)
+        return
+    }
+
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = Spacing.md),
     ) {
-        if (!hasContent && !uiState.isLoadingBrief) {
+        if (!hasContent) {
             item {
                 Box(
                     modifier = Modifier
@@ -266,8 +294,8 @@ private fun DailyBriefContent(
                 ) {
                     EmptyState(
                         icon = Icons.Outlined.AutoAwesome,
-                        title = "You're all caught up.",
-                        description = "Ask LifePilot anything using the bar below.",
+                        title = "You're all caught up",
+                        description = "Nothing needs your attention right now.\nAsk LifePilot anything using the bar below.",
                     )
                 }
             }
@@ -344,7 +372,8 @@ private fun AttentionCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         ),
-        shape = MaterialTheme.shapes.medium,
+        shape = MaterialTheme.shapes.large,
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Row(
             modifier = Modifier.padding(Spacing.md),
@@ -353,7 +382,7 @@ private fun AttentionCard(
         ) {
             Box(
                 modifier = Modifier
-                    .size(4.dp, 40.dp)
+                    .size(3.dp, 40.dp)
                     .background(accentColor, RoundedCornerShape(2.dp))
             )
             Column(modifier = Modifier.weight(1f)) {
@@ -390,7 +419,8 @@ private fun CompactGoalCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         ),
-        shape = MaterialTheme.shapes.medium,
+        shape = MaterialTheme.shapes.large,
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm),
@@ -550,19 +580,10 @@ private fun AiWorkspaceContent(
                     )
                 }
                 if (isLoading) {
-                    item {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.AutoAwesome,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(16.dp),
-                            )
-                            CircularProgressIndicator(modifier = Modifier.size(16.dp))
-                        }
+                    item(key = "thinking") {
+                        AiThinkingIndicator(
+                            modifier = Modifier.padding(start = Spacing.xs),
+                        )
                     }
                 }
             }
@@ -693,11 +714,12 @@ private fun ActionProposalCard(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val haptic = LocalHapticFeedback.current
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer,
         ),
-        shape = MaterialTheme.shapes.medium,
+        shape = MaterialTheme.shapes.extraLarge,
         modifier = modifier,
     ) {
         Column(modifier = Modifier.padding(Spacing.md)) {
@@ -744,7 +766,10 @@ private fun ActionProposalCard(
                     Text("Skip", color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f))
                 }
                 Spacer(modifier = Modifier.width(Spacing.sm))
-                TextButton(onClick = onApprove) {
+                TextButton(onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onApprove()
+                }) {
                     Text("Save to record", color = MaterialTheme.colorScheme.onPrimaryContainer)
                 }
             }
@@ -762,7 +787,7 @@ private fun ContextQuestionCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.secondaryContainer,
         ),
-        shape = MaterialTheme.shapes.medium,
+        shape = MaterialTheme.shapes.large,
         modifier = modifier,
     ) {
         Row(

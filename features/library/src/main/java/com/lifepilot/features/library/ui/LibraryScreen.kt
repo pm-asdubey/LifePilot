@@ -24,7 +24,7 @@ import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Sort
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.CircularProgressIndicator
+import com.lifepilot.designsystem.components.ObjectCardSkeleton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -234,13 +234,13 @@ fun LibraryScreen(
         modifier = modifier,
     ) { innerPadding ->
         if (uiState.isLoading) {
-            Box(
+            androidx.compose.foundation.lazy.LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
-                contentAlignment = Alignment.Center,
+                contentPadding = PaddingValues(vertical = com.lifepilot.designsystem.theme.Spacing.sm),
             ) {
-                CircularProgressIndicator()
+                items(6) { ObjectCardSkeleton() }
             }
             return@Scaffold
         }
@@ -279,9 +279,9 @@ fun LibraryScreen(
                 if (uiState.objects.isEmpty()) {
                     EmptyState(
                         icon = Icons.Outlined.FolderOpen,
-                        title = "Nothing tracked yet",
-                        description = "Add your first document or record to get started.",
-                        actionLabel = "Get started",
+                        title = "Your library is empty",
+                        description = "Add your first record — a passport, job, property or insurance policy — and LifePilot will keep everything in order.",
+                        actionLabel = "Add a record",
                         onAction = onAddObject,
                         modifier = Modifier.weight(1f),
                     )

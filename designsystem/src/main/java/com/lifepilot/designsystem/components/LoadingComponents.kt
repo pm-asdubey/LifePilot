@@ -1,5 +1,6 @@
 package com.lifepilot.designsystem.components
 
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -23,23 +24,31 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.lifepilot.designsystem.theme.Spacing
 
 fun Modifier.shimmer(): Modifier = composed {
     val transition = rememberInfiniteTransition(label = "shimmer")
-    val alpha by transition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 0.7f,
+    val translateX by transition.animateFloat(
+        initialValue = -300f,
+        targetValue = 1200f,
         animationSpec = infiniteRepeatable(
-            animation = tween(800),
-            repeatMode = RepeatMode.Reverse,
+            animation = tween(durationMillis = 1400, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
         ),
-        label = "shimmer_alpha",
+        label = "shimmer_translate",
     )
+    val base = MaterialTheme.colorScheme.surfaceContainerHigh
+    val highlight = MaterialTheme.colorScheme.surfaceContainerHighest
+
     background(
-        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = alpha),
-        shape = RoundedCornerShape(4.dp),
+        brush = Brush.linearGradient(
+            colors = listOf(base, highlight, base),
+            start = Offset(translateX, 0f),
+            end = Offset(translateX + 600f, 0f),
+        ),
+        shape = RoundedCornerShape(6.dp),
     )
 }
 
@@ -48,7 +57,7 @@ fun ObjectCardSkeleton(modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(Spacing.md),
+            .padding(horizontal = Spacing.md, vertical = Spacing.sm),
     ) {
         Box(
             modifier = Modifier
@@ -57,24 +66,25 @@ fun ObjectCardSkeleton(modifier: Modifier = Modifier) {
         )
         Spacer(modifier = Modifier.width(Spacing.md))
         Column(modifier = Modifier.weight(1f)) {
+            Spacer(modifier = Modifier.height(4.dp))
             Box(
                 modifier = Modifier
-                    .fillMaxWidth(0.7f)
-                    .height(16.dp)
+                    .fillMaxWidth(0.65f)
+                    .height(15.dp)
                     .shimmer(),
             )
             Spacer(modifier = Modifier.height(Spacing.xs))
             Box(
                 modifier = Modifier
-                    .fillMaxWidth(0.5f)
+                    .fillMaxWidth(0.45f)
                     .height(12.dp)
                     .shimmer(),
             )
-            Spacer(modifier = Modifier.height(Spacing.xs))
+            Spacer(modifier = Modifier.height(Spacing.sm))
             Box(
                 modifier = Modifier
-                    .fillMaxWidth(0.3f)
-                    .height(20.dp)
+                    .fillMaxWidth(0.28f)
+                    .height(18.dp)
                     .shimmer(),
             )
         }
@@ -97,7 +107,7 @@ fun TaskCardSkeleton(modifier: Modifier = Modifier) {
         Column(modifier = Modifier.weight(1f)) {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth(0.8f)
+                    .fillMaxWidth(0.75f)
                     .height(14.dp)
                     .shimmer(),
             )
@@ -105,9 +115,66 @@ fun TaskCardSkeleton(modifier: Modifier = Modifier) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth(0.4f)
-                    .height(12.dp)
+                    .height(11.dp)
                     .shimmer(),
             )
+        }
+    }
+}
+
+@Composable
+fun HomeBriefSkeleton(modifier: Modifier = Modifier) {
+    Column(modifier = modifier.padding(horizontal = Spacing.md)) {
+        Spacer(modifier = Modifier.height(Spacing.lg))
+        Box(modifier = Modifier.fillMaxWidth(0.4f).height(14.dp).shimmer())
+        Spacer(modifier = Modifier.height(Spacing.xs))
+        Box(modifier = Modifier.fillMaxWidth(0.7f).height(32.dp).shimmer())
+        Spacer(modifier = Modifier.height(Spacing.xl))
+        repeat(3) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(72.dp)
+                    .shimmer(),
+            )
+            Spacer(modifier = Modifier.height(Spacing.sm))
+        }
+        Spacer(modifier = Modifier.height(Spacing.lg))
+        Box(modifier = Modifier.fillMaxWidth(0.3f).height(13.dp).shimmer())
+        Spacer(modifier = Modifier.height(Spacing.sm))
+        repeat(2) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .shimmer(),
+            )
+            Spacer(modifier = Modifier.height(Spacing.sm))
+        }
+    }
+}
+
+@Composable
+fun PlannerSkeleton(modifier: Modifier = Modifier) {
+    Column(modifier = modifier.padding(horizontal = Spacing.md)) {
+        Spacer(modifier = Modifier.height(Spacing.md))
+        Box(modifier = Modifier.fillMaxWidth(0.45f).height(13.dp).shimmer())
+        Spacer(modifier = Modifier.height(Spacing.sm))
+        Box(modifier = Modifier.fillMaxWidth().height(88.dp).shimmer())
+        Spacer(modifier = Modifier.height(Spacing.lg))
+        Box(modifier = Modifier.fillMaxWidth(0.35f).height(13.dp).shimmer())
+        Spacer(modifier = Modifier.height(Spacing.sm))
+        repeat(4) {
+            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                Box(modifier = Modifier.size(20.dp).shimmer())
+                Spacer(modifier = Modifier.width(Spacing.md))
+                Column(modifier = Modifier.weight(1f)) {
+                    Box(modifier = Modifier.fillMaxWidth(0.7f).height(14.dp).shimmer())
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Box(modifier = Modifier.fillMaxWidth(0.4f).height(11.dp).shimmer())
+                }
+            }
+            Spacer(modifier = Modifier.height(Spacing.xs))
         }
     }
 }

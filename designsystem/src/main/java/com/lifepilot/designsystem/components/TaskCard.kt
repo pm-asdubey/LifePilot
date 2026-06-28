@@ -1,5 +1,10 @@
 package com.lifepilot.designsystem.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,8 +22,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -41,6 +48,27 @@ fun TaskCard(
     modifier: Modifier = Modifier,
 ) {
     val haptic = LocalHapticFeedback.current
+
+    val iconScale by animateFloatAsState(
+        targetValue = if (isCompleted) 1f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessHigh,
+        ),
+        label = "checkbox_scale",
+    )
+    val iconTint by animateColorAsState(
+        targetValue = if (isCompleted) MaterialTheme.colorScheme.primary
+        else MaterialTheme.colorScheme.onSurfaceVariant,
+        animationSpec = tween(durationMillis = 200),
+        label = "checkbox_tint",
+    )
+    val textAlpha by animateFloatAsState(
+        targetValue = if (isCompleted) 0.45f else 1f,
+        animationSpec = tween(durationMillis = 300),
+        label = "text_alpha",
+    )
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -66,8 +94,8 @@ fun TaskCard(
                 imageVector = if (isCompleted) Icons.Outlined.CheckCircleOutline
                 else Icons.Outlined.RadioButtonUnchecked,
                 contentDescription = if (isCompleted) "Completed" else "Mark complete",
-                tint = if (isCompleted) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = iconTint,
+                modifier = Modifier.scale(iconScale),
             )
         }
         Spacer(modifier = Modifier.width(Spacing.sm))
@@ -75,8 +103,7 @@ fun TaskCard(
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (isCompleted) MaterialTheme.colorScheme.onSurfaceVariant
-                else MaterialTheme.colorScheme.onSurface,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = textAlpha),
                 textDecoration = if (isCompleted) TextDecoration.LineThrough else null,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
@@ -90,7 +117,7 @@ fun TaskCard(
                         Text(
                             text = dueDateLabel,
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = textAlpha),
                         )
                     }
                 }

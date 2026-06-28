@@ -1,14 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  LifePilot logo — a minimalist compass pointing toward a north star.
+  Concept: LifePilot quietly guides users toward what deserves their attention.
+  Thin circle outline, needle, and a small four-pointed star at true north.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- LP monogram for LifePilot -->
+
+    <!-- Outer thin circle -->
     <path
-        android:fillColor="#6650A4"
-        android:pathData="M32,28 L32,80 L42,80 L42,58 L58,58 L58,48 L42,48 L42,38 L60,38 L60,28 Z" />
+        android:strokeColor="#6B8FD4"
+        android:strokeWidth="2.5"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M54,18 A36,36 0 1,1 53.99,18 Z" />
+
+    <!-- Compass needle — north half (pointing to star), bright blue -->
     <path
-        android:fillColor="#6650A4"
-        android:pathData="M66,28 L66,80 L76,80 L76,58 L88,50 C92,47 94,43 94,38 C94,32 89,28 82,28 Z M76,38 L82,38 C84.5,38 85.5,39.5 85.5,41 C85.5,42.5 84,44.5 81,46.5 L76,50 Z" />
+        android:fillColor="#6B8FD4"
+        android:pathData="M54,23 L57.5,50 L54,52.5 L50.5,50 Z" />
+
+    <!-- Compass needle — south half, muted -->
+    <path
+        android:fillColor="#2A3E60"
+        android:pathData="M54,82 L57.5,56 L54,52.5 L50.5,56 Z" />
+
+    <!-- Small pivot dot at centre -->
+    <path
+        android:fillColor="#6B8FD4"
+        android:pathData="M54,50 m-3,0 a3,3 0 1,1 6,0 a3,3 0 1,1 -6,0" />
+
+    <!-- North star — four-pointed, at top of circle -->
+    <path
+        android:fillColor="#B8CFFF"
+        android:pathData="M54,13 L55.4,16.5 L59,17 L55.9,19.8 L56.8,23.5 L54,21.5 L51.2,23.5 L52.1,19.8 L49,17 L52.6,16.5 Z" />
+
 </vector>

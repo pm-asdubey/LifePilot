@@ -37,6 +37,7 @@ fun <T : BottomNavDestination> LifePilotBottomNavBar(
                     )
                 },
                 label = { Text(text = destination.label) },
+                alwaysShowLabel = true,
             )
         }
     }

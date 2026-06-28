@@ -21,7 +21,7 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.EmojiEvents
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import com.lifepilot.designsystem.components.PlannerSkeleton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
@@ -127,14 +127,11 @@ fun PlannerScreen(
         modifier = modifier,
     ) { innerPadding ->
         if (uiState.isLoading) {
-            Box(
+            PlannerSkeleton(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
-                contentAlignment = Alignment.Center,
-            ) {
-                CircularProgressIndicator()
-            }
+            )
             return@Scaffold
         }
 
@@ -192,8 +189,8 @@ private fun GoalsTab(
         ) {
             EmptyState(
                 icon = Icons.Outlined.EmojiEvents,
-                title = "No active goals",
-                description = "Start planning something. Tap + to create your first goal.",
+                title = "No goals yet",
+                description = "Set a goal and LifePilot will help you stay on track with suggested tasks and timely reminders.",
             )
         }
         return
@@ -356,12 +353,17 @@ private fun TasksTab(
             ) {
                 EmptyState(
                     icon = Icons.Outlined.CheckCircle,
-                    title = "Nothing to do",
+                    title = when (selectedFilter) {
+                        TaskFilter.TODAY -> "Clear for today"
+                        TaskFilter.THIS_WEEK -> "Nothing this week"
+                        TaskFilter.ALL -> "All clear"
+                        TaskFilter.COMPLETED -> "No completed tasks"
+                    },
                     description = when (selectedFilter) {
-                        TaskFilter.TODAY -> "No tasks due today."
-                        TaskFilter.THIS_WEEK -> "No tasks this week."
-                        TaskFilter.ALL -> "No pending tasks."
-                        TaskFilter.COMPLETED -> "No completed tasks."
+                        TaskFilter.TODAY -> "You're on top of things. Any tasks due today will appear here."
+                        TaskFilter.THIS_WEEK -> "A quiet week ahead. Tasks added this week will appear here."
+                        TaskFilter.ALL -> "No pending tasks. Add one above, or ask LifePilot to suggest what to do next."
+                        TaskFilter.COMPLETED -> "Complete a task to see it here."
                     },
                 )
             }
