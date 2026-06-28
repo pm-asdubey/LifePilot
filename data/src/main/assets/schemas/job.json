@@ -80,6 +80,28 @@
       "aiExtractable": true,
       "enumValues": ["FULL_TIME", "PART_TIME", "CONTRACT", "FREELANCE", "INTERN"],
       "validationRules": []
+    },
+    {
+      "fieldId": "interview_status",
+      "displayName": "Interview Status",
+      "fieldType": "ENUM",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "enumValues": ["NOT_STARTED", "IN_PROGRESS", "OFFER_RECEIVED", "REJECTED", "ACCEPTED"],
+      "validationRules": []
+    },
+    {
+      "fieldId": "career_notes",
+      "displayName": "Career Notes",
+      "fieldType": "MULTILINE_TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": false,
+      "aiWritable": true,
+      "validationRules": []
     }
   ],
   "lifecycle": {
@@ -100,6 +122,7 @@
   },
   "aiConfig": {
     "extractableFields": ["companyName", "jobTitle", "joiningDate", "endDate", "location", "employmentType"],
+    "aiWritableFields": ["career_notes", "interview_status"],
     "classificationHints": ["offer letter", "employment contract", "appointment letter", "salary slip"]
   }
 }

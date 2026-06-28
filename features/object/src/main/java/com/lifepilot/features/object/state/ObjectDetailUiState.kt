@@ -19,6 +19,7 @@ data class ObjectDetailUiState(
     val relatedObjects: Map<String, LifeObject> = emptyMap(),
     val selectedTab: ObjectDetailTab = ObjectDetailTab.OVERVIEW,
     val showLinkObjectSheet: Boolean = false,
+    val pendingVerificationVersionId: String? = null,
     val error: String? = null,
 )
 

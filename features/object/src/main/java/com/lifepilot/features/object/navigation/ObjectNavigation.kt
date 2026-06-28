@@ -32,6 +32,9 @@ fun NavGraphBuilder.objectDetailScreen(navController: NavController) {
             onEditMetadata = { objectId ->
                 navController.navigate("object/$objectId/edit")
             },
+            onVerifyDocument = { objectId, versionId ->
+                navController.navigate("object/$objectId/verify/$versionId")
+            },
             onArchived = { navController.popBackStack() },
         )
 

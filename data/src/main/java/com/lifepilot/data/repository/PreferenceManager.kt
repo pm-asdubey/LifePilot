@@ -76,7 +76,23 @@ class PreferenceManager @Inject constructor(
         _aiApiKeyFlow.value = null
     }
 
+    fun observePendingVerification(objectId: String): Flow<String?> {
+        val key = stringPreferencesKey("${PENDING_VERIFICATION_PREFIX}$objectId")
+        return context.dataStore.data.map { it[key] }
+    }
+
+    suspend fun setPendingVerification(objectId: String, versionId: String) {
+        val key = stringPreferencesKey("${PENDING_VERIFICATION_PREFIX}$objectId")
+        context.dataStore.edit { it[key] = versionId }
+    }
+
+    suspend fun clearPendingVerification(objectId: String) {
+        val key = stringPreferencesKey("${PENDING_VERIFICATION_PREFIX}$objectId")
+        context.dataStore.edit { it.remove(key) }
+    }
+
     companion object {
         private const val ENCRYPTED_AI_API_KEY = "encrypted_ai_api_key"
+        private const val PENDING_VERIFICATION_PREFIX = "pending_verification_"
     }
 }

@@ -60,6 +60,7 @@ class ObjectDetailViewModel @Inject constructor(
         observeObject()
         observeRelationships()
         observeAllObjects()
+        observePendingVerification()
     }
 
     private fun observeObject() {
@@ -91,9 +92,26 @@ class ObjectDetailViewModel @Inject constructor(
                         relationships = current.relationships,
                         relatedObjects = current.relatedObjects,
                         showLinkObjectSheet = current.showLinkObjectSheet,
+                        pendingVerificationVersionId = current.pendingVerificationVersionId,
                     )
                 }
             }
+        }
+    }
+
+    private fun observePendingVerification() {
+        viewModelScope.launch {
+            preferenceManager.observePendingVerification(objectId)
+                .catch { Timber.e(it, "Error observing pending verification") }
+                .collect { versionId ->
+                    _uiState.update { it.copy(pendingVerificationVersionId = versionId) }
+                }
+        }
+    }
+
+    fun dismissPendingVerification() {
+        viewModelScope.launch {
+            preferenceManager.clearPendingVerification(objectId)
         }
     }
 

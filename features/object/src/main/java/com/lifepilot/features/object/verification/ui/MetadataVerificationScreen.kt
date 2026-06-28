@@ -75,7 +75,7 @@ fun MetadataVerificationScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onDismiss) {
+                    IconButton(onClick = { viewModel.dismiss() }) {
                         Icon(Icons.Outlined.Close, contentDescription = "Dismiss")
                     }
                 },
@@ -120,7 +120,7 @@ fun MetadataVerificationScreen(
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.error,
                         )
-                        TextButton(onClick = onDismiss) {
+                        TextButton(onClick = { viewModel.dismiss() }) {
                             Text("Dismiss")
                         }
                     }

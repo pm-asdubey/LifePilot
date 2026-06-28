@@ -5,6 +5,7 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.lifepilot.data.database.dao.DocumentDao
+import com.lifepilot.data.repository.PreferenceManager
 import com.lifepilot.domain.engine.LifeStateEngine
 import com.lifepilot.domain.ocr.OcrResult
 import com.lifepilot.domain.ocr.OcrService
@@ -19,6 +20,7 @@ class DocumentOcrWorker @AssistedInject constructor(
     private val documentDao: DocumentDao,
     private val ocrService: OcrService,
     private val lifeStateEngine: LifeStateEngine,
+    private val preferenceManager: PreferenceManager,
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
@@ -45,6 +47,8 @@ class DocumentOcrWorker @AssistedInject constructor(
                     Timber.d("OCR complete for version $versionId: ${ocrResult.text.length} chars")
                     val objectId = documentDao.getDocumentById(versionEntity.documentId)?.objectId
                     if (objectId != null) {
+                        // Signal that AI metadata extraction is ready for user review
+                        preferenceManager.setPendingVerification(objectId, versionId)
                         lifeStateEngine.processDocumentIngestion(
                             objectId = objectId,
                             documentId = versionEntity.documentId,

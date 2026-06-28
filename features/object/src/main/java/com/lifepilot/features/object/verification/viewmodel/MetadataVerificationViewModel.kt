@@ -3,6 +3,7 @@ package com.lifepilot.features.objectdetail.verification.viewmodel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lifepilot.data.repository.PreferenceManager
 import com.lifepilot.domain.engine.LifeStateEngine
 import com.lifepilot.domain.model.MetadataEntry
 import com.lifepilot.domain.model.MetadataSource
@@ -31,6 +32,7 @@ class MetadataVerificationViewModel @Inject constructor(
     private val metadataRepository: MetadataRepository,
     private val extractMetadataUseCase: ExtractMetadataUseCase,
     private val lifeStateEngine: LifeStateEngine,
+    private val preferenceManager: PreferenceManager,
 ) : ViewModel() {
 
     private val objectId: String = savedStateHandle["objectId"] ?: ""
@@ -118,7 +120,7 @@ class MetadataVerificationViewModel @Inject constructor(
         viewModelScope.launch {
             val acceptedFields = _state.value.suggestions.filter { it.isAccepted && it.editedValue.isNotBlank() }
             if (acceptedFields.isEmpty()) {
-                _state.update { it.copy(saved = true) }
+                clearPendingAndComplete()
                 return@launch
             }
 
@@ -139,7 +141,7 @@ class MetadataVerificationViewModel @Inject constructor(
                 }
                 metadataRepository.upsertMetadataBatch(entries)
                 lifeStateEngine.processMetadataUpdate(objectId, entries)
-                _state.update { it.copy(isSaving = false, saved = true) }
+                clearPendingAndComplete()
             } catch (e: Exception) {
                 Timber.e(e, "Failed to save verified metadata")
                 _state.update { it.copy(isSaving = false, error = "Failed to save: ${e.message}") }
@@ -148,6 +150,15 @@ class MetadataVerificationViewModel @Inject constructor(
     }
 
     fun dismiss() {
-        _state.update { it.copy(saved = true) }
+        viewModelScope.launch {
+            clearPendingAndComplete()
+        }
+    }
+
+    private suspend fun clearPendingAndComplete() {
+        if (objectId.isNotBlank()) {
+            preferenceManager.clearPendingVerification(objectId)
+        }
+        _state.update { it.copy(isSaving = false, saved = true) }
     }
 }

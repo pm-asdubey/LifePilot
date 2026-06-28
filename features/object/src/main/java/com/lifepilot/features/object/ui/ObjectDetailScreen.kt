@@ -1,6 +1,8 @@
 package com.lifepilot.features.objectdetail.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -19,17 +21,19 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.LinkOff
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -83,6 +87,7 @@ fun ObjectDetailScreen(
     onNavigateToDocument: (String) -> Unit,
     onUploadDocument: (String) -> Unit,
     onEditMetadata: (String) -> Unit = {},
+    onVerifyDocument: (objectId: String, versionId: String) -> Unit = { _, _ -> },
     onArchived: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ObjectDetailViewModel = hiltViewModel(),
@@ -239,6 +244,18 @@ fun ObjectDetailScreen(
                 .fillMaxSize()
                 .padding(innerPadding),
         ) {
+            // AI found details banner
+            val pendingVersionId = uiState.pendingVerificationVersionId
+            if (pendingVersionId != null) {
+                AiFoundDetailsBanner(
+                    onReview = {
+                        onVerifyDocument(obj.objectId, pendingVersionId)
+                    },
+                    onDismiss = viewModel::dismissPendingVerification,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -310,6 +327,59 @@ fun ObjectDetailScreen(
                     currentObjectId = obj.objectId,
                     onUnlink = { relationshipId -> viewModel.unlinkObject(relationshipId) },
                     onLink = { viewModel.showLinkObjectSheet() },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AiFoundDetailsBanner(
+    onReview: () -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+        ),
+        shape = MaterialTheme.shapes.small,
+        modifier = modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Spacing.md, vertical = Spacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.AutoAwesome,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.size(20.dp),
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "AI found details in your document",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+                Text(
+                    text = "Tap to review and save what looks correct.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
+                )
+            }
+            TextButton(onClick = onReview) {
+                Text("Review", color = MaterialTheme.colorScheme.onSecondaryContainer)
+            }
+            IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
+                Icon(
+                    imageVector = Icons.Outlined.Close,
+                    contentDescription = "Dismiss",
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.size(16.dp),
                 )
             }
         }
