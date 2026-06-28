@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -420,7 +421,46 @@ private fun OverviewTab(
                 Spacer(modifier = Modifier.height(Spacing.md))
             }
         }
-        if (metadata.isNotEmpty()) {
+        // AI Context card — surfaced prominently when present
+        val aiContext = metadata.firstOrNull { it.fieldId == "ai_context" }
+        if (aiContext != null) {
+            item {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    ),
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Column(modifier = Modifier.padding(Spacing.md)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Outlined.AutoAwesome,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.size(14.dp),
+                            )
+                            Spacer(modifier = Modifier.width(Spacing.xs))
+                            Text(
+                                text = "AI Context",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(Spacing.xs))
+                        Text(
+                            text = aiContext.value,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(Spacing.sm))
+            }
+        }
+
+        val regularMetadata = metadata.filter { it.fieldId != "ai_context" }
+        if (regularMetadata.isNotEmpty()) {
             item {
                 Text(
                     text = "Details",
@@ -429,7 +469,7 @@ private fun OverviewTab(
                     modifier = Modifier.padding(bottom = Spacing.sm),
                 )
             }
-            items(metadata, key = { it.metadataId }) { entry ->
+            items(regularMetadata, key = { it.metadataId }) { entry ->
                 Card(
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
