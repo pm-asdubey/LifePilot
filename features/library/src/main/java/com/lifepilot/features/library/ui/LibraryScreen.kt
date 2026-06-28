@@ -77,15 +77,15 @@ fun LibraryScreen(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete ${uiState.selectedObjectIds.size} Objects") },
-            text = { Text("This will permanently delete the selected objects and all their documents. This action cannot be undone.") },
+            title = { Text("Remove ${uiState.selectedObjectIds.size} items?") },
+            text = { Text("This will permanently remove the selected items and all their documents. This cannot be undone.") },
             confirmButton = {
                 TextButton(
                     onClick = {
                         showDeleteDialog = false
                         viewModel.deleteSelected()
                     },
-                ) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+                ) { Text("Remove", color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") }
@@ -99,7 +99,7 @@ fun LibraryScreen(
                 TopAppBar(
                     navigationIcon = {
                         IconButton(onClick = viewModel::exitSelectionMode) {
-                            Icon(Icons.Filled.Close, contentDescription = "Exit selection")
+                            Icon(Icons.Filled.Close, contentDescription = "Cancel selection")
                         }
                     },
                     title = {
@@ -116,7 +116,7 @@ fun LibraryScreen(
                 TopAppBar(
                     title = {
                         Text(
-                            text = "Library",
+                            text = "My Records",
                             style = MaterialTheme.typography.titleLarge,
                         )
                     },
@@ -170,7 +170,7 @@ fun LibraryScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Add,
-                        contentDescription = "Add Object",
+                        contentDescription = "Track something new",
                     )
                 }
             }
@@ -214,7 +214,7 @@ fun LibraryScreen(
                                 modifier = Modifier.size(18.dp),
                             )
                             Spacer(modifier = Modifier.width(Spacing.xs))
-                            Text("Delete")
+                            Text("Remove")
                         }
                     }
                 }
@@ -268,9 +268,9 @@ fun LibraryScreen(
                 if (uiState.objects.isEmpty()) {
                     EmptyState(
                         icon = Icons.Outlined.FolderOpen,
-                        title = "No objects yet",
-                        description = "Add your first document or object to get started.",
-                        actionLabel = "Add Object",
+                        title = "Nothing tracked yet",
+                        description = "Add your first document or record to get started.",
+                        actionLabel = "Get started",
                         onAction = onAddObject,
                         modifier = Modifier.weight(1f),
                     )
@@ -291,13 +291,20 @@ fun LibraryScreen(
                                 ObjectStatus.ARCHIVED -> StatusArchived
                                 ObjectStatus.DRAFT -> MaterialTheme.colorScheme.onSurfaceVariant
                             }
+                            val statusLabel = when (obj.status) {
+                                ObjectStatus.ACTIVE -> "Active"
+                                ObjectStatus.RENEWAL_DUE -> "Renewal due"
+                                ObjectStatus.EXPIRED -> "Expired"
+                                ObjectStatus.ARCHIVED -> "Archived"
+                                ObjectStatus.DRAFT -> "Draft"
+                            }
                             val isSelected = obj.objectId in uiState.selectedObjectIds
                             ObjectCard(
                                 title = obj.title,
                                 subtitle = obj.description,
                                 objectType = obj.objectType,
                                 domain = obj.domain,
-                                statusLabel = obj.status.name.replace("_", " "),
+                                statusLabel = statusLabel,
                                 statusColor = statusColor,
                                 icon = domainIcon(obj.domain),
                                 isSelected = isSelected,
@@ -321,4 +328,3 @@ fun LibraryScreen(
         }
     }
 }
-

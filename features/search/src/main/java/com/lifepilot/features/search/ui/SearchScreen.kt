@@ -61,7 +61,7 @@ fun SearchScreen(
                 onSearch = viewModel::onSearch,
                 active = false,
                 onActiveChange = {},
-                placeholder = { Text("Search objects, documents, tasks...") },
+                placeholder = { Text("Search for anything...") },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Outlined.Search,
@@ -95,7 +95,7 @@ fun SearchScreen(
             if (uiState.query.isBlank()) {
                 if (uiState.recentSearches.isNotEmpty()) {
                     SectionHeader(
-                        title = "RECENT SEARCHES",
+                        title = "RECENT",
                         modifier = Modifier.padding(top = Spacing.md),
                     )
                     LazyColumn(
@@ -131,15 +131,15 @@ fun SearchScreen(
                 } else {
                     EmptyState(
                         icon = Icons.Outlined.Search,
-                        title = "Search your life",
-                        description = "Find any document, object, task or event.",
+                        title = "Find anything",
+                        description = "Search across all your documents, records and tasks.",
                     )
                 }
             } else if (uiState.results.isEmpty()) {
                 EmptyState(
                     icon = Icons.Outlined.Search,
-                    title = "No results",
-                    description = "No matches found for \"${uiState.query}\".",
+                    title = "Nothing found",
+                    description = "No matches for \"${uiState.query}\".",
                 )
             } else {
                 LazyColumn(
@@ -190,7 +190,7 @@ fun SearchScreen(
                             val objectType = result.objectType
                             if (objectType != null) {
                                 Text(
-                                    text = objectType,
+                                    text = objectType.replaceFirstChar { it.uppercase() },
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )

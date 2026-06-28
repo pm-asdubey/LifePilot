@@ -68,7 +68,7 @@ fun CreateObjectSheet(
             when (state.step) {
                 CreateObjectStep.SELECT_TYPE -> {
                     Text(
-                        text = "Add Object",
+                        text = "What would you like to track?",
                         style = MaterialTheme.typography.titleLarge,
                         modifier = Modifier.padding(bottom = Spacing.md),
                     )
@@ -122,6 +122,7 @@ fun CreateObjectSheet(
                 }
 
                 CreateObjectStep.FILL_DETAILS -> {
+                    val selectedType = state.availableTypes.find { it.objectType == state.selectedType }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(bottom = Spacing.md),
@@ -133,7 +134,7 @@ fun CreateObjectSheet(
                             )
                         }
                         Text(
-                            text = state.selectedType ?: "",
+                            text = selectedType?.displayName ?: (state.selectedType ?: ""),
                             style = MaterialTheme.typography.titleLarge,
                         )
                     }
@@ -141,7 +142,7 @@ fun CreateObjectSheet(
                     OutlinedTextField(
                         value = state.title,
                         onValueChange = viewModel::onTitleChange,
-                        label = { Text("Title *") },
+                        label = { Text("Name *") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         isError = state.error != null,
@@ -152,7 +153,7 @@ fun CreateObjectSheet(
                     OutlinedTextField(
                         value = state.description,
                         onValueChange = viewModel::onDescriptionChange,
-                        label = { Text("Description (optional)") },
+                        label = { Text("Notes (optional)") },
                         minLines = 2,
                         maxLines = 4,
                         modifier = Modifier.fillMaxWidth(),
@@ -174,7 +175,7 @@ fun CreateObjectSheet(
                         enabled = !state.isLoading && state.title.isNotBlank(),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Text(if (state.isLoading) "Creating..." else "Create Object")
+                        Text(if (state.isLoading) "Saving..." else "Start tracking")
                     }
                     Spacer(modifier = Modifier.height(Spacing.xxl))
                 }
@@ -182,4 +183,3 @@ fun CreateObjectSheet(
         }
     }
 }
-

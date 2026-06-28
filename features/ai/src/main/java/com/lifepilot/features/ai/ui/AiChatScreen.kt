@@ -73,11 +73,11 @@ fun AiChatScreen(
                 title = {
                     Column {
                         Text(
-                            text = "AI Assistant",
+                            text = "Ask anything",
                             style = MaterialTheme.typography.titleMedium,
                         )
                         Text(
-                            text = "Ask about your life data",
+                            text = "Your data stays on your device",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -139,14 +139,14 @@ fun AiChatScreen(
                             modifier = Modifier.size(20.dp),
                         )
                         Text(
-                            text = "Set up an AI provider in Settings to enable AI responses.",
+                            text = "Connect an AI provider in Settings to get answers.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onTertiaryContainer,
                             modifier = Modifier.weight(1f),
                         )
                         if (onNavigateToSettings != null) {
                             TextButton(onClick = onNavigateToSettings) {
-                                Text("Set Up")
+                                Text("Set up")
                             }
                         }
                     }
@@ -161,8 +161,8 @@ fun AiChatScreen(
                 ) {
                     EmptyState(
                         icon = Icons.Outlined.AutoAwesome,
-                        title = "Ask your life assistant",
-                        description = "Ask about your documents, objects, reminders, and deadlines. Your data stays local.",
+                        title = "Ask about your life",
+                        description = "Ask about your passport, insurance, deadlines, reminders or anything you've stored here.",
                     )
                 }
             } else {
@@ -286,7 +286,7 @@ private fun ChatInputBar(
         OutlinedTextField(
             value = text,
             onValueChange = onTextChange,
-            placeholder = { Text("Ask about your data...") },
+            placeholder = { Text("What would you like to know?") },
             modifier = Modifier.weight(1f),
             maxLines = 4,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),

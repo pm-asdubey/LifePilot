@@ -71,7 +71,7 @@ fun MetadataVerificationScreen(
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                         )
-                        Text("AI Suggestions")
+                        Text("Review what AI found")
                     }
                 },
                 navigationIcon = {
@@ -98,7 +98,7 @@ fun MetadataVerificationScreen(
                     ) {
                         CircularProgressIndicator()
                         Text(
-                            text = "Analysing document...",
+                            text = "Reading document...",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -116,7 +116,7 @@ fun MetadataVerificationScreen(
                         modifier = Modifier.padding(Spacing.lg),
                     ) {
                         Text(
-                            text = state.error ?: "Could not extract metadata",
+                            text = state.error ?: "Could not read this document",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.error,
                         )
@@ -134,7 +134,7 @@ fun MetadataVerificationScreen(
                 ) {
                     item {
                         Text(
-                            text = "Review extracted information for ${state.objectTitle}",
+                            text = "We found information about ${state.objectTitle}. Select what looks correct.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -170,7 +170,7 @@ fun MetadataVerificationScreen(
                                     CircularProgressIndicator(modifier = Modifier.padding(4.dp))
                                 } else {
                                     Icon(Icons.Outlined.Check, contentDescription = null)
-                                    Text("Apply Selected", modifier = Modifier.padding(start = Spacing.xs))
+                                    Text("Save selected", modifier = Modifier.padding(start = Spacing.xs))
                                 }
                             }
                         }

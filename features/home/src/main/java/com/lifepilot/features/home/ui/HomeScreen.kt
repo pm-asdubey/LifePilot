@@ -96,7 +96,7 @@ fun HomeScreen(
                         IconButton(onClick = onNavigateToTimeline) {
                             Icon(
                                 imageVector = Icons.Outlined.Notifications,
-                                contentDescription = "Notifications ($attentionCount)",
+                                contentDescription = "Activity ($attentionCount)",
                             )
                         }
                     }
@@ -113,7 +113,7 @@ fun HomeScreen(
             ) {
                 Icon(
                     imageVector = Icons.Filled.Add,
-                    contentDescription = "Add Object",
+                    contentDescription = "Track something new",
                 )
             }
         },
@@ -154,8 +154,8 @@ fun HomeScreen(
                 item {
                     Spacer(modifier = Modifier.height(Spacing.md))
                     SectionHeader(
-                        title = "TASKS",
-                        actionLabel = "Library",
+                        title = "NEEDS ATTENTION",
+                        actionLabel = "All records",
                         onAction = onNavigateToLibrary,
                     )
                     Spacer(modifier = Modifier.height(Spacing.sm))
@@ -170,7 +170,7 @@ fun HomeScreen(
                     TaskCard(
                         title = task.title,
                         dueDateLabel = task.dueDate?.format(DateTimeFormatter.ofPattern("MMM d")),
-                        priorityLabel = task.priority.name,
+                        priorityLabel = task.priority.name.lowercase().replaceFirstChar { it.uppercase() },
                         priorityColor = priorityColor,
                         isCompleted = false,
                         onComplete = { viewModel.completeTask(task.taskId) },
@@ -184,8 +184,8 @@ fun HomeScreen(
                 item {
                     Spacer(modifier = Modifier.height(Spacing.md))
                     SectionHeader(
-                        title = "RECENT ACTIVITY",
-                        actionLabel = "Timeline",
+                        title = "RECENT CHANGES",
+                        actionLabel = "Full history",
                         onAction = onNavigateToTimeline,
                     )
                     Spacer(modifier = Modifier.height(Spacing.sm))
@@ -214,8 +214,8 @@ fun HomeScreen(
                 item {
                     Spacer(modifier = Modifier.height(Spacing.md))
                     SectionHeader(
-                        title = "BY DOMAIN",
-                        actionLabel = "Library",
+                        title = "BY CATEGORY",
+                        actionLabel = "All records",
                         onAction = onNavigateToLibrary,
                     )
                     Spacer(modifier = Modifier.height(Spacing.sm))
@@ -233,9 +233,9 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.height(Spacing.xxl))
                     EmptyState(
                         icon = Icons.Outlined.FolderOpen,
-                        title = "Your life dashboard is empty",
-                        description = "Start by adding your first document or object to track.",
-                        actionLabel = "Add First Object",
+                        title = "Nothing here yet",
+                        description = "Start by tracking your first document, passport, insurance or any important record.",
+                        actionLabel = "Get started",
                         onAction = onAddObject,
                     )
                 }
@@ -256,13 +256,13 @@ private fun StatsRow(
         horizontalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
         StatCard(
-            label = "Objects",
+            label = "Tracked",
             value = objectCount.toString(),
             icon = Icons.Outlined.FolderOpen,
             modifier = Modifier.weight(1f),
         )
         StatCard(
-            label = "Pending Tasks",
+            label = "To do",
             value = pendingTaskCount.toString(),
             icon = Icons.Outlined.Assignment,
             modifier = Modifier.weight(1f),

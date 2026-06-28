@@ -49,7 +49,7 @@ fun TimelineScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Timeline",
+                        text = "History",
                         style = MaterialTheme.typography.titleLarge,
                     )
                 },
@@ -75,8 +75,8 @@ fun TimelineScreen(
         if (uiState.entries.isEmpty()) {
             EmptyState(
                 icon = Icons.Outlined.Timeline,
-                title = "No activity yet",
-                description = "Your timeline will show all changes to your objects.",
+                title = "No history yet",
+                description = "Changes to your records will appear here.",
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
@@ -111,12 +111,7 @@ fun TimelineScreen(
                                 selected = uiState.selectedSourceType == sourceType,
                                 onClick = { viewModel.selectFilter(sourceType) },
                                 label = {
-                                    Text(
-                                        sourceType
-                                            .replace("_", " ")
-                                            .lowercase()
-                                            .replaceFirstChar { it.uppercase() } + " ($count)"
-                                    )
+                                    Text(humanSourceType(sourceType) + " ($count)")
                                 },
                             )
                         }
@@ -152,4 +147,17 @@ fun TimelineScreen(
             }
         }
     }
+}
+
+private fun humanSourceType(sourceType: String): String = when (sourceType.uppercase()) {
+    "DOCUMENT_UPLOAD" -> "Documents"
+    "OCR_COMPLETE", "OCR" -> "Scanned"
+    "AI_EXTRACTION", "METADATA_EXTRACTION" -> "AI extracted"
+    "METADATA_UPDATE", "USER_EDIT" -> "Edits"
+    "TASK_COMPLETE", "TASK_COMPLETED" -> "Tasks"
+    "REMINDER" -> "Reminders"
+    "LIFECYCLE_CHANGE", "STATUS_CHANGE" -> "Status changes"
+    "OBJECT_CREATED" -> "New records"
+    "OBJECT_ARCHIVED" -> "Archived"
+    else -> sourceType.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() }
 }

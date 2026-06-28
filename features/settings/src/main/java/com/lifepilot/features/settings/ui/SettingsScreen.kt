@@ -78,7 +78,7 @@ fun SettingsScreen(
                 OutlinedTextField(
                     value = uiState.newProfileName,
                     onValueChange = viewModel::onNewProfileNameChange,
-                    label = { Text("Profile Name") },
+                    label = { Text("Name") },
                     singleLine = true,
                 )
             },
@@ -99,7 +99,7 @@ fun SettingsScreen(
                 OutlinedTextField(
                     value = uiState.editProfileName,
                     onValueChange = viewModel::onEditProfileNameChange,
-                    label = { Text("Profile Name") },
+                    label = { Text("Name") },
                     singleLine = true,
                 )
             },
@@ -131,7 +131,7 @@ fun SettingsScreen(
     if (uiState.showAiConfig) {
         AlertDialog(
             onDismissRequest = viewModel::hideAiConfig,
-            title = { Text("AI Provider") },
+            title = { Text("Connect to AI") },
             text = {
                 Column {
                     OutlinedTextField(
@@ -301,7 +301,7 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(Spacing.lg))
                 HorizontalDivider()
                 Spacer(modifier = Modifier.height(Spacing.md))
-                SectionHeader(title = "AI CONFIGURATION")
+                SectionHeader(title = "INTELLIGENCE")
                 Spacer(modifier = Modifier.height(Spacing.sm))
             }
 
@@ -332,7 +332,7 @@ fun SettingsScreen(
                                 .padding(start = Spacing.md),
                         ) {
                             Text(
-                                text = "AI Provider",
+                                text = "Connect to AI",
                                 style = MaterialTheme.typography.titleSmall,
                                 color = MaterialTheme.colorScheme.onSurface,
                             )
@@ -340,7 +340,7 @@ fun SettingsScreen(
                                 text = if (uiState.aiProvider.isNotBlank())
                                     "${uiState.aiProvider} • ${uiState.aiModel.ifBlank { "default model" }}"
                                 else
-                                    "Not configured — tap to set up",
+                                    "Not connected — tap to set up",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -358,7 +358,7 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(Spacing.lg))
                 HorizontalDivider()
                 Spacer(modifier = Modifier.height(Spacing.md))
-                SectionHeader(title = "DATA & BACKUP")
+                SectionHeader(title = "BACKUP & RESTORE")
                 Spacer(modifier = Modifier.height(Spacing.sm))
             }
 
@@ -385,12 +385,12 @@ fun SettingsScreen(
                             )
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Export Data",
+                                    text = "Back up data",
                                     style = MaterialTheme.typography.titleSmall,
                                     color = MaterialTheme.colorScheme.onSurface,
                                 )
                                 Text(
-                                    text = "Create a backup of all your objects and metadata",
+                                    text = "Save a copy of all your records",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -404,7 +404,7 @@ fun SettingsScreen(
                             val result = uiState.exportResult!!
                             Spacer(modifier = Modifier.height(Spacing.sm))
                             Text(
-                                text = "Export complete: ${result.objectCount} objects, ${result.documentCount} documents, ${result.taskCount} tasks",
+                                text = "Done: ${result.objectCount} records, ${result.documentCount} documents, ${result.taskCount} tasks",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.primary,
                             )
@@ -417,17 +417,17 @@ fun SettingsScreen(
                                         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                     }
                                     context.startActivity(
-                                        Intent.createChooser(intent, "Share export")
+                                        Intent.createChooser(intent, "Share backup file")
                                     )
                                 }) {
-                                    Text("Share Export File")
+                                    Text("Share backup file")
                                 }
                             }
                         }
                         if (uiState.exportError != null) {
                             Spacer(modifier = Modifier.height(Spacing.sm))
                             Text(
-                                text = "Export failed: ${uiState.exportError}",
+                                text = "Backup failed: ${uiState.exportError}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.error,
                             )
@@ -437,7 +437,7 @@ fun SettingsScreen(
                             onClick = viewModel::exportData,
                             enabled = !uiState.isExporting && uiState.activeProfile != null,
                         ) {
-                            Text("Export")
+                            Text("Back up now")
                         }
                     }
                 }
@@ -467,12 +467,12 @@ fun SettingsScreen(
                             )
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Import Data",
+                                    text = "Restore data",
                                     style = MaterialTheme.typography.titleSmall,
                                     color = MaterialTheme.colorScheme.onSurface,
                                 )
                                 Text(
-                                    text = "Restore objects and metadata from a LifePilot export file",
+                                    text = "Restore records from a backup file",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -486,7 +486,7 @@ fun SettingsScreen(
                             val result = uiState.importResult!!
                             Spacer(modifier = Modifier.height(Spacing.sm))
                             Text(
-                                text = "Import complete: ${result.objectsImported} objects, ${result.metadataEntriesImported} fields" +
+                                text = "Done: ${result.objectsImported} records restored" +
                                     if (result.objectsSkipped > 0) ", ${result.objectsSkipped} skipped" else "",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.primary,
@@ -495,7 +495,7 @@ fun SettingsScreen(
                         if (uiState.importError != null) {
                             Spacer(modifier = Modifier.height(Spacing.sm))
                             Text(
-                                text = "Import failed: ${uiState.importError}",
+                                text = "Restore failed: ${uiState.importError}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.error,
                             )
@@ -505,7 +505,7 @@ fun SettingsScreen(
                             onClick = { importFileLauncher.launch("application/json") },
                             enabled = !uiState.isImporting && uiState.activeProfile != null,
                         ) {
-                            Text("Choose Import File")
+                            Text("Choose backup file")
                         }
                     }
                 }
@@ -542,12 +542,12 @@ fun SettingsScreen(
                         )
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Biometric Lock",
+                                text = "Biometric lock",
                                 style = MaterialTheme.typography.titleSmall,
                                 color = MaterialTheme.colorScheme.onSurface,
                             )
                             Text(
-                                text = "Require fingerprint or face ID to open the app",
+                                text = "Require fingerprint or face to open the app",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )

@@ -28,7 +28,7 @@ enum class TopLevelDestination(
     ),
     LIBRARY(
         route = "library",
-        label = "Library",
+        label = "Records",
         selectedIcon = Icons.Filled.LibraryBooks,
         unselectedIcon = Icons.Outlined.LibraryBooks,
     ),
@@ -40,7 +40,7 @@ enum class TopLevelDestination(
     ),
     AI(
         route = "ai",
-        label = "Ask AI",
+        label = "Ask",
         selectedIcon = Icons.Filled.AutoAwesome,
         unselectedIcon = Icons.Outlined.AutoAwesome,
     ),

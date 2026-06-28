@@ -95,9 +95,9 @@ fun ObjectDetailScreen(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete Object") },
+            title = { Text("Remove this record?") },
             text = {
-                Text("This will permanently delete \"${uiState.lifeObject?.title}\". This action cannot be undone.")
+                Text("\"${uiState.lifeObject?.title}\" and all its documents will be permanently removed.")
             },
             confirmButton = {
                 TextButton(
@@ -106,7 +106,7 @@ fun ObjectDetailScreen(
                         viewModel.deleteObject { onNavigateBack() }
                     }
                 ) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text("Remove", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
@@ -150,7 +150,7 @@ fun ObjectDetailScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.Edit,
-                                contentDescription = "Edit Details",
+                                contentDescription = "Edit details",
                             )
                         }
                     }
@@ -176,7 +176,7 @@ fun ObjectDetailScreen(
                                 DropdownMenuItem(
                                     text = {
                                         Text(
-                                            "Delete",
+                                            "Remove",
                                             color = MaterialTheme.colorScheme.error,
                                         )
                                     },
@@ -202,7 +202,7 @@ fun ObjectDetailScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Add,
-                        contentDescription = "Upload Document",
+                        contentDescription = "Add document",
                     )
                 }
             }
@@ -229,7 +229,7 @@ fun ObjectDetailScreen(
                     .padding(innerPadding),
                 contentAlignment = Alignment.Center,
             ) {
-                Text("Object not found")
+                Text("Record not found")
             }
             return@Scaffold
         }
@@ -251,13 +251,20 @@ fun ObjectDetailScreen(
                     ObjectStatus.EXPIRED -> StatusExpired
                     else -> StatusArchived
                 }
+                val statusLabel = when (obj.status) {
+                    ObjectStatus.ACTIVE -> "Active"
+                    ObjectStatus.RENEWAL_DUE -> "Renewal due"
+                    ObjectStatus.EXPIRED -> "Expired"
+                    ObjectStatus.ARCHIVED -> "Archived"
+                    ObjectStatus.DRAFT -> "Draft"
+                }
                 StatusChip(
-                    label = obj.status.name.replace("_", " "),
+                    label = statusLabel,
                     color = statusColor,
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
-                    text = obj.objectType,
+                    text = obj.objectType.replaceFirstChar { it.uppercase() },
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -341,7 +348,7 @@ private fun OverviewTab(
         if (metadata.isNotEmpty()) {
             item {
                 Text(
-                    text = "DETAILS",
+                    text = "Details",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = Spacing.sm),
@@ -387,7 +394,7 @@ private fun OverviewTab(
                 EmptyState(
                     icon = Icons.Outlined.Description,
                     title = "No details yet",
-                    description = "Upload documents to extract metadata automatically.",
+                    description = "Upload documents to fill this in automatically.",
                 )
             }
         }
@@ -403,8 +410,8 @@ private fun DocumentsTab(
     if (documents.isEmpty()) {
         EmptyState(
             icon = Icons.Outlined.Description,
-            title = "No documents",
-            description = "Tap the + button to upload a document.",
+            title = "No documents yet",
+            description = "Tap the + button to add a document.",
             modifier = modifier.fillMaxSize(),
         )
     } else {
@@ -438,11 +445,13 @@ private fun DocumentsTab(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurface,
                             )
-                            Text(
-                                text = "${doc.versions.size} version(s)",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            if (doc.versions.size > 1) {
+                                Text(
+                                    text = "${doc.versions.size} versions",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                     }
                 }
@@ -484,8 +493,8 @@ private fun TasksTab(
     if (tasks.isEmpty()) {
         EmptyState(
             icon = Icons.Outlined.Description,
-            title = "No tasks",
-            description = "Tasks are generated automatically when you add objects.",
+            title = "Nothing to do",
+            description = "Tasks will appear here as you add information.",
             modifier = modifier.fillMaxSize(),
         )
     } else {
@@ -528,7 +537,7 @@ private fun TasksTab(
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.CheckCircle,
-                                contentDescription = "Complete",
+                                contentDescription = "Mark done",
                                 tint = MaterialTheme.colorScheme.onPrimaryContainer,
                                 modifier = Modifier.size(24.dp),
                             )
@@ -539,7 +548,7 @@ private fun TasksTab(
                     TaskCard(
                         title = task.title,
                         dueDateLabel = task.dueDate?.format(java.time.format.DateTimeFormatter.ofPattern("MMM d")),
-                        priorityLabel = task.priority.name,
+                        priorityLabel = task.priority.name.lowercase().replaceFirstChar { it.uppercase() },
                         priorityColor = priorityColor,
                         isCompleted = isCompleted,
                         onComplete = { if (!isCompleted) onCompleteTask(task.taskId) },
@@ -565,10 +574,10 @@ private fun RelationshipsTab(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 EmptyState(
                     icon = Icons.Outlined.Link,
-                    title = "No linked objects",
-                    description = "Link this object to others to see connections.",
+                    title = "No connections yet",
+                    description = "Link this record to others to see how they're related.",
                 )
-                TextButton(onClick = onLink) { Text("Link an Object") }
+                TextButton(onClick = onLink) { Text("Add connection") }
             }
         }
     } else {
@@ -609,7 +618,7 @@ private fun RelationshipsTab(
                         IconButton(onClick = { onUnlink(rel.relationshipId) }) {
                             Icon(
                                 imageVector = Icons.Outlined.LinkOff,
-                                contentDescription = "Remove link",
+                                contentDescription = "Remove connection",
                                 tint = MaterialTheme.colorScheme.error,
                             )
                         }
