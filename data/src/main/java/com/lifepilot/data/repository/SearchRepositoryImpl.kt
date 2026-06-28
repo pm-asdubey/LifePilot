@@ -1,8 +1,10 @@
 package com.lifepilot.data.repository
 
 import com.lifepilot.data.database.dao.DocumentDao
+import com.lifepilot.data.database.dao.GoalDao
 import com.lifepilot.data.database.dao.MetadataDao
 import com.lifepilot.data.database.dao.ObjectDao
+import com.lifepilot.data.database.dao.TaskDao
 import com.lifepilot.domain.model.SearchEntityType
 import com.lifepilot.domain.model.SearchResult
 import com.lifepilot.domain.repository.SearchRepository
@@ -17,6 +19,8 @@ class SearchRepositoryImpl @Inject constructor(
     private val objectDao: ObjectDao,
     private val metadataDao: MetadataDao,
     private val documentDao: DocumentDao,
+    private val goalDao: GoalDao,
+    private val taskDao: TaskDao,
     private val preferenceManager: PreferenceManager,
 ) : SearchRepository {
 
@@ -91,7 +95,35 @@ class SearchRepositoryImpl @Inject constructor(
             }
         }
 
-        return (boostedObjectResults + additionalObjects + docObjects)
+        // Goal search
+        val goalResults = goalDao.searchGoals(profileId, query).map { entity ->
+            SearchResult(
+                entityId = entity.goalId,
+                entityType = SearchEntityType.GOAL,
+                title = entity.title,
+                subtitle = entity.description,
+                objectType = null,
+                domain = null,
+                relevanceScore = computeScore(query, entity.title, entity.description),
+            )
+        }
+
+        // Task search (pending/in-progress only to keep results actionable)
+        val taskResults = taskDao.searchTasks(profileId, query)
+            .filter { it.status in listOf("PENDING", "IN_PROGRESS") }
+            .map { entity ->
+                SearchResult(
+                    entityId = entity.taskId,
+                    entityType = SearchEntityType.TASK,
+                    title = entity.title,
+                    subtitle = entity.description,
+                    objectType = null,
+                    domain = null,
+                    relevanceScore = computeScore(query, entity.title, entity.description) * 0.85f,
+                )
+            }
+
+        return (boostedObjectResults + additionalObjects + docObjects + goalResults + taskResults)
             .sortedByDescending { it.relevanceScore }
     }
 

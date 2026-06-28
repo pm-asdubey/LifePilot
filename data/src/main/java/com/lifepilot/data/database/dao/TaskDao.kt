@@ -48,4 +48,12 @@ interface TaskDao {
 
     @Query("DELETE FROM tasks WHERE task_id = :taskId")
     suspend fun deleteTask(taskId: String)
+
+    @Query("""
+        SELECT * FROM tasks
+        WHERE profile_id = :profileId AND (title LIKE '%' || :query || '%' OR description LIKE '%' || :query || '%')
+        ORDER BY due_date ASC
+        LIMIT 20
+    """)
+    suspend fun searchTasks(profileId: String, query: String): List<TaskEntity>
 }

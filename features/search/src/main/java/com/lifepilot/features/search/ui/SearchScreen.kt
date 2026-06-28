@@ -187,10 +187,17 @@ fun SearchScreen(
                                     )
                                 }
                             }
-                            val objectType = result.objectType
-                            if (objectType != null) {
+                            val typeLabel = when (result.entityType) {
+                                SearchEntityType.GOAL -> "Goal"
+                                SearchEntityType.TASK -> "Task"
+                                SearchEntityType.CONVERSATION -> "Chat"
+                                SearchEntityType.OBJECT -> result.objectType?.replaceFirstChar { it.uppercase() }
+                                SearchEntityType.DOCUMENT -> "Doc"
+                                SearchEntityType.EVENT -> "Event"
+                            }
+                            if (typeLabel != null) {
                                 Text(
-                                    text = objectType.replaceFirstChar { it.uppercase() },
+                                    text = typeLabel,
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )

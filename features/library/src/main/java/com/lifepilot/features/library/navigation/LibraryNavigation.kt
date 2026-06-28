@@ -21,6 +21,9 @@ fun NavGraphBuilder.libraryScreen(navController: NavController) {
             onAddObject = {
                 showCreateSheet = true
             },
+            onNavigateToSearch = {
+                navController.navigate("search")
+            },
         )
 
         if (showCreateSheet) {

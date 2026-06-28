@@ -30,4 +30,12 @@ interface GoalDao {
 
     @Query("UPDATE goals SET status = :status, updated_at = :updatedAt WHERE goal_id = :goalId")
     suspend fun updateGoalStatus(goalId: String, status: String, updatedAt: Long)
+
+    @Query("""
+        SELECT * FROM goals
+        WHERE profile_id = :profileId AND (title LIKE '%' || :query || '%' OR description LIKE '%' || :query || '%' OR notes LIKE '%' || :query || '%')
+        ORDER BY created_at DESC
+        LIMIT 20
+    """)
+    suspend fun searchGoals(profileId: String, query: String): List<GoalEntity>
 }

@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.outlined.FolderOpen
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Sort
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomAppBar
@@ -67,6 +68,7 @@ import com.lifepilot.features.library.viewmodel.LibraryViewModel
 fun LibraryScreen(
     onNavigateToObject: (String) -> Unit,
     onAddObject: () -> Unit,
+    onNavigateToSearch: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: LibraryViewModel = hiltViewModel(),
 ) {
@@ -121,6 +123,13 @@ fun LibraryScreen(
                         )
                     },
                     actions = {
+                        IconButton(onClick = onNavigateToSearch) {
+                            Icon(
+                                imageVector = Icons.Outlined.Search,
+                                contentDescription = "Search",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                         Box {
                             IconButton(onClick = { showSortMenu = true }) {
                                 Icon(

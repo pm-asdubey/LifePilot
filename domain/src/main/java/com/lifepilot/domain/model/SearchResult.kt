@@ -15,4 +15,6 @@ enum class SearchEntityType {
     DOCUMENT,
     TASK,
     EVENT,
+    GOAL,
+    CONVERSATION,
 }
