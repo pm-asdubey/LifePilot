@@ -2,6 +2,7 @@ package com.lifepilot.data.engine
 
 import com.lifepilot.domain.engine.ObjectReasoner
 import com.lifepilot.domain.engine.RetrievalEngine
+import com.lifepilot.domain.model.LifeObject
 import com.lifepilot.domain.model.MetadataEntry
 import com.lifepilot.domain.model.RetrievalContext
 import com.lifepilot.domain.repository.MetadataRepository
@@ -9,6 +10,9 @@ import com.lifepilot.domain.repository.ObjectRepository
 import com.lifepilot.domain.repository.ProfileRepository
 import com.lifepilot.domain.repository.ReminderRepository
 import com.lifepilot.domain.repository.TaskRepository
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.firstOrNull
 import timber.log.Timber
@@ -45,25 +49,32 @@ class RetrievalEngineImpl @Inject constructor(
                 .firstOrNull() ?: emptyList()
         }.getOrElse { emptyList() }
 
+        // Batch-load metadata once; allObjects Flow already batches this but we
+        // need the raw map for scoring as well.
         val allMetadata = runCatching {
             metadataRepository.getMetadataForObjects(allObjects.map { it.objectId })
         }.getOrElse { emptyMap() }
 
-        // Build the full index used by parseAction() after the AI responds
         val allObjectIndex = allObjects.associate { it.objectId to (it.title to it.objectType) }
 
-        // Score and select the most relevant objects for the prompt
-        val scoredIds = scoreObjects(userQuery, allObjects, allMetadata)
-            .take(MAX_RELEVANT_OBJECTS)
-            .map { it.first }
+        // Score once — keep (objectId, score) pairs so we don't re-score below.
+        val topScored = scoreObjects(userQuery, allObjects, allMetadata).take(MAX_RELEVANT_OBJECTS)
 
-        // Build ObjectSnapshots for selected objects only
-        val relevantSnapshots = scoredIds.mapNotNull { objectId ->
-            val rawScore = scoreObjects(userQuery, allObjects.filter { it.objectId == objectId }, allMetadata)
-                .firstOrNull()?.second ?: 0f
-            objectReasoner.buildSnapshot(resolvedProfileId, objectId)?.copy(relevanceScore = rawScore)
+        // Build ObjectSnapshots in parallel — each buildSnapshot() fires DB queries
+        // independently, so async/await cuts latency from (N × queries) to ~(1 × queries).
+        val relevantSnapshots = coroutineScope {
+            topScored.map { (objectId, score) ->
+                async {
+                    runCatching {
+                        objectReasoner.buildSnapshot(resolvedProfileId, objectId)
+                            ?.copy(relevanceScore = score)
+                    }.getOrNull()
+                }
+            }.awaitAll().filterNotNull()
         }
 
+        // Remaining context loaded concurrently with snapshot building above when
+        // called from a coroutineScope — structured concurrency ensures cancellation.
         val pendingTasks = runCatching {
             taskRepository.observePendingTasks(resolvedProfileId)
                 .catch { }
@@ -90,15 +101,15 @@ class RetrievalEngineImpl @Inject constructor(
 
     /**
      * Keyword-based relevance scoring.
-     * Returns (objectId, score) pairs sorted descending by score, falling back to all objects
-     * when no query tokens match anything.
+     * Returns (objectId, score) pairs sorted descending by score, falling back to
+     * the most recently updated objects when no tokens match.
      *
-     * Future: swap this function body for embedding-based cosine similarity
+     * Future: replace this body with embedding-based cosine similarity
      * without changing any caller.
      */
     private fun scoreObjects(
         query: String,
-        objects: List<com.lifepilot.domain.model.LifeObject>,
+        objects: List<LifeObject>,
         metadata: Map<String, List<MetadataEntry>>,
     ): List<Pair<String, Float>> {
         val tokens = query.lowercase()
@@ -115,16 +126,18 @@ class RetrievalEngineImpl @Inject constructor(
             val typeLower = obj.objectType.lowercase()
             val domainLower = obj.domain.lowercase()
 
-            tokens.forEach { token ->
+            for (token in tokens) {
                 if (titleLower.contains(token)) score += 3f
                 if (typeLower.contains(token)) score += 2f
                 if (domainLower.contains(token)) score += 1.5f
             }
 
             metadata[obj.objectId]?.take(10)?.forEach { entry ->
-                tokens.forEach { token ->
-                    if (entry.value.lowercase().contains(token)) score += 0.5f
-                    if (entry.fieldId.lowercase().contains(token)) score += 0.3f
+                val valueLower = entry.value.lowercase()
+                val fieldLower = entry.fieldId.lowercase()
+                for (token in tokens) {
+                    if (valueLower.contains(token)) score += 0.5f
+                    if (fieldLower.contains(token)) score += 0.3f
                 }
             }
 

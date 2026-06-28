@@ -48,4 +48,7 @@ class TaskRepositoryImpl @Inject constructor(
 
     override suspend fun getTaskById(taskId: String): Task? =
         taskDao.getTaskById(taskId)?.toDomain()
+
+    override suspend fun getPendingTaskCountForObject(objectId: String): Int =
+        taskDao.getPendingTaskCount(objectId)
 }

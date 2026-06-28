@@ -30,10 +30,15 @@ import com.lifepilot.features.home.state.AttentionUrgency
 import com.lifepilot.features.home.state.HomeMode
 import com.lifepilot.features.home.state.HomeUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -43,6 +48,7 @@ import java.time.LocalTime
 import java.util.UUID
 import javax.inject.Inject
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
@@ -83,50 +89,25 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             profileRepository.observeActiveProfile()
                 .catch { e -> Timber.e(e, "Error observing profile") }
-                .collect { profile ->
-                    if (profile == null) {
+                .flatMapLatest { profile ->
+                    if (profile == null) return@flatMapLatest flowOf(null)
+                    combine(
+                        goalRepository.observeActiveGoals(profile.profileId)
+                            .catch { e -> Timber.e(e, "Error observing goals"); emit(emptyList()) },
+                        conversationRepository.observeConversations(profile.profileId)
+                            .catch { e -> Timber.e(e, "Error observing conversations"); emit(emptyList()) },
+                        lifeStateEngine.observeAttentionRequired(profile.profileId)
+                            .catch { e -> Timber.e(e, "Error observing attention"); emit(emptyList()) },
+                    ) { goals, conversations, attentionItems ->
+                        BriefData(profile.displayName, profile.profileId, goals, conversations, attentionItems)
+                    }
+                }
+                .collect { data ->
+                    if (data == null) {
                         _uiState.update { it.copy(isLoadingBrief = false) }
                         return@collect
                     }
-                    _uiState.update { it.copy(profileName = profile.displayName) }
-                    observeGoals(profile.profileId)
-                    observeConversations(profile.profileId)
-                    observeAttentionItems(profile.profileId)
-                }
-        }
-    }
-
-    private fun observeGoals(profileId: String) {
-        viewModelScope.launch {
-            goalRepository.observeActiveGoals(profileId)
-                .catch { e -> Timber.e(e, "Error observing goals") }
-                .collect { goals ->
-                    _uiState.update { it.copy(activeGoals = goals, isLoadingBrief = false) }
-                }
-        }
-    }
-
-    private fun observeConversations(profileId: String) {
-        viewModelScope.launch {
-            conversationRepository.observeConversations(profileId)
-                .catch { e -> Timber.e(e, "Error observing conversations") }
-                .collect { conversations ->
-                    _uiState.update { state ->
-                        state.copy(
-                            recentConversations = conversations.take(3),
-                            allConversations = conversations,
-                        )
-                    }
-                }
-        }
-    }
-
-    private fun observeAttentionItems(profileId: String) {
-        viewModelScope.launch {
-            lifeStateEngine.observeAttentionRequired(profileId)
-                .catch { e -> Timber.e(e, "Error observing attention items") }
-                .collect { engineItems ->
-                    val mapped = engineItems.take(5).map { item ->
+                    val mapped = data.attentionItems.take(5).map { item ->
                         AttentionItem(
                             id = item.itemId,
                             title = item.title,
@@ -141,10 +122,27 @@ class HomeViewModel @Inject constructor(
                             },
                         )
                     }
-                    _uiState.update { it.copy(attentionItems = mapped) }
+                    _uiState.update { state ->
+                        state.copy(
+                            profileName = data.profileName,
+                            isLoadingBrief = false,
+                            activeGoals = data.goals,
+                            recentConversations = data.conversations.take(3),
+                            allConversations = data.conversations,
+                            attentionItems = mapped,
+                        )
+                    }
                 }
         }
     }
+
+    private data class BriefData(
+        val profileName: String,
+        val profileId: String,
+        val goals: List<com.lifepilot.domain.model.Goal>,
+        val conversations: List<com.lifepilot.domain.model.Conversation>,
+        val attentionItems: List<com.lifepilot.domain.engine.AttentionItem>,
+    )
 
     fun onInputChange(text: String) {
         _uiState.update { it.copy(inputText = text) }

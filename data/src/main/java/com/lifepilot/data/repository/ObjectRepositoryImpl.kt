@@ -20,17 +20,21 @@ class ObjectRepositoryImpl @Inject constructor(
 
     override fun observeObjectsByProfile(profileId: String): Flow<List<LifeObject>> =
         objectDao.observeObjectsByProfile(profileId).map { entities ->
+            if (entities.isEmpty()) return@map emptyList()
+            val grouped = metadataDao.getMetadataForObjects(entities.map { it.objectId })
+                .groupBy { it.objectId }
             entities.map { entity ->
-                val metadata = metadataDao.getMetadataByObject(entity.objectId)
-                entity.toDomain(metadata.map { it.toDomain() })
+                entity.toDomain(grouped[entity.objectId]?.map { it.toDomain() } ?: emptyList())
             }
         }
 
     override fun observeObjectsByDomain(profileId: String, domain: String): Flow<List<LifeObject>> =
         objectDao.observeObjectsByDomain(profileId, domain).map { entities ->
+            if (entities.isEmpty()) return@map emptyList()
+            val grouped = metadataDao.getMetadataForObjects(entities.map { it.objectId })
+                .groupBy { it.objectId }
             entities.map { entity ->
-                val metadata = metadataDao.getMetadataByObject(entity.objectId)
-                entity.toDomain(metadata.map { it.toDomain() })
+                entity.toDomain(grouped[entity.objectId]?.map { it.toDomain() } ?: emptyList())
             }
         }
 
@@ -46,6 +50,15 @@ class ObjectRepositoryImpl @Inject constructor(
         val entity = objectDao.getObjectById(objectId) ?: return null
         val metadata = metadataDao.getMetadataByObject(objectId)
         return entity.toDomain(metadata.map { it.toDomain() })
+    }
+
+    override suspend fun getObjectsByIds(objectIds: List<String>): List<LifeObject> {
+        if (objectIds.isEmpty()) return emptyList()
+        val entities = objectDao.getObjectsByIds(objectIds)
+        val grouped = metadataDao.getMetadataForObjects(objectIds).groupBy { it.objectId }
+        return entities.map { entity ->
+            entity.toDomain(grouped[entity.objectId]?.map { it.toDomain() } ?: emptyList())
+        }
     }
 
     override suspend fun createObject(

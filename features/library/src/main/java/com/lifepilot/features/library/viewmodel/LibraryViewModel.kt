@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
@@ -23,6 +24,7 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class LibraryViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
@@ -111,11 +113,8 @@ class LibraryViewModel @Inject constructor(
     }
 
     fun refresh() {
-        _uiState.update { it.copy(isRefreshing = true) }
-        viewModelScope.launch {
-            kotlinx.coroutines.delay(600)
-            _uiState.update { it.copy(isRefreshing = false) }
-        }
+        // Room observables keep data live — no manual reload needed.
+        _uiState.update { it.copy(isRefreshing = false) }
     }
 
     fun enterSelectionMode(objectId: String) {

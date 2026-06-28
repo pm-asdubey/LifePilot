@@ -9,6 +9,7 @@ interface ObjectRepository {
     fun observeObjectsByDomain(profileId: String, domain: String): Flow<List<LifeObject>>
     fun observeObjectById(objectId: String): Flow<LifeObject?>
     suspend fun getObjectById(objectId: String): LifeObject?
+    suspend fun getObjectsByIds(objectIds: List<String>): List<LifeObject>
     suspend fun createObject(
         profileId: String,
         objectType: String,

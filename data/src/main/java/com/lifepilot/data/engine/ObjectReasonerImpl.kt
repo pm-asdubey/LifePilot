@@ -7,8 +7,6 @@ import com.lifepilot.domain.repository.DocumentRepository
 import com.lifepilot.domain.repository.MetadataRepository
 import com.lifepilot.domain.repository.ObjectRepository
 import com.lifepilot.domain.repository.TaskRepository
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.firstOrNull
 import org.json.JSONArray
 import org.json.JSONObject
 import timber.log.Timber
@@ -33,10 +31,7 @@ class ObjectReasonerImpl @Inject constructor(
         val regularMetadata = allMetadata.filter { it.fieldId != "ai_context" }
 
         val pendingTaskCount = runCatching {
-            taskRepository.observeTasksByObject(objectId)
-                .catch { }
-                .firstOrNull()
-                ?.size ?: 0
+            taskRepository.getPendingTaskCountForObject(objectId)
         }.getOrElse { 0 }
 
         val documentCount = runCatching {

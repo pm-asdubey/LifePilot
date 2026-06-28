@@ -122,10 +122,9 @@ class ObjectDetailViewModel @Inject constructor(
                 .collect { relationships ->
                     val relatedObjectIds = relationships.map { rel ->
                         if (rel.sourceObjectId == objectId) rel.targetObjectId else rel.sourceObjectId
-                    }.toSet()
-                    val relatedObjects = relatedObjectIds.mapNotNull { id ->
-                        objectRepository.getObjectById(id)
-                    }.associateBy { it.objectId }
+                    }.distinct()
+                    val relatedObjects = objectRepository.getObjectsByIds(relatedObjectIds)
+                        .associateBy { it.objectId }
                     _uiState.update { it.copy(relationships = relationships, relatedObjects = relatedObjects) }
                 }
         }

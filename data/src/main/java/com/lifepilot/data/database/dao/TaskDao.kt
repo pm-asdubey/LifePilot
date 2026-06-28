@@ -37,6 +37,9 @@ interface TaskDao {
     @Query("SELECT title FROM tasks WHERE object_id = :objectId")
     suspend fun getTaskTitlesByObject(objectId: String): List<String>
 
+    @Query("SELECT COUNT(*) FROM tasks WHERE object_id = :objectId AND status IN ('PENDING', 'IN_PROGRESS')")
+    suspend fun getPendingTaskCount(objectId: String): Int
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTask(task: TaskEntity)
 

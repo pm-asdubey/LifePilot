@@ -4,8 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lifepilot.data.repository.PreferenceManager
 import com.lifepilot.domain.engine.PlanningEngine
-import com.lifepilot.domain.model.Goal
-import com.lifepilot.domain.model.GoalStatus
 import com.lifepilot.domain.model.Task
 import com.lifepilot.domain.model.TaskStatus
 import com.lifepilot.domain.repository.GoalRepository
@@ -21,10 +19,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
-import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -37,6 +32,9 @@ class PlannerViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(PlannerUiState())
     val uiState: StateFlow<PlannerUiState> = _uiState.asStateFlow()
+
+    // Drives filter changes without spawning new collectors.
+    private val selectedFilter = MutableStateFlow(TaskFilter.ALL)
 
     init {
         observeData()
@@ -52,17 +50,21 @@ class PlannerViewModel @Inject constructor(
             combine(
                 goalRepository.observeActiveGoals(profileId),
                 taskRepository.observeTasksByProfile(profileId),
-            ) { goals, tasks -> Pair(goals, tasks) }
+                selectedFilter,
+            ) { goals, tasks, filter ->
+                Triple(goals, tasks, filter)
+            }
                 .catch { e ->
                     Timber.e(e, "Error loading planner data")
                     _uiState.update { it.copy(isLoading = false, error = e.message) }
                 }
-                .collect { (goals, tasks) ->
+                .collect { (goals, tasks, filter) ->
                     _uiState.update { state ->
                         state.copy(
                             isLoading = false,
                             activeGoals = goals,
-                            tasks = filterTasks(tasks, state.selectedTaskFilter),
+                            tasks = filterTasks(tasks, filter),
+                            selectedTaskFilter = filter,
                             error = null,
                         )
                     }
@@ -71,22 +73,7 @@ class PlannerViewModel @Inject constructor(
     }
 
     fun setTaskFilter(filter: TaskFilter) {
-        val allTasks = _uiState.value.tasks
-        _uiState.update { state ->
-            state.copy(
-                selectedTaskFilter = filter,
-            )
-        }
-        viewModelScope.launch {
-            val profileId = preferenceManager.getActiveProfileId() ?: return@launch
-            taskRepository.observeTasksByProfile(profileId)
-                .catch { }
-                .collect { tasks ->
-                    _uiState.update { state ->
-                        state.copy(tasks = filterTasks(tasks, filter))
-                    }
-                }
-        }
+        selectedFilter.value = filter
     }
 
     fun showCreateGoalSheet() {
