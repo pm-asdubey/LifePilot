@@ -8,6 +8,8 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,6 +43,7 @@ import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -182,6 +185,10 @@ fun HomeScreen(
                 text = uiState.inputText,
                 onTextChange = viewModel::onInputChange,
                 onSend = viewModel::sendMessage,
+                onSuggestionChipClick = { suggestion ->
+                    viewModel.onInputChange(suggestion)
+                    viewModel.sendMessage()
+                },
                 isLoading = uiState.isAiLoading,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -821,42 +828,74 @@ private fun ContextQuestionCard(
 
 // ---- AI Input Bar ----
 
+private val AI_SUGGESTIONS = listOf(
+    "What needs attention?",
+    "What's expiring soon?",
+    "How's my career?",
+    "Any risks I should know?",
+    "What should I do today?",
+    "Summarise my finances",
+)
+
 @Composable
 private fun AiInputBar(
     text: String,
     onTextChange: (String) -> Unit,
     onSend: () -> Unit,
+    onSuggestionChipClick: (String) -> Unit,
     isLoading: Boolean,
     modifier: Modifier = Modifier,
 ) {
     HorizontalDivider()
-    Row(
-        modifier = modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm),
-        verticalAlignment = Alignment.Bottom,
-        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-    ) {
-        OutlinedTextField(
-            value = text,
-            onValueChange = onTextChange,
-            placeholder = { Text("Ask LifePilot anything…") },
-            modifier = Modifier.weight(1f),
-            maxLines = 4,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-            keyboardActions = KeyboardActions(onSend = { if (!isLoading) onSend() }),
-            shape = RoundedCornerShape(24.dp),
-        )
-        IconButton(
-            onClick = onSend,
-            enabled = text.isNotBlank() && !isLoading,
+    Column(modifier = modifier) {
+        // Suggestion chips — shown when the input field is empty
+        if (text.isEmpty() && !isLoading) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = Spacing.md, vertical = Spacing.xs),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
+            ) {
+                AI_SUGGESTIONS.forEach { suggestion ->
+                    FilterChip(
+                        selected = false,
+                        onClick = { onSuggestionChipClick(suggestion) },
+                        label = { Text(suggestion, style = MaterialTheme.typography.labelSmall) },
+                    )
+                }
+            }
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Spacing.md, vertical = Spacing.sm),
+            verticalAlignment = Alignment.Bottom,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
-            Icon(
-                imageVector = Icons.Filled.Send,
-                contentDescription = "Send",
-                tint = if (text.isNotBlank() && !isLoading)
-                    MaterialTheme.colorScheme.primary
-                else
-                    MaterialTheme.colorScheme.onSurfaceVariant,
+            OutlinedTextField(
+                value = text,
+                onValueChange = onTextChange,
+                placeholder = { Text("Ask LifePilot anything…") },
+                modifier = Modifier.weight(1f),
+                maxLines = 4,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                keyboardActions = KeyboardActions(onSend = { if (!isLoading) onSend() }),
+                shape = RoundedCornerShape(24.dp),
             )
+            IconButton(
+                onClick = onSend,
+                enabled = text.isNotBlank() && !isLoading,
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Send,
+                    contentDescription = "Send",
+                    tint = if (text.isNotBlank() && !isLoading)
+                        MaterialTheme.colorScheme.primary
+                    else
+                        MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }

@@ -21,6 +21,7 @@ class AppInitializer @Inject constructor(
     private val preferenceManager: PreferenceManager,
     private val workManagerScheduler: WorkManagerScheduler,
     private val notificationHelper: NotificationHelper,
+    private val sampleDataSeeder: SampleDataSeeder,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -34,24 +35,29 @@ class AppInitializer @Inject constructor(
             try {
                 schemaEngine.loadSchemas()
                 Timber.d("Schemas loaded: ${schemaEngine.getAllObjectTypes()}")
-                ensureDefaultProfile()
+                val profileId = ensureDefaultProfile()
+                sampleDataSeeder.seedIfEmpty(profileId)
             } catch (e: Exception) {
                 Timber.e(e, "App initialization failed")
             }
         }
     }
 
-    private suspend fun ensureDefaultProfile() {
+    private suspend fun ensureDefaultProfile(): String {
         val profiles = profileRepository.observeProfiles().firstOrNull() ?: emptyList()
-        if (profiles.isEmpty()) {
+        return if (profiles.isEmpty()) {
             val profile = profileRepository.createProfile("My Profile", isPrimary = true)
             preferenceManager.setActiveProfileId(profile.profileId)
             Timber.d("Created default profile: ${profile.profileId}")
+            profile.profileId
         } else {
             val active = preferenceManager.getActiveProfileId()
             if (active == null) {
                 val primary = profiles.find { it.isPrimary } ?: profiles.first()
                 preferenceManager.setActiveProfileId(primary.profileId)
+                primary.profileId
+            } else {
+                active
             }
         }
     }

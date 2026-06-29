@@ -8,6 +8,7 @@ import com.lifepilot.domain.ai.AiCompletionResult
 import com.lifepilot.domain.ai.AiMessage
 import com.lifepilot.domain.ai.AiMessageRole
 import com.lifepilot.domain.engine.AttentionPriority
+import com.lifepilot.domain.engine.DomainLifeStateEngine
 import com.lifepilot.domain.engine.LifeStateEngine
 import com.lifepilot.domain.engine.PlanningEngine
 import com.lifepilot.domain.engine.PromptBuilder
@@ -39,6 +40,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -62,6 +64,7 @@ class HomeViewModel @Inject constructor(
     private val promptBuilder: PromptBuilder,
     private val aiProviderFactory: AiProviderFactory,
     private val preferenceManager: PreferenceManager,
+    private val domainLifeStateEngine: DomainLifeStateEngine,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -71,6 +74,10 @@ class HomeViewModel @Inject constructor(
     // RetrievalEngine populates these; HomeViewModel reads them — never writes them.
     private var currentObjectIndex: Map<String, Pair<String, String>> = emptyMap()
     private var currentObjectMetadataIndex: Map<String, List<com.lifepilot.domain.model.MetadataEntry>> = emptyMap()
+    // Domains and snapshots active in the last retrieval — used to focus domain life state updates.
+    private var currentRetrievalDomains: List<String> = emptyList()
+    // objectId → domain lookup, built from all objects in the retrieval context.
+    private var currentObjectDomainIndex: Map<String, String> = emptyMap()
 
     init {
         _uiState.update { it.copy(greeting = timeBasedGreeting()) }
@@ -93,10 +100,13 @@ class HomeViewModel @Inject constructor(
                     if (profile == null) return@flatMapLatest flowOf(null)
                     combine(
                         goalRepository.observeActiveGoals(profile.profileId)
+                            .onStart { emit(emptyList()) }
                             .catch { e -> Timber.e(e, "Error observing goals"); emit(emptyList()) },
                         conversationRepository.observeConversations(profile.profileId)
+                            .onStart { emit(emptyList()) }
                             .catch { e -> Timber.e(e, "Error observing conversations"); emit(emptyList()) },
                         lifeStateEngine.observeAttentionRequired(profile.profileId)
+                            .onStart { emit(emptyList()) }
                             .catch { e -> Timber.e(e, "Error observing attention"); emit(emptyList()) },
                     ) { goals, conversations, attentionItems ->
                         BriefData(profile.displayName, profile.profileId, goals, conversations, attentionItems)
@@ -217,7 +227,9 @@ class HomeViewModel @Inject constructor(
                 // HomeViewModel never decides what to retrieve or how to format.
                 val retrievalContext = retrievalEngine.retrieve(profileId, userQuery = text)
                 currentObjectIndex = retrievalContext.allObjectIndex
+                currentObjectDomainIndex = retrievalContext.allObjectDomainIndex
                 currentObjectMetadataIndex = retrievalContext.allObjectMetadata
+                currentRetrievalDomains = retrievalContext.relevantSnapshots.map { it.domain }.distinct()
 
                 val systemPrompt = promptBuilder.build(retrievalContext, userQuery = text)
 
@@ -258,6 +270,21 @@ class HomeViewModel @Inject constructor(
                                 pendingContextQuestion = question,
                             )
                         }
+                        // Fire domain life state update in the background — non-blocking.
+                        // Captures the conversation turn that just completed.
+                        val domainsSnapshot = currentRetrievalDomains
+                        if (domainsSnapshot.isNotEmpty()) {
+                            launch {
+                                runCatching {
+                                    domainLifeStateEngine.evaluateAndUpdate(
+                                        profileId = profileId,
+                                        userMessage = text,
+                                        aiResponse = visibleContent,
+                                        affectedDomains = domainsSnapshot,
+                                    )
+                                }.onFailure { Timber.w(it, "Domain life state update failed silently") }
+                            }
+                        }
                     }
                     is AiCompletionResult.Error -> {
                         val errorMsg = StoredMessage(
@@ -267,6 +294,7 @@ class HomeViewModel @Inject constructor(
                             content = "Error: ${result.message}",
                             timestamp = Instant.now(),
                         )
+                        conversationRepository.saveMessage(errorMsg)
                         _uiState.update { s ->
                             s.copy(messages = s.messages + errorMsg, isAiLoading = false)
                         }
@@ -279,6 +307,7 @@ class HomeViewModel @Inject constructor(
                             content = "AI provider not configured. Go to Settings → AI Provider to set it up.",
                             timestamp = Instant.now(),
                         )
+                        conversationRepository.saveMessage(unavailableMsg)
                         _uiState.update { s ->
                             s.copy(
                                 messages = s.messages + unavailableMsg,
@@ -300,6 +329,7 @@ class HomeViewModel @Inject constructor(
         _uiState.update { it.copy(pendingAction = null) }
         viewModelScope.launch {
             try {
+                val profileId = preferenceManager.getActiveProfileId() ?: return@launch
                 val confirmText = executeProposal(proposal)
                 val convId = _uiState.value.currentConversationId ?: return@launch
                 val confirmMsg = StoredMessage(
@@ -311,10 +341,39 @@ class HomeViewModel @Inject constructor(
                 )
                 conversationRepository.saveMessage(confirmMsg)
                 _uiState.update { s -> s.copy(messages = s.messages + confirmMsg) }
+
+                // After a concrete change is approved, update the affected domain.
+                // We know the domain from the proposal or from the object index.
+                val affectedDomain = proposalDomain(proposal)
+                if (affectedDomain != null) {
+                    launch {
+                        runCatching {
+                            domainLifeStateEngine.evaluateAndUpdate(
+                                profileId = profileId,
+                                userMessage = "Action approved: $confirmText",
+                                aiResponse = confirmText,
+                                affectedDomains = listOf(affectedDomain),
+                            )
+                        }.onFailure { Timber.w(it, "Post-approval domain update failed") }
+                    }
+                }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to execute AI proposal")
             }
         }
+    }
+
+    private fun proposalDomain(proposal: AiProposal): String? = when (proposal) {
+        is AiProposal.ObjectCreation -> proposal.domain
+        is AiProposal.MetadataUpdate ->
+            currentObjectDomainIndex[proposal.objectId] ?: currentRetrievalDomains.firstOrNull()
+        is AiProposal.GoalProposal ->
+            proposal.linkedObjectId?.let { currentObjectDomainIndex[it] }
+                ?: currentRetrievalDomains.firstOrNull()
+        is AiProposal.TaskCreation ->
+            proposal.objectId?.let { currentObjectDomainIndex[it] }
+                ?: currentRetrievalDomains.firstOrNull()
+        is AiProposal.TaskCompletion -> currentRetrievalDomains.firstOrNull()
     }
 
     private suspend fun executeProposal(proposal: AiProposal): String {

@@ -3,6 +3,7 @@ package com.lifepilot.features.library.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lifepilot.domain.engine.SchemaEngine
+import com.lifepilot.domain.repository.DomainRepository
 import com.lifepilot.domain.repository.ObjectRepository
 import com.lifepilot.domain.repository.ProfileRepository
 import com.lifepilot.domain.usecase.ArchiveObjectUseCase
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -29,6 +31,7 @@ import javax.inject.Inject
 class LibraryViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
     private val objectRepository: ObjectRepository,
+    private val domainRepository: DomainRepository,
     private val schemaEngine: SchemaEngine,
     private val archiveObjectUseCase: ArchiveObjectUseCase,
     private val deleteObjectUseCase: DeleteObjectUseCase,
@@ -50,12 +53,17 @@ class LibraryViewModel @Inject constructor(
                 .flatMapLatest { profile ->
                     if (profile == null) return@flatMapLatest flowOf(null)
                     combine(
-                        objectRepository.observeObjectsByProfile(profile.profileId),
-                        objectRepository.observeObjectCountByDomain(profile.profileId),
+                        objectRepository.observeObjectsByProfile(profile.profileId)
+                            .onStart { emit(emptyList()) },
+                        objectRepository.observeObjectCountByDomain(profile.profileId)
+                            .onStart { emit(emptyMap()) },
+                        domainRepository.observeAllDomainLifeStates(profile.profileId)
+                            .onStart { emit(emptyList()) },
                         selectedDomain,
                         sortOrder,
-                    ) { objects, domainCounts, domain, sort ->
-                        Triple(objects to domainCounts, domain, sort)
+                    ) { objects, domainCounts, lifeStates, domain, sort ->
+                        val lifeStateMap = lifeStates.associateBy { it.domain }
+                        Triple(Triple(objects, domainCounts, lifeStateMap), domain, sort)
                     }
                 }
                 .catch { e ->
@@ -68,12 +76,13 @@ class LibraryViewModel @Inject constructor(
                         return@collect
                     }
                     val (objectsAndCounts, domain, sort) = result
-                    val (objects, domainCounts) = objectsAndCounts
+                    val (objects, domainCounts, lifeStateMap) = objectsAndCounts
                     val domains = domainCounts.entries.map { (d, count) ->
                         DomainItem(
                             domain = d,
                             objectCount = count,
                             displayName = d,
+                            lifeState = lifeStateMap[d],
                         )
                     }.sortedBy { it.domain }
 

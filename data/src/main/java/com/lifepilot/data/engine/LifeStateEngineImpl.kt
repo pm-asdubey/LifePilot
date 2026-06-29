@@ -14,6 +14,7 @@ import com.lifepilot.domain.repository.ReminderRepository
 import com.lifepilot.domain.repository.TimelineRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.onStart
 import timber.log.Timber
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -71,8 +72,10 @@ class LifeStateEngineImpl @Inject constructor(
     override fun observeAttentionRequired(profileId: String): Flow<List<AttentionItem>> {
         val thirtyDaysLater = Instant.now().plus(30, ChronoUnit.DAYS)
         return combine(
-            objectRepository.observeObjectsByProfile(profileId),
-            reminderRepository.observeUpcomingReminders(thirtyDaysLater),
+            objectRepository.observeObjectsByProfile(profileId)
+                .onStart { emit(emptyList()) },
+            reminderRepository.observeUpcomingReminders(thirtyDaysLater)
+                .onStart { emit(emptyList()) },
         ) { objects, reminders ->
             val items = mutableListOf<AttentionItem>()
 
