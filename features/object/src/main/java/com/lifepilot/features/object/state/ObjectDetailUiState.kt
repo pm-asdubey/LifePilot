@@ -28,5 +28,4 @@ enum class ObjectDetailTab(val label: String) {
     DOCUMENTS("Documents"),
     TIMELINE("Timeline"),
     TASKS("Tasks"),
-    RELATIONSHIPS("Links"),
 }

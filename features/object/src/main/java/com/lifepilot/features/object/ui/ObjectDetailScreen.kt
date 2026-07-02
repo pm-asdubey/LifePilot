@@ -25,8 +25,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Description
-import androidx.compose.material.icons.outlined.Link
-import androidx.compose.material.icons.outlined.LinkOff
+
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -76,12 +75,16 @@ import com.lifepilot.domain.model.LifeObject
 import com.lifepilot.domain.model.MetadataEntry
 import com.lifepilot.domain.model.MetadataSource
 import com.lifepilot.domain.model.ObjectStatus
-import com.lifepilot.domain.model.Relationship
+
 import com.lifepilot.domain.model.Task
 import com.lifepilot.domain.model.TimelineEntry
 import com.lifepilot.domain.model.VerificationStatus
 import com.lifepilot.features.objectdetail.state.ObjectDetailTab
 import com.lifepilot.features.objectdetail.viewmodel.ObjectDetailViewModel
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
+import java.time.temporal.ChronoUnit
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -97,7 +100,6 @@ fun ObjectDetailScreen(
     viewModel: ObjectDetailViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val allProfileObjects by viewModel.allProfileObjects.collectAsState()
     var showMenu by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
 
@@ -123,14 +125,6 @@ fun ObjectDetailScreen(
                     Text("Cancel")
                 }
             },
-        )
-    }
-
-    if (uiState.showLinkObjectSheet) {
-        LinkObjectSheet(
-            availableObjects = allProfileObjects,
-            onLink = { targetId, relType -> viewModel.linkObject(targetId, relType) },
-            onDismiss = viewModel::hideLinkObjectSheet,
         )
     }
 
@@ -277,6 +271,7 @@ fun ObjectDetailScreen(
                     ObjectStatus.RENEWAL_DUE -> "Renewal due"
                     ObjectStatus.EXPIRED -> "Expired"
                     ObjectStatus.ARCHIVED -> "Archived"
+                    ObjectStatus.INACTIVE -> "Inactive"
                     ObjectStatus.DRAFT -> "Draft"
                 }
                 StatusChip(
@@ -288,6 +283,16 @@ fun ObjectDetailScreen(
                     text = obj.objectType.replaceFirstChar { it.uppercase() },
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            val temporalLabel = temporalContextLabel(obj.objectType, obj.metadata)
+            if (temporalLabel != null) {
+                Text(
+                    text = temporalLabel,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = Spacing.md, vertical = 2.dp),
                 )
             }
 
@@ -313,9 +318,6 @@ fun ObjectDetailScreen(
                 ObjectDetailTab.OVERVIEW -> OverviewTab(
                     metadata = obj.metadata,
                     description = obj.description,
-                    onAskAiAbout = {
-                        onAskAiAboutObject(obj.objectId, obj.objectType, obj.title)
-                    },
                 )
                 ObjectDetailTab.DOCUMENTS -> DocumentsTab(
                     documents = uiState.documents,
@@ -327,13 +329,6 @@ fun ObjectDetailScreen(
                 ObjectDetailTab.TASKS -> TasksTab(
                     tasks = uiState.tasks,
                     onCompleteTask = { taskId -> viewModel.completeTask(taskId) },
-                )
-                ObjectDetailTab.RELATIONSHIPS -> RelationshipsTab(
-                    relationships = uiState.relationships,
-                    relatedObjects = uiState.relatedObjects,
-                    currentObjectId = obj.objectId,
-                    onUnlink = { relationshipId -> viewModel.unlinkObject(relationshipId) },
-                    onLink = { viewModel.showLinkObjectSheet() },
                 )
             }
         }
@@ -397,7 +392,6 @@ private fun AiFoundDetailsBanner(
 private fun OverviewTab(
     metadata: List<MetadataEntry>,
     description: String?,
-    onAskAiAbout: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -519,36 +513,6 @@ private fun OverviewTab(
                     title = "No details yet",
                     description = "Upload documents to fill this in automatically.",
                 )
-            }
-        }
-        // Ask AI entry point
-        item {
-            Spacer(modifier = Modifier.height(Spacing.lg))
-            Card(
-                onClick = onAskAiAbout,
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                ),
-                shape = MaterialTheme.shapes.medium,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Row(
-                    modifier = Modifier.padding(Spacing.md),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.AutoAwesome,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp),
-                    )
-                    Text(
-                        text = "Ask AI about this record",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
             }
         }
     }
@@ -713,74 +677,6 @@ private fun TasksTab(
     }
 }
 
-@Composable
-private fun RelationshipsTab(
-    relationships: List<Relationship>,
-    relatedObjects: Map<String, LifeObject>,
-    currentObjectId: String,
-    onUnlink: (String) -> Unit,
-    onLink: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    if (relationships.isEmpty()) {
-        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                EmptyState(
-                    icon = Icons.Outlined.Link,
-                    title = "No connections yet",
-                    description = "Link this record to others to see how they're related.",
-                )
-                TextButton(onClick = onLink) { Text("Add connection") }
-            }
-        }
-    } else {
-        LazyColumn(
-            modifier = modifier.fillMaxSize(),
-            contentPadding = PaddingValues(Spacing.md),
-        ) {
-            items(relationships, key = { it.relationshipId }) { rel ->
-                val otherId = if (rel.sourceObjectId == currentObjectId) rel.targetObjectId else rel.sourceObjectId
-                val other = relatedObjects[otherId]
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = Spacing.xs),
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(Spacing.md),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = other?.title ?: otherId,
-                                style = MaterialTheme.typography.titleSmall,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                            Text(
-                                text = rel.relationshipType.replace("_", " ").lowercase()
-                                    .replaceFirstChar { it.uppercase() },
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        IconButton(onClick = { onUnlink(rel.relationshipId) }) {
-                            Icon(
-                                imageVector = Icons.Outlined.LinkOff,
-                                contentDescription = "Remove connection",
-                                tint = MaterialTheme.colorScheme.error,
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
 
 @Composable
 private fun ProvenanceBadge(entry: MetadataEntry) {
@@ -800,4 +696,136 @@ private fun ProvenanceBadge(entry: MetadataEntry) {
         color = color.copy(alpha = 0.7f),
         modifier = Modifier.padding(top = 2.dp),
     )
+}
+
+// Maps an object type + its metadata to a one-line contextual temporal phrase.
+// Returns null when the object type has no meaningful temporal framing.
+private fun temporalContextLabel(objectType: String, metadata: List<MetadataEntry>): String? {
+    val today = LocalDate.now()
+
+    fun metaDate(vararg fieldIds: String): LocalDate? {
+        val parsers = listOf(
+            DateTimeFormatter.ISO_LOCAL_DATE,
+            DateTimeFormatter.ofPattern("dd/MM/yyyy"),
+            DateTimeFormatter.ofPattern("d MMM yyyy"),
+            DateTimeFormatter.ofPattern("dd-MM-yyyy"),
+        )
+        for (fieldId in fieldIds) {
+            val raw = metadata.firstOrNull {
+                it.fieldId.equals(fieldId, ignoreCase = true) ||
+                    it.fieldId.replace("_", "").equals(fieldId.replace("_", ""), ignoreCase = true)
+            }?.value?.trim() ?: continue
+            for (fmt in parsers) {
+                try { return LocalDate.parse(raw, fmt) } catch (_: DateTimeParseException) {}
+            }
+        }
+        return null
+    }
+
+    fun daysAgo(date: LocalDate): Long = ChronoUnit.DAYS.between(date, today)
+    fun daysUntil(date: LocalDate): Long = ChronoUnit.DAYS.between(today, date)
+
+    fun pastPhrase(date: LocalDate, verb: String): String {
+        val days = daysAgo(date)
+        val suffix = when {
+            days == 0L -> "today"
+            days == 1L -> "yesterday"
+            days < 30 -> "$days days ago"
+            days < 365 -> "${days / 30} months ago"
+            else -> "${days / 365} year${if (days / 365 > 1) "s" else ""} ago"
+        }
+        return "$verb ${date.format(DateTimeFormatter.ofPattern("d MMM yyyy"))} · $suffix"
+    }
+
+    fun futurePhrase(date: LocalDate, verb: String): String {
+        val days = daysUntil(date)
+        val suffix = when {
+            days == 0L -> "today"
+            days == 1L -> "tomorrow"
+            days < 30 -> "in $days days"
+            days < 365 -> "in ${days / 30} months"
+            else -> "in ${days / 365} year${if (days / 365 > 1) "s" else ""}"
+        }
+        return "$verb ${date.format(DateTimeFormatter.ofPattern("d MMM yyyy"))} · $suffix"
+    }
+
+    return when (objectType.lowercase().replace(" ", "").replace("_", "")) {
+        "job", "employment" -> {
+            val start = metaDate("start_date", "startDate", "joining_date", "joiningDate", "date_of_joining")
+            val end = metaDate("end_date", "endDate", "leaving_date", "leavingDate")
+            when {
+                end != null && end <= today -> pastPhrase(end, "Left")
+                start != null && start > today -> futurePhrase(start, "Joining")
+                start != null -> pastPhrase(start, "Joined")
+                else -> null
+            }
+        }
+        "travel" -> {
+            val departure = metaDate("departure_date", "departureDate", "start_date", "startDate")
+            val returnDate = metaDate("return_date", "returnDate", "end_date", "endDate")
+            when {
+                returnDate != null && returnDate < today -> pastPhrase(departure ?: returnDate, "Travelled")
+                departure != null && departure > today -> futurePhrase(departure, "Departing")
+                departure != null -> "Currently travelling · departed ${departure.format(DateTimeFormatter.ofPattern("d MMM yyyy"))}"
+                else -> null
+            }
+        }
+        "marriage" -> {
+            val date = metaDate("marriage_date", "marriageDate", "wedding_date", "weddingDate")
+            when {
+                date == null -> null
+                date > today -> futurePhrase(date, "Getting married on")
+                else -> pastPhrase(date, "Married on")
+            }
+        }
+        "childbirth" -> {
+            val date = metaDate("birth_date", "birthDate", "date_of_birth", "dateOfBirth", "due_date", "dueDate")
+            when {
+                date == null -> null
+                date > today -> futurePhrase(date, "Due")
+                else -> pastPhrase(date, "Born")
+            }
+        }
+        "deathofarelative", "death_of_relative" -> {
+            val date = metaDate("date_of_death", "dateOfDeath", "death_date", "deathDate")
+            if (date != null) pastPhrase(date, "Passed away on") else null
+        }
+        "interview" -> {
+            val date = metaDate("interview_date", "interviewDate", "scheduled_date", "scheduledDate")
+            when {
+                date == null -> null
+                date > today -> futurePhrase(date, "Interview on")
+                else -> pastPhrase(date, "Interviewed on")
+            }
+        }
+        "education" -> {
+            val start = metaDate("start_date", "startDate", "enrollment_date", "enrollmentDate")
+            val end = metaDate("end_date", "endDate", "graduation_date", "graduationDate")
+            when {
+                end != null && end <= today -> pastPhrase(end, "Graduated")
+                start != null && start > today -> futurePhrase(start, "Starting")
+                start != null -> pastPhrase(start, "Enrolled")
+                else -> null
+            }
+        }
+        "visa" -> {
+            val expiry = metaDate("expiry_date", "expiryDate")
+            val issue = metaDate("issue_date", "issueDate")
+            when {
+                expiry != null && expiry < today -> "Expired ${expiry.format(DateTimeFormatter.ofPattern("d MMM yyyy"))}"
+                expiry != null && daysUntil(expiry) <= 60 -> "Expiring ${expiry.format(DateTimeFormatter.ofPattern("d MMM yyyy"))} · ${daysUntil(expiry)} days left"
+                issue != null -> "Valid since ${issue.format(DateTimeFormatter.ofPattern("d MMM yyyy"))}"
+                else -> null
+            }
+        }
+        "property", "rentagreement" -> {
+            val start = metaDate("possession_date", "possessionDate", "lease_start", "leaseStart", "start_date", "startDate")
+            when {
+                start == null -> null
+                start > today -> futurePhrase(start, "Possession")
+                else -> pastPhrase(start, "Owned since")
+            }
+        }
+        else -> null
+    }
 }

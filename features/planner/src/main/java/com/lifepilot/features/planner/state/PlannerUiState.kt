@@ -8,8 +8,13 @@ data class PlannerUiState(
     val activeGoals: List<Goal> = emptyList(),
     val tasks: List<Task> = emptyList(),
     val selectedTaskFilter: TaskFilter = TaskFilter.TODAY,
+    val highlightedTaskId: String? = null,
     val error: String? = null,
     val showCreateGoalSheet: Boolean = false,
+    val editingTask: Task? = null,
+    val editingGoal: Goal? = null,
+    val lastCompletedTaskId: String? = null,
+    val lastCompletedTaskTitle: String? = null,
 )
 
 enum class TaskFilter {

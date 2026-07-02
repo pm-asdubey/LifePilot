@@ -2,6 +2,7 @@ package com.lifepilot.data.di
 
 import com.lifepilot.data.repository.ConversationRepositoryImpl
 import com.lifepilot.data.repository.DocumentRepositoryImpl
+import com.lifepilot.data.repository.DomainRepositoryImpl
 import com.lifepilot.data.repository.EventRepositoryImpl
 import com.lifepilot.data.repository.GoalRepositoryImpl
 import com.lifepilot.data.repository.RelationshipRepositoryImpl
@@ -12,6 +13,8 @@ import com.lifepilot.data.repository.ReminderRepositoryImpl
 import com.lifepilot.data.repository.SearchRepositoryImpl
 import com.lifepilot.data.repository.TaskRepositoryImpl
 import com.lifepilot.data.repository.TimelineRepositoryImpl
+import com.lifepilot.data.engine.ActionPlanExecutorImpl
+import com.lifepilot.data.engine.DomainLifeStateEngineImpl
 import com.lifepilot.data.engine.LifeStateEngineImpl
 import com.lifepilot.data.engine.ObjectReasonerImpl
 import com.lifepilot.data.engine.PlanningEngineImpl
@@ -20,6 +23,8 @@ import com.lifepilot.data.engine.RetrievalEngineImpl
 import com.lifepilot.data.engine.RuleEngineImpl
 import com.lifepilot.data.ocr.MlKitOcrService
 import com.lifepilot.data.schema.SchemaEngineImpl
+import com.lifepilot.domain.engine.ActionPlanExecutor
+import com.lifepilot.domain.engine.DomainLifeStateEngine
 import com.lifepilot.domain.engine.LifeStateEngine
 import com.lifepilot.domain.engine.ObjectReasoner
 import com.lifepilot.domain.engine.PlanningEngine
@@ -30,6 +35,7 @@ import com.lifepilot.domain.engine.SchemaEngine
 import com.lifepilot.domain.ocr.OcrService
 import com.lifepilot.domain.repository.ConversationRepository
 import com.lifepilot.domain.repository.DocumentRepository
+import com.lifepilot.domain.repository.DomainRepository
 import com.lifepilot.domain.repository.EventRepository
 import com.lifepilot.domain.repository.GoalRepository
 import com.lifepilot.domain.repository.RelationshipRepository
@@ -135,4 +141,16 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindUpdateRepository(impl: UpdateRepositoryImpl): UpdateRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindDomainRepository(impl: DomainRepositoryImpl): DomainRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindDomainLifeStateEngine(impl: DomainLifeStateEngineImpl): DomainLifeStateEngine
+
+    @Binds
+    @Singleton
+    abstract fun bindActionPlanExecutor(impl: ActionPlanExecutorImpl): ActionPlanExecutor
 }

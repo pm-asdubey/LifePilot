@@ -1,0 +1,199 @@
+{
+  "objectType": "CreditCard",
+  "domain": "Finance",
+  "displayName": "Credit Card",
+  "icon": "credit_card",
+  "description": "Credit card or charge card account",
+  "schemaVersion": 1,
+  "fields": [
+    {
+      "fieldId": "bankName",
+      "displayName": "Bank / Issuer",
+      "fieldType": "TEXT",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [
+        { "ruleType": "REQUIRED", "message": "Bank or issuer name is required" }
+      ],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "cardNetwork",
+      "displayName": "Card Network",
+      "fieldType": "ENUM",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "enumValues": ["Visa", "Mastercard", "RuPay", "American Express", "Diners Club"],
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "cardVariant",
+      "displayName": "Card Variant",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "lastFourDigits",
+      "displayName": "Last 4 Digits",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [
+        { "ruleType": "REGEX", "parameter": "^\\d{4}$", "message": "Enter last 4 digits only" }
+      ],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "creditLimit",
+      "displayName": "Credit Limit",
+      "fieldType": "NUMBER",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "SENSITIVE"
+    },
+    {
+      "fieldId": "billingDate",
+      "displayName": "Billing Date (day of month)",
+      "fieldType": "NUMBER",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "paymentDueDate",
+      "displayName": "Payment Due Date (day of month)",
+      "fieldType": "NUMBER",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "expiryDate",
+      "displayName": "Card Expiry",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "annualFee",
+      "displayName": "Annual Fee",
+      "fieldType": "NUMBER",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "linkedSavingsAccount",
+      "displayName": "Linked Savings Account",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "rewardProgram",
+      "displayName": "Reward Program",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "autoPayEnabled",
+      "displayName": "Auto-Pay Enabled",
+      "fieldType": "BOOLEAN",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "notes",
+      "displayName": "Notes",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    }
+  ],
+  "lifecycle": {
+    "states": [
+      { "stateId": "ACTIVE", "displayName": "Active" },
+      { "stateId": "BLOCKED", "displayName": "Blocked" },
+      { "stateId": "EXPIRED", "displayName": "Expired", "isFinal": false },
+      { "stateId": "CANCELLED", "displayName": "Cancelled", "isFinal": true }
+    ],
+    "transitions": [
+      { "fromState": "ACTIVE", "toState": "BLOCKED", "trigger": "CARD_BLOCKED", "label": "Card Blocked" },
+      { "fromState": "BLOCKED", "toState": "ACTIVE", "trigger": "CARD_UNBLOCKED", "label": "Card Unblocked" },
+      { "fromState": "ACTIVE", "toState": "EXPIRED", "trigger": "EXPIRED", "label": "Expired" },
+      { "fromState": "EXPIRED", "toState": "ACTIVE", "trigger": "RENEWED", "label": "Renewed" },
+      { "fromState": "ACTIVE", "toState": "CANCELLED", "trigger": "CANCELLED", "label": "Cancelled" }
+    ],
+    "initialState": "ACTIVE"
+  },
+  "reminderRules": [
+    {
+      "ruleId": "credit_card_expiry_60d",
+      "triggerField": "expiryDate",
+      "offsetDays": -60,
+      "priority": "MEDIUM",
+      "title": "Credit Card Expiring",
+      "messageTemplate": "Your {bankName} credit card expires in 60 days. Request a replacement."
+    }
+  ],
+  "searchConfig": {
+    "primaryFields": ["bankName", "cardVariant"],
+    "fullTextFields": ["bankName", "cardVariant", "cardNetwork"],
+    "filterableFields": ["bankName", "cardNetwork"]
+  },
+  "aiConfig": {
+    "extractableFields": [
+      "bankName", "cardNetwork", "cardVariant", "lastFourDigits", "expiryDate"
+    ],
+    "classificationHints": [
+      "credit card", "charge card", "card statement", "credit limit",
+      "billing cycle", "reward points", "cashback card"
+    ],
+    "aiWritableFields": []
+  }
+}

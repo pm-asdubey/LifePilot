@@ -1,8 +1,11 @@
 package com.lifepilot.data
 
+import com.lifepilot.data.database.dao.ConversationDao
 import com.lifepilot.data.database.dao.DocumentDao
+import com.lifepilot.data.database.dao.GoalDao
 import com.lifepilot.data.database.dao.MetadataDao
 import com.lifepilot.data.database.dao.ObjectDao
+import com.lifepilot.data.database.dao.TaskDao
 import com.lifepilot.data.database.entity.ObjectEntity
 import com.lifepilot.data.repository.PreferenceManager
 import com.lifepilot.data.repository.SearchRepositoryImpl
@@ -20,6 +23,9 @@ class SearchRepositoryImplTest {
     private val objectDao: ObjectDao = mockk()
     private val metadataDao: MetadataDao = mockk()
     private val documentDao: DocumentDao = mockk()
+    private val goalDao: GoalDao = mockk()
+    private val taskDao: TaskDao = mockk()
+    private val conversationDao: ConversationDao = mockk()
     private val preferenceManager: PreferenceManager = mockk()
     private lateinit var repository: SearchRepositoryImpl
 
@@ -47,7 +53,10 @@ class SearchRepositoryImplTest {
     fun setUp() {
         coEvery { metadataDao.searchMetadataValues(any(), any()) } returns emptyList()
         coEvery { documentDao.searchDocuments(any(), any()) } returns emptyList()
-        repository = SearchRepositoryImpl(objectDao, metadataDao, documentDao, preferenceManager)
+        coEvery { goalDao.searchGoals(any(), any()) } returns emptyList()
+        coEvery { taskDao.searchTasks(any(), any()) } returns emptyList()
+        coEvery { conversationDao.searchConversations(any(), any()) } returns emptyList()
+        repository = SearchRepositoryImpl(objectDao, metadataDao, documentDao, goalDao, taskDao, conversationDao, preferenceManager)
     }
 
     @Test

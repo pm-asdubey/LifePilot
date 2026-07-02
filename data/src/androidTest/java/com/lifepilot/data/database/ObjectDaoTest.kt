@@ -76,15 +76,10 @@ class ObjectDaoTest {
         dao.insertObject(testObject("obj1"))
         dao.archiveObject("obj1", System.currentTimeMillis())
 
-        val obj = db.objectDao().let {
-            db.openHelper.readableDatabase
-                .rawQuery("SELECT archived FROM objects WHERE object_id = 'obj1'", null)
-                .use { cursor ->
-                    cursor.moveToFirst()
-                    cursor.getInt(0)
-                }
-        }
-        assertEquals(1, obj)
+        val obj = dao.observeObjectsByProfile("profile1").first()
+            .firstOrNull { it.objectId == "obj1" }
+        assertNotNull(obj)
+        assertEquals(true, obj!!.archived)
     }
 
     @Test

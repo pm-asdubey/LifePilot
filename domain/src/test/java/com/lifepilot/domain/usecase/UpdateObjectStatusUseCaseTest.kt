@@ -63,7 +63,7 @@ class UpdateObjectStatusUseCaseTest {
         coEvery { objectRepository.getObjectById("obj-1") } returns testObject
         coEvery { objectRepository.updateObjectStatus("obj-1", ObjectStatus.EXPIRED) } returns Unit
         coEvery { eventRepository.recordEvent(any(), any(), any(), any(), any()) } returns testEvent
-        coEvery { timelineRepository.addTimelineEntry(any()) } returns Unit
+        coEvery { timelineRepository.addTimelineEntry(any()) } answers { firstArg() }
 
         val result = useCase("obj-1", ObjectStatus.EXPIRED)
 
@@ -95,7 +95,7 @@ class UpdateObjectStatusUseCaseTest {
             capturedPayload = thirdArg()
             testEvent
         }
-        coEvery { timelineRepository.addTimelineEntry(any()) } returns Unit
+        coEvery { timelineRepository.addTimelineEntry(any()) } answers { firstArg() }
 
         useCase("obj-1", ObjectStatus.RENEWAL_DUE)
 

@@ -1,5 +1,5 @@
 {
-  "objectType": "travel",
+  "objectType": "Travel",
   "displayName": "Travel",
   "domain": "Travel",
   "icon": "Flight",
@@ -15,27 +15,11 @@
       "searchable": true,
       "aiExtractable": true,
       "validationRules": [],
-      "placeholder": "London, UK"
+      "placeholder": "London, UK",
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "travel_type",
-      "displayName": "Travel Type",
-      "fieldType": "ENUM",
-      "required": true,
-      "editable": true,
-      "searchable": false,
-      "aiExtractable": false,
-      "validationRules": [],
-      "enumValues": [
-        "HOLIDAY",
-        "BUSINESS",
-        "RELOCATION",
-        "MEDICAL",
-        "EDUCATION"
-      ]
-    },
-    {
-      "fieldId": "departure_date",
+      "fieldId": "departureDate",
       "displayName": "Departure Date",
       "fieldType": "DATE",
       "required": false,
@@ -43,10 +27,11 @@
       "searchable": false,
       "aiExtractable": true,
       "validationRules": [],
-      "placeholder": "YYYY-MM-DD"
+      "placeholder": "YYYY-MM-DD",
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "return_date",
+      "fieldId": "returnDate",
       "displayName": "Return Date",
       "fieldType": "DATE",
       "required": false,
@@ -54,66 +39,90 @@
       "searchable": false,
       "aiExtractable": true,
       "validationRules": [],
-      "placeholder": "YYYY-MM-DD"
+      "placeholder": "YYYY-MM-DD",
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "visa_required",
-      "displayName": "Visa Required",
-      "fieldType": "ENUM",
+      "fieldId": "visaStatus",
+      "displayName": "Visa Status",
+      "fieldType": "TEXT",
       "required": false,
       "editable": true,
       "searchable": false,
       "aiExtractable": false,
       "validationRules": [],
-      "enumValues": [
-        "YES",
-        "NO",
-        "NOT_SURE"
-      ]
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "visa_expiry",
-      "displayName": "Visa Expiry",
+      "fieldId": "visaApplicationDate",
+      "displayName": "Visa Application Date",
       "fieldType": "DATE",
       "required": false,
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
       "validationRules": [],
-      "placeholder": "YYYY-MM-DD"
+      "placeholder": "YYYY-MM-DD",
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "booking_reference",
-      "displayName": "Booking Reference",
+      "fieldId": "flightPNR",
+      "displayName": "Flight PNR",
       "fieldType": "TEXT",
       "required": false,
       "editable": true,
       "searchable": true,
       "aiExtractable": true,
       "validationRules": [],
-      "placeholder": "ABC123"
+      "placeholder": "ABC123",
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "airline",
-      "displayName": "Airline / Carrier",
+      "fieldId": "accommodation",
+      "displayName": "Accommodation",
       "fieldType": "TEXT",
       "required": false,
       "editable": true,
-      "searchable": true,
+      "searchable": false,
       "aiExtractable": true,
       "validationRules": [],
-      "placeholder": "British Airways"
+      "placeholder": "Hotel name or address",
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "notes",
-      "displayName": "Notes",
-      "fieldType": "MULTILINE_TEXT",
+      "fieldId": "budget",
+      "displayName": "Budget",
+      "fieldType": "TEXT",
       "required": false,
       "editable": true,
-      "searchable": true,
+      "searchable": false,
       "aiExtractable": false,
-      "aiWritable": true,
-      "validationRules": []
+      "validationRules": [],
+      "placeholder": "50000",
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "companions",
+      "displayName": "Companions",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "placeholder": "Names of travel companions",
+      "sensitivityLevel": "SENSITIVE"
+    },
+    {
+      "fieldId": "travelType",
+      "displayName": "Travel Type",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     }
   ],
   "lifecycle": {
@@ -171,17 +180,9 @@
   },
   "reminderRules": [
     {
-      "ruleId": "visa_expiry_reminder",
-      "title": "Visa Expiry",
-      "triggerField": "visa_expiry",
-      "offsetDays": -60,
-      "priority": "HIGH",
-      "messageTemplate": "Travel visa expires in 60 days"
-    },
-    {
       "ruleId": "departure_reminder",
       "title": "Departure",
-      "triggerField": "departure_date",
+      "triggerField": "departureDate",
       "offsetDays": -3,
       "priority": "MEDIUM",
       "messageTemplate": "Upcoming departure in 3 days"
@@ -190,36 +191,35 @@
   "searchConfig": {
     "primaryFields": [
       "destination",
-      "booking_reference",
-      "airline"
+      "flightPNR"
     ],
     "fullTextFields": [
       "destination",
-      "airline",
-      "booking_reference"
+      "flightPNR",
+      "accommodation"
     ],
     "filterableFields": [
-      "travel_type",
-      "visa_required"
+      "travelType",
+      "visaStatus"
     ]
   },
   "aiConfig": {
     "extractableFields": [
       "destination",
-      "departure_date",
-      "return_date",
-      "booking_reference",
-      "airline"
+      "departureDate",
+      "returnDate",
+      "flightPNR",
+      "accommodation",
+      "visaApplicationDate"
     ],
     "classificationHints": [
       "travel",
       "flight",
       "visa",
       "booking",
-      "itinerary"
+      "itinerary",
+      "PNR"
     ],
-    "aiWritableFields": [
-      "notes"
-    ]
+    "aiWritableFields": []
   }
 }

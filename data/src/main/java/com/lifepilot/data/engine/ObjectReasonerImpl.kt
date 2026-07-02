@@ -28,7 +28,19 @@ class ObjectReasonerImpl @Inject constructor(
 
         val aiContextEntry = allMetadata.firstOrNull { it.fieldId == "ai_context" }
         val aiContext = aiContextEntry?.let { runCatching { parseAiContext(it.value) }.getOrNull() }
-        val regularMetadata = allMetadata.filter { it.fieldId != "ai_context" }
+
+        // Defensive deduplication: if duplicate rows exist for the same field,
+        // keep the highest-confidence, most-recent value. This prevents corrupted
+        // AI context from any historical data inconsistency (ISSUE-025).
+        val regularMetadata = allMetadata
+            .filter { it.fieldId != "ai_context" }
+            .groupBy { it.fieldId }
+            .map { (_, entries) ->
+                entries.maxWithOrNull(
+                    compareByDescending<com.lifepilot.domain.model.MetadataEntry> { it.confidence ?: 0f }
+                        .thenByDescending { it.updatedAt }
+                ) ?: entries.first()
+            }
 
         val pendingTaskCount = runCatching {
             taskRepository.getPendingTaskCountForObject(objectId)

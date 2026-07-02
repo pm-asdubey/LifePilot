@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LifePilot — Projects Mockup</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0f0f13;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px 80px;
+    gap: 48px;
+    color: #e0e0ea;
+  }
+
+  h1 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #555570;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: -32px;
+  }
+
+  /* ── screen label ── */
+  .screen-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #444460;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-align: center;
+    margin-bottom: 6px;
+  }
+
+  .screen-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* ── phone shell ── */
+  .phone {
+    width: 375px;
+    background: #111118;
+    border-radius: 40px;
+    overflow: hidden;
+    border: 1.5px solid #2a2a3a;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
+    position: relative;
+  }
+
+  .phone-status {
+    background: #111118;
+    padding: 14px 24px 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .phone-status .time { font-size: 15px; font-weight: 600; color: #e0e0ea; }
+  .phone-status .icons { font-size: 12px; color: #888899; letter-spacing: 2px; }
+
+  .phone-screen {
+    background: #111118;
+    min-height: 720px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── top bar ── */
+  .topbar {
+    padding: 8px 20px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 52px;
+  }
+
+  .topbar-title { font-size: 22px; font-weight: 700; color: #fff; }
+  .topbar-sub { font-size: 14px; font-weight: 700; color: #fff; }
+
+  .topbar-actions { display: flex; gap: 4px; }
+
+  .icon-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: transparent;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: #9999b8;
+    font-size: 18px;
+  }
+
+  .back-btn {
+    display: flex; align-items: center; gap: 6px;
+    color: #7c74ff;
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  /* ── tab bar (top tabs) ── */
+  .tab-row {
+    display: flex;
+    border-bottom: 1px solid #1e1e2a;
+    padding: 0 20px;
+    gap: 0;
+  }
+
+  .tab {
+    font-size: 14px;
+    font-weight: 600;
+    color: #555570;
+    padding: 10px 16px;
+    cursor: pointer;
+    position: relative;
+    white-space: nowrap;
+  }
+
+  .tab.active {
+    color: #7c74ff;
+  }
+
+  .tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 16px; right: 16px;
+    height: 2px;
+    background: #7c74ff;
+    border-radius: 2px 2px 0 0;
+  }
+
+  /* ── scrollable tab row ── */
+  .tab-row-scroll {
+    display: flex;
+    border-bottom: 1px solid #1e1e2a;
+    padding: 0 8px;
+    gap: 0;
+    overflow-x: auto;
+  }
+
+  .tab-row-scroll::-webkit-scrollbar { display: none; }
+
+  /* ── content area ── */
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 16px 100px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .content::-webkit-scrollbar { display: none; }
+
+  /* ── section label ── */
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #444460;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    padding: 4px 4px 2px;
+  }
+
+  /* ── project card ── */
+  .project-card {
+    background: #1a1a26;
+    border: 1px solid #24243a;
+    border-radius: 14px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+
+  .project-card:hover { border-color: #3a3a55; }
+
+  .project-card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .project-emoji {
+    font-size: 26px;
+    line-height: 1;
+    width: 40px; height: 40px;
+    background: #22223a;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .project-info { flex: 1; min-width: 0; }
+
+  .project-title {
+    font-size: 15px;
+    font-weight: 650;
+    color: #e8e8f0;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .project-meta {
+    font-size: 12px;
+    color: #666688;
+    display: flex;
+    gap: 10px;
+  }
+
+  .project-meta span { display: flex; align-items: center; gap: 3px; }
+
+  .project-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .status-chip {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    border-radius: 100px;
+    padding: 2px 8px;
+  }
+
+  .chip-active { background: rgba(0,210,140,0.12); color: #00d48c; }
+  .chip-behind { background: rgba(245,158,11,0.12); color: #f59e0b; }
+  .chip-blocked { background: rgba(239,68,68,0.12); color: #ef4444; }
+  .chip-proposed { background: rgba(108,99,255,0.12); color: #9d96ff; }
+
+  /* progress bar */
+  .progress-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .progress-track {
+    flex: 1;
+    height: 4px;
+    background: #2a2a40;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, #7c74ff, #00d4aa);
+  }
+
+  .progress-label {
+    font-size: 11px;
+    color: #555570;
+    flex-shrink: 0;
+  }
+
+  /* ── FAB ── */
+  .fab {
+    position: absolute;
+    bottom: 24px;
+    right: 20px;
+    width: 52px; height: 52px;
+    background: #7c74ff;
+    border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    color: white;
+    box-shadow: 0 4px 20px rgba(124,116,255,0.4);
+    cursor: pointer;
+  }
+
+  /* ── bottom nav ── */
+  .bottom-nav {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: #111118;
+    border-top: 1px solid #1e1e2a;
+    display: flex;
+    padding: 8px 0 20px;
+  }
+
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+  }
+
+  .nav-icon { font-size: 20px; color: #444460; }
+  .nav-icon.active { color: #7c74ff; }
+  .nav-label { font-size: 10px; color: #444460; font-weight: 500; }
+  .nav-label.active { color: #7c74ff; }
+
+  /* ── workspace screen ── */
+  .workspace-header {
+    padding: 12px 20px 0;
+  }
+
+  .workspace-emoji-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 6px;
+  }
+
+  .workspace-emoji-large {
+    font-size: 36px;
+    line-height: 1;
+  }
+
+  .workspace-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.2;
+  }
+
+  .workspace-subtitle {
+    font-size: 12px;
+    color: #555570;
+    margin-top: 2px;
+  }
+
+  /* ── overview card ── */
+  .overview-card {
+    background: #1a1a26;
+    border: 1px solid #24243a;
+    border-radius: 14px;
+    padding: 14px 16px;
+  }
+
+  .overview-card-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #555570;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+  }
+
+  .life-state-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .life-state-chip {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 100px;
+    border: 1px solid #2a2a40;
+    color: #9999b8;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .life-state-chip.ok { border-color: rgba(0,210,140,0.3); color: #00d48c; }
+  .life-state-chip.warn { border-color: rgba(245,158,11,0.3); color: #f59e0b; }
+  .life-state-chip.gap { border-color: rgba(239,68,68,0.3); color: #ef4444; }
+
+  /* ── task row ── */
+  .task-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #1a1a26;
+  }
+
+  .task-row:last-child { border-bottom: none; }
+
+  .task-check {
+    width: 20px; height: 20px;
+    border: 2px solid #3a3a55;
+    border-radius: 6px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .task-check.done { background: #7c74ff; border-color: #7c74ff; }
+  .task-check.done::after { content: '✓'; font-size: 11px; color: white; }
+
+  .task-content { flex: 1; }
+
+  .task-title {
+    font-size: 14px;
+    color: #d0d0e0;
+    margin-bottom: 2px;
+  }
+
+  .task-title.done { text-decoration: line-through; color: #444460; }
+
+  .task-tags { display: flex; gap: 6px; margin-top: 4px; }
+
+  .task-tag {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 100px;
+    background: #22223a;
+    color: #666688;
+  }
+
+  .task-tag.high { background: rgba(245,158,11,0.1); color: #f59e0b; }
+  .task-tag.urgent { background: rgba(239,68,68,0.1); color: #ef4444; }
+
+  .task-due {
+    font-size: 11px;
+    color: #555570;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .task-due.overdue { color: #ef4444; }
+
+  /* ── AI insight card ── */
+  .ai-card {
+    background: linear-gradient(135deg, rgba(124,116,255,0.08), rgba(0,212,170,0.05));
+    border: 1px solid rgba(124,116,255,0.2);
+    border-radius: 14px;
+    padding: 14px 16px;
+  }
+
+  .ai-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .ai-card-icon { font-size: 16px; }
+
+  .ai-card-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #9d96ff;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .ai-card-text {
+    font-size: 13px;
+    color: #9999b8;
+    line-height: 1.5;
+  }
+
+  /* ── document row ── */
+  .doc-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid #1a1a26;
+  }
+
+  .doc-icon {
+    width: 36px; height: 36px;
+    background: #22223a;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .doc-info { flex: 1; }
+  .doc-name { font-size: 13px; color: #d0d0e0; }
+  .doc-meta { font-size: 11px; color: #444460; margin-top: 1px; }
+  .doc-arrow { color: #333350; font-size: 14px; }
+
+  /* ── create project sheet ── */
+  .sheet-overlay {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: #18182a;
+    border-radius: 24px 24px 0 0;
+    border-top: 1px solid #2a2a40;
+    padding: 16px 20px 32px;
+    z-index: 10;
+    box-shadow: 0 -20px 60px rgba(0,0,0,0.5);
+  }
+
+  .sheet-handle {
+    width: 36px; height: 4px;
+    background: #2a2a40;
+    border-radius: 2px;
+    margin: 0 auto 20px;
+  }
+
+  .sheet-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 20px;
+  }
+
+  .emoji-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .emoji-option {
+    width: 44px; height: 44px;
+    background: #22223a;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.1s;
+  }
+
+  .emoji-option.selected { border-color: #7c74ff; background: rgba(124,116,255,0.15); }
+
+  .input-field {
+    width: 100%;
+    background: #22223a;
+    border: 1px solid #2a2a40;
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: #e0e0ea;
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+
+  .input-field::placeholder { color: #444460; }
+
+  .input-label {
+    font-size: 11px;
+    color: #666688;
+    margin-bottom: 6px;
+    display: block;
+  }
+
+  .date-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #22223a;
+    border: 1px solid #2a2a40;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    cursor: pointer;
+  }
+
+  .date-label { font-size: 14px; color: #444460; }
+  .date-value { font-size: 14px; color: #e0e0ea; }
+
+  .btn-primary {
+    width: 100%;
+    background: #7c74ff;
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    color: white;
+    text-align: center;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+
+  /* ── stat row ── */
+  .stat-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .stat-card {
+    flex: 1;
+    background: #1a1a26;
+    border: 1px solid #24243a;
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+  }
+
+  .stat-num { font-size: 22px; font-weight: 800; color: #fff; }
+  .stat-lbl { font-size: 10px; color: #555570; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+
+  /* ── divider ── */
+  .divider { height: 1px; background: #1a1a26; margin: 4px 0; }
+
+  /* ── all screens row ── */
+  .screens-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 32px;
+    justify-content: center;
+  }
+
+  .deadline-tag {
+    font-size: 11px;
+    color: #f59e0b;
+    background: rgba(245,158,11,0.1);
+    padding: 2px 8px;
+    border-radius: 100px;
+    margin-top: 4px;
+    display: inline-block;
+  }
+
+  .timeline-item {
+    display: flex;
+    gap: 12px;
+    padding: 8px 0;
+  }
+
+  .timeline-dot-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 14px;
+    flex-shrink: 0;
+    padding-top: 4px;
+  }
+
+  .timeline-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #7c74ff;
+    flex-shrink: 0;
+  }
+
+  .timeline-line {
+    flex: 1;
+    width: 2px;
+    background: #2a2a40;
+    margin-top: 4px;
+  }
+
+  .timeline-content { flex: 1; padding-bottom: 12px; }
+  .timeline-title { font-size: 13px; color: #d0d0e0; }
+  .timeline-date { font-size: 11px; color: #444460; margin-top: 2px; }
+
+  /* scrollable tab indicator */
+  .tab-scroll-hint {
+    font-size: 10px;
+    color: #333350;
+    text-align: center;
+    padding: 4px 0 0;
+    letter-spacing: 0.05em;
+  }
+</style>
+</head>
+<body>
+
+<h1>LifePilot — Projects Feature Mockup</h1>
+
+<div class="screens-row">
+
+  <!-- ──────────────────────────────
+       SCREEN 1: Planner — Projects Tab
+  ────────────────────────────────── -->
+  <div class="screen-group">
+    <div class="screen-label">Projects List</div>
+    <div class="phone">
+      <div class="phone-status">
+        <span class="time">9:41</span>
+        <span class="icons">●●●</span>
+      </div>
+      <div class="phone-screen">
+        <div class="topbar">
+          <span class="topbar-title">Planner</span>
+          <div class="topbar-actions">
+            <div class="icon-btn">🔍</div>
+          </div>
+        </div>
+
+        <div class="tab-row">
+          <div class="tab">Tasks</div>
+          <div class="tab active">Projects</div>
+        </div>
+
+        <div class="content">
+
+          <!-- active -->
+          <div class="section-label">Active · 3</div>
+
+          <div class="project-card">
+            <div class="project-card-header">
+              <div class="project-emoji">🇯🇵</div>
+              <div class="project-info">
+                <div class="project-title">Japan Trip 2026</div>
+                <div class="project-meta">
+                  <span>✅ 4 tasks</span>
+                  <span>📄 3 docs</span>
+                </div>
+                <div class="deadline-tag">📅 Aug 12</div>
+              </div>
+              <div class="project-actions">
+                <div class="status-chip chip-active">On track</div>
+              </div>
+            </div>
+            <div class="progress-row">
+              <div class="progress-track"><div class="progress-fill" style="width:55%"></div></div>
+              <div class="progress-label">55%</div>
+            </div>
+          </div>
+
+          <div class="project-card">
+            <div class="project-card-header">
+              <div class="project-emoji">💼</div>
+              <div class="project-info">
+                <div class="project-title">Senior PM Job Search</div>
+                <div class="project-meta">
+                  <span>✅ 2 tasks</span>
+                  <span>📄 5 docs</span>
+                </div>
+                <div class="deadline-tag">📅 Sep 30</div>
+              </div>
+              <div class="project-actions">
+                <div class="status-chip chip-behind">Behind</div>
+              </div>
+            </div>
+            <div class="progress-row">
+              <div class="progress-track"><div class="progress-fill" style="width:20%"></div></div>
+              <div class="progress-label">20%</div>
+            </div>
+          </div>
+
+          <div class="project-card">
+            <div class="project-card-header">
+              <div class="project-emoji">🏠</div>
+              <div class="project-info">
+                <div class="project-title">Buy First House</div>
+                <div class="project-meta">
+                  <span>✅ 6 tasks</span>
+                  <span>📄 8 docs</span>
+                </div>
+              </div>
+              <div class="project-actions">
+                <div class="status-chip chip-active">On track</div>
+              </div>
+            </div>
+            <div class="progress-row">
+              <div class="progress-track"><div class="progress-fill" style="width:70%"></div></div>
+              <div class="progress-label">70%</div>
+            </div>
+          </div>
+
+          <!-- proposed -->
+          <div class="section-label" style="margin-top:6px;">Proposed by AI · 1</div>
+
+          <div class="project-card" style="border-color: rgba(124,116,255,0.25);">
+            <div class="project-card-header">
+              <div class="project-emoji">🎓</div>
+              <div class="project-info">
+                <div class="project-title">MBA Application 2027</div>
+                <div class="project-meta">
+                  <span>Based on your Career conversations</span>
+                </div>
+              </div>
+              <div class="project-actions">
+                <div class="status-chip chip-proposed">AI proposed</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="fab">+</div>
+
+        <div class="bottom-nav">
+          <div class="nav-item"><div class="nav-icon">🏠</div><div class="nav-label">Home</div></div>
+          <div class="nav-item"><div class="nav-icon">📚</div><div class="nav-label">Library</div></div>
+          <div class="nav-item"><div class="nav-icon active">📅</div><div class="nav-label active">Planner</div></div>
+          <div class="nav-item"><div class="nav-icon">🔍</div><div class="nav-label">Search</div></div>
+          <div class="nav-item"><div class="nav-icon">⚙️</div><div class="nav-label">Settings</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ──────────────────────────────
+       SCREEN 2: Project Workspace — Overview
+  ────────────────────────────────── -->
+  <div class="screen-group">
+    <div class="screen-label">Project Workspace — Overview</div>
+    <div class="phone">
+      <div class="phone-status">
+        <span class="time">9:41</span>
+        <span class="icons">●●●</span>
+      </div>
+      <div class="phone-screen">
+        <div class="topbar">
+          <div class="back-btn">← Planner</div>
+          <div class="topbar-actions">
+            <div class="icon-btn">✏️</div>
+            <div class="icon-btn">⋮</div>
+          </div>
+        </div>
+
+        <div class="workspace-header">
+          <div class="workspace-emoji-row">
+            <div class="workspace-emoji-large">🇯🇵</div>
+            <div>
+              <div class="workspace-title">Japan Trip 2026</div>
+              <div class="workspace-subtitle">Aug 12, 2026 · 55% complete</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-row-scroll">
+          <div class="tab active" style="font-size:13px; padding: 8px 14px;">Overview</div>
+          <div class="tab" style="font-size:13px; padding: 8px 14px;">Tasks</div>
+          <div class="tab" style="font-size:13px; padding: 8px 14px;">Documents</div>
+          <div class="tab" style="font-size:13px; padding: 8px 14px;">Timeline</div>
+          <div class="tab" style="font-size:13px; padding: 8px 14px;">AI</div>
+        </div>
+
+        <div class="content" style="padding-top:14px;">
+
+          <div class="stat-row">
+            <div class="stat-card">
+              <div class="stat-num">4</div>
+              <div class="stat-lbl">Open tasks</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-num">3</div>
+              <div class="stat-lbl">Documents</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-num">42</div>
+              <div class="stat-lbl">Days left</div>
+            </div>
+          </div>
+
+          <div class="overview-card">
+            <div class="overview-card-title">Life State</div>
+            <div class="life-state-row">
+              <div class="life-state-chip ok">✓ Passport valid</div>
+              <div class="life-state-chip ok">✓ Flights booked</div>
+              <div class="life-state-chip warn">⚠ Travel insurance</div>
+              <div class="life-state-chip gap">✗ JR Pass</div>
+              <div class="life-state-chip gap">✗ Hotel Osaka</div>
+            </div>
+          </div>
+
+          <div class="ai-card">
+            <div class="ai-card-header">
+              <span class="ai-card-icon">🤖</span>
+              <span class="ai-card-label">AI Insight</span>
+            </div>
+            <div class="ai-card-text">Your passport is valid until March 2029. Japan visa for Indian passport typically takes 5–7 working days — you should apply by July 28. Travel insurance is still missing.</div>
+          </div>
+
+          <div class="overview-card">
+            <div class="overview-card-title">Next tasks</div>
+            <div class="task-row">
+              <div class="task-check"></div>
+              <div class="task-content">
+                <div class="task-title">Apply for Japan visa</div>
+                <div class="task-tags"><span class="task-tag urgent">Urgent</span></div>
+              </div>
+              <div class="task-due overdue">Jul 28</div>
+            </div>
+            <div class="task-row">
+              <div class="task-check"></div>
+              <div class="task-content">
+                <div class="task-title">Buy travel insurance</div>
+                <div class="task-tags"><span class="task-tag high">High</span></div>
+              </div>
+              <div class="task-due">Aug 1</div>
+            </div>
+            <div class="task-row" style="border:none">
+              <div class="task-check"></div>
+              <div class="task-content">
+                <div class="task-title">Book hotel in Osaka</div>
+                <div class="task-tags"><span class="task-tag">Medium</span></div>
+              </div>
+              <div class="task-due">Aug 5</div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="bottom-nav">
+          <div class="nav-item"><div class="nav-icon">🏠</div><div class="nav-label">Home</div></div>
+          <div class="nav-item"><div class="nav-icon">📚</div><div class="nav-label">Library</div></div>
+          <div class="nav-item"><div class="nav-icon active">📅</div><div class="nav-label active">Planner</div></div>
+          <div class="nav-item"><div class="nav-icon">🔍</div><div class="nav-label">Search</div></div>
+          <div class="nav-item"><div class="nav-icon">⚙️</div><div class="nav-label">Settings</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ──────────────────────────────
+       SCREEN 3: Project Workspace — Tasks tab
+  ────────────────────────────────── -->
+  <div class="screen-group">
+    <div class="screen-label">Project Workspace — Tasks</div>
+    <div class="phone">
+      <div class="phone-status">
+        <span class="time">9:41</span>
+        <span class="icons">●●●</span>
+      </div>
+      <div class="phone-screen">
+        <div class="topbar">
+          <div class="back-btn">← Planner</div>
+          <div class="topbar-actions">
+            <div class="icon-btn">✏️</div>
+            <div class="icon-btn">⋮</div>
+          </div>
+        </div>
+
+        <div class="workspace-header">
+          <div class="workspace-emoji-row">
+            <div class="workspace-emoji-large">🇯🇵</div>
+            <div>
+              <div class="workspace-title">Japan Trip 2026</div>
+              <div class="workspace-subtitle">Aug 12, 2026 · 55% complete</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-row-scroll">
+          <div class="tab" style="font-size:13px; padding: 8px 14px;">Overview</div>
+          <div class="tab active" style="font-size:13px; padding: 8px 14px;">Tasks</div>
+          <div class="tab" style="font-size:13px; padding: 8px 14px;">Documents</div>
+          <div class="tab" style="font-size:13px; padding: 8px 14px;">Timeline</div>
+          <div class="tab" style="font-size:13px; padding: 8px 14px;">AI</div>
+        </div>
+
+        <div class="content" style="padding-top:14px; padding-bottom:80px;">
+
+          <div class="section-label">Open · 4</div>
+
+          <div class="overview-card" style="padding: 0 16px;">
+            <div class="task-row">
+              <div class="task-check"></div>
+              <div class="task-content">
+                <div class="task-title">Apply for Japan visa</div>
+                <div class="task-tags"><span class="task-tag urgent">Urgent</span></div>
+              </div>
+              <div class="task-due overdue">Jul 28</div>
+            </div>
+            <div class="task-row">
+              <div class="task-check"></div>
+              <div class="task-content">
+                <div class="task-title">Buy travel insurance</div>
+                <div class="task-tags"><span class="task-tag high">High</span></div>
+              </div>
+              <div class="task-due">Aug 1</div>
+            </div>
+            <div class="task-row">
+              <div class="task-check"></div>
+              <div class="task-content">
+                <div class="task-title">Book hotel in Osaka</div>
+                <div class="task-tags"><span class="task-tag">Medium</span></div>
+              </div>
+              <div class="task-due">Aug 5</div>
+            </div>
+            <div class="task-row" style="border:none">
+              <div class="task-check"></div>
+              <div class="task-content">
+                <div class="task-title">Buy JR Pass</div>
+                <div class="task-tags"><span class="task-tag">Low</span></div>
+              </div>
+              <div class="task-due">Aug 10</div>
+            </div>
+          </div>
+
+          <div class="section-label" style="margin-top:6px;">Completed · 3</div>
+
+          <div class="overview-card" style="padding: 0 16px; opacity: 0.6;">
+            <div class="task-row">
+              <div class="task-check done"></div>
+              <div class="task-content">
+                <div class="task-title done">Book flights</div>
+              </div>
+              <div class="task-due">Done</div>
+            </div>
+            <div class="task-row">
+              <div class="task-check done"></div>
+              <div class="task-content">
+                <div class="task-title done">Check passport expiry</div>
+              </div>
+              <div class="task-due">Done</div>
+            </div>
+            <div class="task-row" style="border:none">
+              <div class="task-check done"></div>
+              <div class="task-content">
+                <div class="task-title done">Research itinerary</div>
+              </div>
+              <div class="task-due">Done</div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="fab">+</div>
+
+        <div class="bottom-nav">
+          <div class="nav-item"><div class="nav-icon">🏠</div><div class="nav-label">Home</div></div>
+          <div class="nav-item"><div class="nav-icon">📚</div><div class="nav-label">Library</div></div>
+          <div class="nav-item"><div class="nav-icon active">📅</div><div class="nav-label active">Planner</div></div>
+          <div class="nav-item"><div class="nav-icon">🔍</div><div class="nav-label">Search</div></div>
+          <div class="nav-item"><div class="nav-icon">⚙️</div><div class="nav-label">Settings</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ──────────────────────────────
+       SCREEN 4: Project Workspace — Documents
+  ────────────────────────────────── -->
+  <div class="screen-group">
+    <div class="screen-label">Project Workspace — Documents</div>
+    <div class="phone">
+      <div class="phone-status">
+        <span class="time">9:41</span>
+        <span class="icons">●●●</span>
+      </div>
+      <div class="phone-screen">
+        <div class="topbar">
+          <div class="back-btn">← Planner</div>
+          <div class="topbar-actions">
+            <div class="icon-btn">✏️</div>
+            <div class="icon-btn">⋮</div>
+          </div>
+        </div>
+
+        <div class="workspace-header">
+          <div class="workspace-emoji-row">
+            <div class="workspace-emoji-large">🇯🇵</div>
+            <div>
+              <div class="workspace-title">Japan Trip 2026</div>
+              <div class="workspace-subtitle">Aug 12, 2026 · 55% complete</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-row-scroll">
+          <div class="tab" style="font-size:13px; padding: 8px 14px;">Overview</div>
+          <div class="tab" style="font-size:13px; padding: 8px 14px;">Tasks</div>
+          <div class="tab active" style="font-size:13px; padding: 8px 14px;">Documents</div>
+          <div class="tab" style="font-size:13px; padding: 8px 14px;">Timeline</div>
+          <div class="tab" style="font-size:13px; padding: 8px 14px;">AI</div>
+        </div>
+
+        <div class="content" style="padding-top:14px;">
+
+          <div class="section-label">Linked Records · 2</div>
+
+          <div class="overview-card" style="padding: 0 16px;">
+            <div class="doc-row">
+              <div class="doc-icon">🪪</div>
+              <div class="doc-info">
+                <div class="doc-name">Passport</div>
+                <div class="doc-meta">Indian · Valid to Mar 2029</div>
+              </div>
+              <div class="doc-arrow">›</div>
+            </div>
+            <div class="doc-row" style="border:none">
+              <div class="doc-icon">✈️</div>
+              <div class="doc-info">
+                <div class="doc-name">Flight Booking</div>
+                <div class="doc-meta">BLR → NRT · Aug 12</div>
+              </div>
+              <div class="doc-arrow">›</div>
+            </div>
+          </div>
+
+          <div class="section-label" style="margin-top:6px;">Documents · 3</div>
+
+          <div class="overview-card" style="padding: 0 16px;">
+            <div class="doc-row">
+              <div class="doc-icon">📄</div>
+              <div class="doc-info">
+                <div class="doc-name">Flight_BLR_NRT.pdf</div>
+                <div class="doc-meta">PDF · 2.1 MB · Jun 28</div>
+              </div>
+              <div class="doc-arrow">›</div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-icon">🗺️</div>
+              <div class="doc-info">
+                <div class="doc-name">Itinerary_v2.pdf</div>
+                <div class="doc-meta">PDF · 0.8 MB · Jul 1</div>
+              </div>
+              <div class="doc-arrow">›</div>
+            </div>
+            <div class="doc-row" style="border:none">
+              <div class="doc-icon">🏨</div>
+              <div class="doc-info">
+                <div class="doc-name">Hotel_Tokyo.pdf</div>
+                <div class="doc-meta">PDF · 1.2 MB · Jul 2</div>
+              </div>
+              <div class="doc-arrow">›</div>
+            </div>
+          </div>
+
+          <div style="display:flex; align-items:center; justify-content:center; gap:8px; padding: 12px 0;">
+            <div style="font-size:12px; color: #7c74ff; font-weight:600; cursor:pointer;">+ Link a Record</div>
+            <div style="color: #333350">·</div>
+            <div style="font-size:12px; color: #7c74ff; font-weight:600; cursor:pointer;">+ Add Document</div>
+          </div>
+
+        </div>
+
+        <div class="bottom-nav">
+          <div class="nav-item"><div class="nav-icon">🏠</div><div class="nav-label">Home</div></div>
+          <div class="nav-item"><div class="nav-icon">📚</div><div class="nav-label">Library</div></div>
+          <div class="nav-item"><div class="nav-icon active">📅</div><div class="nav-label active">Planner</div></div>
+          <div class="nav-item"><div class="nav-icon">🔍</div><div class="nav-label">Search</div></div>
+          <div class="nav-item"><div class="nav-icon">⚙️</div><div class="nav-label">Settings</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ──────────────────────────────
+       SCREEN 5: Project Workspace — AI Chat
+  ────────────────────────────────── -->
+  <div class="screen-group">
+    <div class="screen-label">Project Workspace — AI (scoped)</div>
+    <div class="phone">
+      <div class="phone-status">
+        <span class="time">9:41</span>
+        <span class="icons">●●●</span>
+      </div>
+      <div class="phone-screen">
+        <div class="topbar">
+          <div class="back-btn">← Planner</div>
+          <div class="topbar-actions">
+            <div class="icon-btn">⋮</div>
+          </div>
+        </div>
+
+        <div class="workspace-header">
+          <div class="workspace-emoji-row">
+            <div class="workspace-emoji-large">🇯🇵</div>
+            <div>
+              <div class="workspace-title">Japan Trip 2026</div>
+              <div class="workspace-subtitle">AI scoped to this project only</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-row-scroll">
+          <div class="tab" style="font-size:13px; padding: 8px 14px;">Overview</div>
+          <div class="tab" style="font-size:13px; padding: 8px 14px;">Tasks</div>
+          <div class="tab" style="font-size:13px; padding: 8px 14px;">Documents</div>
+          <div class="tab" style="font-size:13px; padding: 8px 14px;">Timeline</div>
+          <div class="tab active" style="font-size:13px; padding: 8px 14px;">AI</div>
+        </div>
+
+        <div class="content" style="padding: 12px 16px 90px; gap: 12px;">
+
+          <div style="background: rgba(124,116,255,0.08); border: 1px solid rgba(124,116,255,0.2); border-radius:10px; padding: 10px 14px; font-size: 12px; color: #9d96ff; display:flex; gap:8px; align-items:center;">
+            <span>🎯</span>
+            <span>Scoped to Japan Trip — AI only sees project tasks, documents, and linked records.</span>
+          </div>
+
+          <!-- AI message -->
+          <div style="align-self:flex-start; max-width:82%;">
+            <div style="background:#1a1a26; border-radius: 14px 14px 14px 4px; padding: 12px 14px;">
+              <div style="font-size:13px; color:#c0c0d0; line-height:1.5;">Your passport is valid until March 2029, so Japan visa is straightforward. Main gap right now is travel insurance — you should get that sorted before buying the JR Pass.</div>
+            </div>
+            <div style="font-size:10px; color:#333350; padding: 4px 4px 0;">LifePilot AI · 9:38 AM</div>
+          </div>
+
+          <!-- User message -->
+          <div style="align-self:flex-end; max-width:78%;">
+            <div style="background: #7c74ff; border-radius: 14px 14px 4px 14px; padding: 12px 14px;">
+              <div style="font-size:13px; color:#fff; line-height:1.5;">What's the best travel insurance for Japan?</div>
+            </div>
+            <div style="font-size:10px; color:#333350; text-align:right; padding: 4px 4px 0;">9:41 AM</div>
+          </div>
+
+          <!-- AI typing -->
+          <div style="align-self:flex-start;">
+            <div style="background:#1a1a26; border-radius: 14px 14px 14px 4px; padding: 10px 16px; display:flex; gap:6px; align-items:center;">
+              <span style="width:6px;height:6px;background:#555570;border-radius:50%;animation:none;opacity:0.4"></span>
+              <span style="width:6px;height:6px;background:#555570;border-radius:50%;opacity:0.7"></span>
+              <span style="width:6px;height:6px;background:#555570;border-radius:50%;opacity:1"></span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- input -->
+        <div style="position:absolute; bottom:60px; left:0; right:0; background:#111118; border-top:1px solid #1e1e2a; padding: 10px 16px; display:flex; gap:8px; align-items:center;">
+          <div style="flex:1; background:#1a1a26; border-radius:12px; padding: 10px 14px; font-size:13px; color:#444460;">Ask about Japan Trip…</div>
+          <div style="width:36px;height:36px;background:#7c74ff;border-radius:10px;display:flex;align-items:center;justify-content:center;color:white;font-size:16px;">↑</div>
+        </div>
+
+        <div class="bottom-nav">
+          <div class="nav-item"><div class="nav-icon">🏠</div><div class="nav-label">Home</div></div>
+          <div class="nav-item"><div class="nav-icon">📚</div><div class="nav-label">Library</div></div>
+          <div class="nav-item"><div class="nav-icon active">📅</div><div class="nav-label active">Planner</div></div>
+          <div class="nav-item"><div class="nav-icon">🔍</div><div class="nav-label">Search</div></div>
+          <div class="nav-item"><div class="nav-icon">⚙️</div><div class="nav-label">Settings</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ──────────────────────────────
+       SCREEN 6: Create Project Sheet
+  ────────────────────────────────── -->
+  <div class="screen-group">
+    <div class="screen-label">Create Project Sheet</div>
+    <div class="phone">
+      <div class="phone-status">
+        <span class="time">9:41</span>
+        <span class="icons">●●●</span>
+      </div>
+      <div class="phone-screen" style="position:relative;">
+        <!-- dimmed background -->
+        <div style="position:absolute;inset:0;background:rgba(0,0,0,0.5);z-index:5;border-radius:0 0 38px 38px;"></div>
+
+        <!-- sheet -->
+        <div class="sheet-overlay" style="z-index:10; border-radius:24px 24px 0 0;">
+          <div class="sheet-handle"></div>
+          <div class="sheet-title">Create Project</div>
+
+          <div class="input-label">Pick an emoji</div>
+          <div class="emoji-grid" style="margin-bottom:16px;">
+            <div class="emoji-option selected">✈️</div>
+            <div class="emoji-option">💼</div>
+            <div class="emoji-option">🏠</div>
+            <div class="emoji-option">🎓</div>
+            <div class="emoji-option">🏋️</div>
+            <div class="emoji-option">💰</div>
+            <div class="emoji-option">🎯</div>
+            <div class="emoji-option">🏥</div>
+            <div class="emoji-option">👶</div>
+            <div class="emoji-option">🌍</div>
+            <div class="emoji-option">🚗</div>
+            <div class="emoji-option">📚</div>
+          </div>
+
+          <div class="input-label">Project name</div>
+          <div class="input-field" style="color:#e0e0ea;">Japan Trip 2026</div>
+
+          <div class="input-label">Description (optional)</div>
+          <div class="input-field" style="color:#444460;">What's this project about?</div>
+
+          <div class="date-row">
+            <div class="date-label">Target date</div>
+            <div class="date-value">Aug 12, 2026 ›</div>
+          </div>
+
+          <div class="btn-primary">Create Project</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- footer note -->
+<div style="max-width: 900px; text-align: center; padding: 0 20px;">
+  <div style="font-size: 12px; color: #333350; line-height: 1.6;">
+    <strong style="color: #555570;">Navigation:</strong> Projects list lives in the Planner tab (replaces Goals). Tapping a project opens the workspace. The AI tab in the workspace scopes retrieval to that project only — context is smaller, answers are more precise.<br><br>
+    <strong style="color: #555570;">Workspace tabs MVP order:</strong> Overview → Tasks → Documents → Timeline → AI · (Knowledge + Life State can be added later)
+  </div>
+</div>
+
+</body>
+</html>

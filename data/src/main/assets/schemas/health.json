@@ -1,118 +1,236 @@
 {
-  "objectType": "health",
+  "objectType": "Health",
   "domain": "Health",
   "displayName": "Health Record",
   "icon": "favorite",
-  "description": "Medical records, prescriptions, and health documents",
+  "description": "Vaccination records and health documents",
   "schemaVersion": 1,
   "fields": [
     {
-      "fieldId": "record_type",
-      "displayName": "Record Type",
-      "fieldType": "ENUM",
-      "required": true,
-      "editable": true,
-      "searchable": true,
-      "aiExtractable": true,
-      "validationRules": [],
-      "enumValues": [
-        "PRESCRIPTION",
-        "TEST_RESULT",
-        "DIAGNOSIS",
-        "VACCINATION",
-        "SURGERY",
-        "CONSULTATION",
-        "OTHER"
-      ]
-    },
-    {
-      "fieldId": "provider",
-      "displayName": "Healthcare Provider",
+      "fieldId": "covid19",
+      "displayName": "COVID-19 Vaccination",
       "fieldType": "TEXT",
       "required": false,
       "editable": true,
-      "searchable": true,
+      "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "placeholder": "e.g. Covishield \u2014 2 doses",
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "date",
-      "displayName": "Date",
+      "fieldId": "hepatitisB",
+      "displayName": "Hepatitis B Vaccination",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "e.g. Completed 3-dose series",
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "japanEncephalitis",
+      "displayName": "Japanese Encephalitis Vaccination",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "SENSITIVE"
+    },
+    {
+      "fieldId": "nextTetanus",
+      "displayName": "Next Tetanus Due",
       "fieldType": "DATE",
       "required": false,
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "placeholder": "YYYY-MM-DD",
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "notes",
-      "displayName": "Notes",
-      "fieldType": "MULTILINE_TEXT",
+      "fieldId": "typhoid",
+      "displayName": "Typhoid Vaccination",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "bloodGroup",
+      "displayName": "Blood Group",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "e.g. O+",
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "allergies",
+      "displayName": "Allergies",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "e.g. Penicillin, peanuts",
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "conditions",
+      "displayName": "Medical Conditions / Diagnoses",
+      "fieldType": "TEXT",
       "required": false,
       "editable": true,
       "searchable": true,
       "aiExtractable": true,
       "validationRules": [],
-      "aiWritable": true
+      "placeholder": "e.g. Hypertension, diabetes, asthma",
+      "sensitivityLevel": "SENSITIVE"
+    },
+    {
+      "fieldId": "medications",
+      "displayName": "Current Medications",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "e.g. Metformin 500mg daily",
+      "sensitivityLevel": "SENSITIVE"
+    },
+    {
+      "fieldId": "surgeries",
+      "displayName": "Surgeries / Procedures",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "e.g. Appendectomy 2019",
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "hospitalizations",
+      "displayName": "Hospitalisations",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "SENSITIVE"
+    },
+    {
+      "fieldId": "primaryDoctor",
+      "displayName": "Primary Doctor",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "SENSITIVE"
+    },
+    {
+      "fieldId": "lastCheckupDate",
+      "displayName": "Last Check-up Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     }
   ],
   "lifecycle": {
-    "initialState": "active",
+    "initialState": "ACTIVE",
     "states": [
       {
-        "stateId": "active",
+        "stateId": "ACTIVE",
         "displayName": "Active"
       },
       {
-        "stateId": "archived",
+        "stateId": "ARCHIVED",
         "displayName": "Archived",
         "isFinal": true
       }
     ],
     "transitions": [
       {
-        "fromState": "active",
-        "toState": "archived",
+        "fromState": "ACTIVE",
+        "toState": "ARCHIVED",
         "trigger": "ARCHIVE",
         "label": "Archive"
       }
     ]
   },
-  "reminderRules": [],
+  "reminderRules": [
+    {
+      "ruleId": "tetanus_due_reminder",
+      "title": "Tetanus Booster Due",
+      "triggerField": "nextTetanus",
+      "offsetDays": -30,
+      "priority": "MEDIUM",
+      "messageTemplate": "Tetanus booster due in 30 days"
+    }
+  ],
   "searchConfig": {
     "primaryFields": [
-      "record_type",
-      "provider"
+      "covid19"
     ],
     "fullTextFields": [
-      "record_type",
-      "provider",
-      "notes"
+      "covid19",
+      "hepatitisB",
+      "typhoid"
     ],
-    "filterableFields": [
-      "record_type"
-    ]
+    "filterableFields": []
   },
   "aiConfig": {
     "extractableFields": [
-      "record_type",
-      "provider",
-      "date",
-      "notes"
+      "covid19",
+      "hepatitisB",
+      "japanEncephalitis",
+      "nextTetanus",
+      "typhoid",
+      "bloodGroup",
+      "allergies",
+      "conditions",
+      "medications",
+      "surgeries",
+      "hospitalizations",
+      "lastCheckupDate"
     ],
     "classificationHints": [
-      "prescription",
-      "diagnosis",
-      "test result",
-      "lab",
+      "vaccination",
+      "vaccine",
+      "immunisation",
       "medical",
-      "doctor",
+      "health record",
       "hospital",
-      "vaccination"
+      "surgery",
+      "diagnosis",
+      "appointment",
+      "doctor",
+      "allergy",
+      "medication",
+      "prescription"
     ],
-    "aiWritableFields": [
-      "notes"
-    ]
+    "aiWritableFields": []
   }
 }

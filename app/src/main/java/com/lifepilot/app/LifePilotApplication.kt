@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import com.lifepilot.app.initializer.AppInitializer
+import com.lifepilot.app.logging.ScrubbingTree
 import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
 import javax.inject.Inject
@@ -27,7 +28,7 @@ class LifePilotApplication : Application(), Configuration.Provider {
 
     private fun initLogging() {
         if (BuildConfig.DEBUG) {
-            Timber.plant(Timber.DebugTree())
+            Timber.plant(ScrubbingTree())
         }
     }
 }

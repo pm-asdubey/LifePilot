@@ -1,5 +1,5 @@
 {
-  "objectType": "driving_licence",
+  "objectType": "DrivingLicence",
   "domain": "Identity",
   "displayName": "Driving Licence",
   "icon": "DriveEta",
@@ -19,7 +19,8 @@
           "ruleType": "REQUIRED",
           "message": "Licence number is required"
         }
-      ]
+      ],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "fullName",
@@ -34,7 +35,8 @@
           "ruleType": "REQUIRED",
           "message": "Full name is required"
         }
-      ]
+      ],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "dateOfBirth",
@@ -44,27 +46,30 @@
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "SENSITIVE"
     },
     {
-      "fieldId": "issueDate",
-      "displayName": "Issue Date",
+      "fieldId": "dateOfIssue",
+      "displayName": "Date of Issue",
       "fieldType": "DATE",
       "required": false,
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "expiryDate",
-      "displayName": "Expiry Date",
+      "fieldId": "dateOfExpiry",
+      "displayName": "Date of Expiry",
       "fieldType": "DATE",
       "required": false,
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "issuingAuthority",
@@ -74,18 +79,20 @@
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "licenceCategories",
-      "displayName": "Licence Categories",
+      "fieldId": "vehicleClass",
+      "displayName": "Vehicle Class",
       "fieldType": "TEXT",
       "required": false,
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "placeholder": "e.g. B, C, D",
-      "validationRules": []
+      "placeholder": "e.g. LMV, MCWG",
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "address",
@@ -95,18 +102,8 @@
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
-    },
-    {
-      "fieldId": "notes",
-      "displayName": "Notes",
-      "fieldType": "MULTILINE_TEXT",
-      "required": false,
-      "editable": true,
-      "searchable": true,
-      "aiExtractable": false,
-      "aiWritable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     }
   ],
   "lifecycle": {
@@ -155,7 +152,7 @@
   "reminderRules": [
     {
       "ruleId": "dl_expiry_90d",
-      "triggerField": "expiryDate",
+      "triggerField": "dateOfExpiry",
       "offsetDays": -90,
       "priority": "HIGH",
       "title": "Driving Licence Expiring Soon",
@@ -163,7 +160,7 @@
     },
     {
       "ruleId": "dl_expiry_30d",
-      "triggerField": "expiryDate",
+      "triggerField": "dateOfExpiry",
       "offsetDays": -30,
       "priority": "CRITICAL",
       "title": "Driving Licence Expires in 30 Days",
@@ -181,7 +178,7 @@
     ],
     "filterableFields": [
       "issuingAuthority",
-      "licenceCategories"
+      "vehicleClass"
     ]
   },
   "aiConfig": {
@@ -189,22 +186,19 @@
       "licenceNumber",
       "fullName",
       "dateOfBirth",
-      "issueDate",
-      "expiryDate",
+      "dateOfIssue",
+      "dateOfExpiry",
       "issuingAuthority",
-      "licenceCategories",
+      "vehicleClass",
       "address"
     ],
     "classificationHints": [
       "driving licence",
       "driver license",
-      "DVLA",
-      "DMV",
+      "RTO",
       "licence number",
       "DL"
     ],
-    "aiWritableFields": [
-      "notes"
-    ]
+    "aiWritableFields": []
   }
 }

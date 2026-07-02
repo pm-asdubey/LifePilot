@@ -12,7 +12,8 @@
       "editable": true,
       "searchable": true,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "date_signed",
@@ -21,7 +22,8 @@
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "last_reviewed",
@@ -30,7 +32,8 @@
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "executor_name",
@@ -39,7 +42,8 @@
       "editable": true,
       "searchable": true,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "beneficiaries",
@@ -48,7 +52,8 @@
       "editable": true,
       "searchable": false,
       "aiExtractable": false,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "stored_location",
@@ -57,7 +62,8 @@
       "editable": true,
       "searchable": false,
       "aiExtractable": false,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "notes",
@@ -68,7 +74,8 @@
       "searchable": true,
       "aiExtractable": false,
       "aiWritable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     }
   ],
   "lifecycle": {

@@ -8,6 +8,7 @@ import com.lifepilot.domain.repository.ObjectRepository
 import com.lifepilot.domain.repository.TimelineRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertTrue
@@ -59,8 +60,8 @@ class ArchiveObjectUseCaseTest {
                 source = EventSource.USER,
                 confidence = null,
             )
-        } returns mockk()
-        coEvery { timelineRepository.addTimelineEntry(any()) } returns mockk()
+        } returns mockk { every { eventId } returns "event-1" }
+        coEvery { timelineRepository.addTimelineEntry(any()) } answers { firstArg() }
 
         val result = useCase("obj-1")
 

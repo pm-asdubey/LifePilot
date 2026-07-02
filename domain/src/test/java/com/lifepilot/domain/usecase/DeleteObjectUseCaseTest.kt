@@ -10,6 +10,7 @@ import com.lifepilot.domain.repository.ObjectRepository
 import com.lifepilot.domain.repository.TimelineRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertTrue
@@ -61,8 +62,8 @@ class DeleteObjectUseCaseTest {
         coEvery { documentRepository.deleteDocument(any()) } returns Unit
         coEvery {
             eventRepository.recordEvent(any(), any(), any(), any(), any())
-        } returns mockk()
-        coEvery { timelineRepository.addTimelineEntry(any()) } returns mockk()
+        } returns mockk { every { eventId } returns "event-1" }
+        coEvery { timelineRepository.addTimelineEntry(any()) } answers { firstArg() }
         coEvery { objectRepository.deleteObject("obj-1") } returns Unit
 
         val result = useCase("obj-1")
@@ -89,8 +90,8 @@ class DeleteObjectUseCaseTest {
         coEvery { documentRepository.getDocumentsByObject("obj-1") } returns emptyList()
         coEvery {
             eventRepository.recordEvent(any(), any(), any(), any(), any())
-        } returns mockk()
-        coEvery { timelineRepository.addTimelineEntry(any()) } returns mockk()
+        } returns mockk { every { eventId } returns "event-1" }
+        coEvery { timelineRepository.addTimelineEntry(any()) } answers { firstArg() }
         coEvery { objectRepository.deleteObject("obj-1") } returns Unit
 
         val result = useCase("obj-1")

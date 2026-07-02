@@ -12,7 +12,8 @@
       "editable": true,
       "searchable": true,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "scheme_name",
@@ -21,7 +22,8 @@
       "editable": true,
       "searchable": true,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "policy_number",
@@ -30,7 +32,8 @@
       "editable": true,
       "searchable": true,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "pension_type",
@@ -40,7 +43,8 @@
       "searchable": true,
       "aiExtractable": true,
       "validationRules": [],
-      "placeholder": "e.g. Defined Contribution, Defined Benefit, SIPP"
+      "placeholder": "e.g. Defined Contribution, Defined Benefit, SIPP",
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "start_date",
@@ -49,7 +53,8 @@
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "retirement_age",
@@ -58,7 +63,8 @@
       "editable": true,
       "searchable": false,
       "aiExtractable": false,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "projected_value",
@@ -67,7 +73,8 @@
       "editable": true,
       "searchable": false,
       "aiExtractable": false,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "current_value",
@@ -76,7 +83,8 @@
       "editable": true,
       "searchable": false,
       "aiExtractable": false,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "employer_contribution",
@@ -85,7 +93,8 @@
       "editable": true,
       "searchable": false,
       "aiExtractable": false,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "employee_contribution",
@@ -94,7 +103,8 @@
       "editable": true,
       "searchable": false,
       "aiExtractable": false,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "notes",
@@ -105,7 +115,8 @@
       "searchable": true,
       "aiExtractable": false,
       "aiWritable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     }
   ],
   "lifecycle": {

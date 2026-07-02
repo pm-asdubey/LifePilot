@@ -1,30 +1,11 @@
 {
-  "objectType": "utilities",
+  "objectType": "Utility",
   "displayName": "Utility Account",
   "domain": "Home",
   "icon": "Bolt",
   "description": "Electricity, gas, water, or internet utility account",
   "schemaVersion": 1,
   "fields": [
-    {
-      "fieldId": "utility_type",
-      "displayName": "Utility Type",
-      "fieldType": "ENUM",
-      "required": true,
-      "editable": true,
-      "searchable": false,
-      "aiExtractable": false,
-      "validationRules": [],
-      "enumValues": [
-        "ELECTRICITY",
-        "GAS",
-        "WATER",
-        "INTERNET",
-        "PHONE",
-        "COUNCIL_TAX",
-        "TV_LICENSE"
-      ]
-    },
     {
       "fieldId": "provider",
       "displayName": "Provider",
@@ -34,73 +15,67 @@
       "searchable": true,
       "aiExtractable": true,
       "validationRules": [],
-      "placeholder": "British Gas, etc."
+      "placeholder": "BSES, Airtel, etc.",
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "account_number",
-      "displayName": "Account Number",
-      "fieldType": "TEXT",
-      "required": false,
-      "editable": true,
-      "searchable": false,
-      "aiExtractable": true,
-      "validationRules": [],
-      "placeholder": "Account number"
-    },
-    {
-      "fieldId": "contract_start",
-      "displayName": "Contract Start",
-      "fieldType": "DATE",
-      "required": false,
-      "editable": true,
-      "searchable": false,
-      "aiExtractable": true,
-      "validationRules": [],
-      "placeholder": "YYYY-MM-DD"
-    },
-    {
-      "fieldId": "contract_end",
-      "displayName": "Contract End",
-      "fieldType": "DATE",
-      "required": false,
-      "editable": true,
-      "searchable": false,
-      "aiExtractable": true,
-      "validationRules": [],
-      "placeholder": "YYYY-MM-DD"
-    },
-    {
-      "fieldId": "monthly_cost",
-      "displayName": "Monthly Cost",
-      "fieldType": "NUMBER",
-      "required": false,
-      "editable": true,
-      "searchable": false,
-      "aiExtractable": true,
-      "validationRules": [],
-      "placeholder": "65.00"
-    },
-    {
-      "fieldId": "tariff",
-      "displayName": "Tariff / Plan",
+      "fieldId": "utilityType",
+      "displayName": "Utility Type",
       "fieldType": "TEXT",
       "required": false,
       "editable": true,
       "searchable": false,
       "aiExtractable": false,
       "validationRules": [],
-      "placeholder": "Fixed rate 12M"
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "notes",
-      "displayName": "Notes",
-      "fieldType": "MULTILINE_TEXT",
+      "fieldId": "consumerNumber",
+      "displayName": "Consumer Number",
+      "fieldType": "TEXT",
       "required": false,
       "editable": true,
-      "searchable": true,
-      "aiExtractable": false,
-      "aiWritable": true,
-      "validationRules": []
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "Consumer / account number",
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "lastBillAmount",
+      "displayName": "Last Bill Amount",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "1500",
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "lastPaymentDate",
+      "displayName": "Last Payment Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "YYYY-MM-DD",
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "nextDueDate",
+      "displayName": "Next Due Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "YYYY-MM-DD",
+      "sensitivityLevel": "STANDARD"
     }
   ],
   "lifecycle": {
@@ -143,33 +118,33 @@
   },
   "reminderRules": [
     {
-      "ruleId": "contract_end_reminder",
-      "title": "Contract Renewal",
-      "triggerField": "contract_end",
-      "offsetDays": -30,
+      "ruleId": "bill_due_reminder",
+      "title": "Bill Due Soon",
+      "triggerField": "nextDueDate",
+      "offsetDays": -3,
       "priority": "MEDIUM",
-      "messageTemplate": "Utility contract ends in 30 days. Consider reviewing your tariff."
+      "messageTemplate": "Utility bill due in 3 days"
     }
   ],
   "searchConfig": {
     "primaryFields": [
       "provider",
-      "account_number"
+      "consumerNumber"
     ],
     "fullTextFields": [
       "provider"
     ],
     "filterableFields": [
-      "utility_type"
+      "utilityType"
     ]
   },
   "aiConfig": {
     "extractableFields": [
-      "utility_type",
+      "utilityType",
       "provider",
-      "account_number",
-      "contract_end",
-      "monthly_cost"
+      "consumerNumber",
+      "lastBillAmount",
+      "nextDueDate"
     ],
     "classificationHints": [
       "utility",
@@ -177,10 +152,9 @@
       "electricity",
       "gas",
       "water",
-      "broadband"
+      "broadband",
+      "consumer number"
     ],
-    "aiWritableFields": [
-      "notes"
-    ]
+    "aiWritableFields": []
   }
 }

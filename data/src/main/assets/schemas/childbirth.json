@@ -1,0 +1,165 @@
+{
+  "objectType": "Childbirth",
+  "domain": "Major Life Events",
+  "displayName": "Childbirth",
+  "icon": "child_care",
+  "description": "Birth of a child",
+  "schemaVersion": 1,
+  "fields": [
+    {
+      "fieldId": "childName",
+      "displayName": "Child Name",
+      "fieldType": "TEXT",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [
+        {
+          "ruleType": "REQUIRED",
+          "message": "Child name is required"
+        }
+      ],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "dateOfBirth",
+      "displayName": "Date of Birth",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "SENSITIVE"
+    },
+    {
+      "fieldId": "gender",
+      "displayName": "Gender",
+      "fieldType": "ENUM",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "enumValues": [
+        "MALE",
+        "FEMALE",
+        "OTHER",
+        "PREFER_NOT_TO_SAY"
+      ],
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "hospital",
+      "displayName": "Hospital / Birth Place",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "SENSITIVE"
+    },
+    {
+      "fieldId": "birthWeight",
+      "displayName": "Birth Weight",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "placeholder": "e.g. 3.2 kg",
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "parentNames",
+      "displayName": "Parent(s) Name",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "birthCertificateNumber",
+      "displayName": "Birth Certificate Number",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "SENSITIVE"
+    },
+    {
+      "fieldId": "notes",
+      "displayName": "Notes",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    }
+  ],
+  "lifecycle": {
+    "initialState": "ACTIVE",
+    "states": [
+      {
+        "stateId": "ACTIVE",
+        "displayName": "Active"
+      },
+      {
+        "stateId": "ARCHIVED",
+        "displayName": "Archived",
+        "isFinal": true
+      }
+    ],
+    "transitions": [
+      {
+        "fromState": "ACTIVE",
+        "toState": "ARCHIVED",
+        "trigger": "ARCHIVE",
+        "label": "Archive"
+      }
+    ]
+  },
+  "reminderRules": [],
+  "searchConfig": {
+    "primaryFields": [
+      "childName",
+      "parentNames"
+    ],
+    "fullTextFields": [
+      "childName",
+      "parentNames",
+      "hospital",
+      "notes"
+    ],
+    "filterableFields": [
+      "gender"
+    ]
+  },
+  "aiConfig": {
+    "extractableFields": [
+      "childName",
+      "dateOfBirth",
+      "gender",
+      "hospital",
+      "parentNames"
+    ],
+    "aiWritableFields": [],
+    "classificationHints": [
+      "childbirth",
+      "born",
+      "baby",
+      "newborn",
+      "delivery"
+    ]
+  }
+}

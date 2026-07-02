@@ -20,7 +20,8 @@
           "parameter": "2",
           "message": "Lender name required"
         }
-      ]
+      ],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "loan_type",
@@ -39,7 +40,8 @@
         "BUSINESS",
         "CREDIT_CARD",
         "OTHER"
-      ]
+      ],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "loan_amount",
@@ -49,7 +51,8 @@
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "interest_rate",
@@ -59,7 +62,8 @@
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "start_date",
@@ -69,7 +73,8 @@
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "end_date",
@@ -79,7 +84,8 @@
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "emi_due_day",
@@ -95,7 +101,8 @@
           "parameter": "1,31",
           "message": "Must be 1\u201331"
         }
-      ]
+      ],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "notes",
@@ -106,7 +113,8 @@
       "searchable": true,
       "aiExtractable": false,
       "aiWritable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     }
   ],
   "lifecycle": {

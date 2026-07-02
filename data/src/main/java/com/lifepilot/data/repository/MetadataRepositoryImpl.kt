@@ -85,6 +85,10 @@ class MetadataRepositoryImpl @Inject constructor(
         metadataDao.deleteMetadata(metadataId)
     }
 
+    override suspend fun deleteAllMetadataForObject(objectId: String) {
+        metadataDao.deleteAllMetadataForObject(objectId)
+    }
+
     override suspend fun getMetadataForObjects(objectIds: List<String>): Map<String, List<MetadataEntry>> {
         if (objectIds.isEmpty()) return emptyMap()
         return metadataDao.getMetadataForObjects(objectIds)

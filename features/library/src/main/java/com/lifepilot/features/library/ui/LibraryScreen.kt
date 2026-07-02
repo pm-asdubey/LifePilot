@@ -1,7 +1,13 @@
 package com.lifepilot.features.library.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +25,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Sort
@@ -61,6 +70,10 @@ import com.lifepilot.designsystem.theme.StatusActive
 import com.lifepilot.designsystem.theme.StatusArchived
 import com.lifepilot.designsystem.theme.StatusExpired
 import com.lifepilot.designsystem.theme.StatusRenewalDue
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import com.lifepilot.domain.model.DomainLifeState
 import com.lifepilot.domain.model.ObjectStatus
 import com.lifepilot.features.library.state.LibrarySortOrder
 import com.lifepilot.features.library.viewmodel.LibraryViewModel
@@ -77,6 +90,10 @@ fun LibraryScreen(
     val uiState by viewModel.uiState.collectAsState()
     var showSortMenu by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    // All domain groups start collapsed; user taps the header to expand.
+    var expandedDomains by remember { mutableStateOf(emptySet<String>()) }
+    // Tracks which domain understanding cards have been dismissed for this session.
+    var dismissedUnderstandingCards by remember { mutableStateOf(emptySet<String>()) }
 
     if (showDeleteDialog) {
         AlertDialog(
@@ -288,6 +305,7 @@ fun LibraryScreen(
                 } else {
                     // Group by domain when no domain filter is active (Object Tree view)
                     val selectedDomainFilter = uiState.selectedDomain
+                    val domainLifeStateMap = uiState.domains.associate { it.domain to it.lifeState }
                     val domainGroups: List<Pair<String, List<com.lifepilot.domain.model.LifeObject>>> =
                         if (selectedDomainFilter == null) {
                             uiState.objects.groupBy { it.domain }.entries
@@ -305,82 +323,181 @@ fun LibraryScreen(
                         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                         modifier = Modifier.weight(1f),
                     ) {
+                        // When a specific domain is selected, show its understanding card at top.
+                        // This fixes ISSUE-011 where the card was hidden in filtered view.
+                        if (selectedDomainFilter != null) {
+                            val filteredLifeState = domainLifeStateMap[selectedDomainFilter]
+                            if (filteredLifeState != null && filteredLifeState.currentSituation.isNotBlank() &&
+                                selectedDomainFilter !in dismissedUnderstandingCards) {
+                                item(key = "understanding_filtered") {
+                                    DomainUnderstandingCard(
+                                        lifeState = filteredLifeState,
+                                        onDismiss = {
+                                            dismissedUnderstandingCards =
+                                                dismissedUnderstandingCards + selectedDomainFilter
+                                        },
+                                    )
+                                }
+                            }
+                        }
+
                         domainGroups.forEach { (domain, objects) ->
                             if (selectedDomainFilter == null) {
+                                val isExpanded = domain in expandedDomains
                                 stickyHeader(key = "header_$domain") {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
                                         modifier = androidx.compose.ui.Modifier
                                             .fillMaxWidth()
                                             .background(MaterialTheme.colorScheme.background)
-                                            .padding(
-                                                top = Spacing.sm,
-                                                bottom = Spacing.xs,
-                                            ),
+                                            .clickable {
+                                                expandedDomains = if (isExpanded) {
+                                                    expandedDomains - domain
+                                                } else {
+                                                    expandedDomains + domain
+                                                }
+                                            }
+                                            .padding(top = Spacing.sm, bottom = Spacing.xs),
                                     ) {
                                         Icon(
                                             imageVector = domainIcon(domain),
                                             contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                                            modifier = androidx.compose.ui.Modifier.size(16.dp),
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = androidx.compose.ui.Modifier.size(20.dp),
                                         )
                                         Spacer(modifier = androidx.compose.ui.Modifier.width(Spacing.xs))
                                         Text(
                                             text = domain,
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            style = MaterialTheme.typography.titleSmall,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            modifier = androidx.compose.ui.Modifier.weight(1f),
                                         )
-                                        Spacer(modifier = androidx.compose.ui.Modifier.width(Spacing.xs))
                                         Text(
                                             text = "${objects.size}",
                                             style = MaterialTheme.typography.labelSmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                         )
+                                        Spacer(modifier = androidx.compose.ui.Modifier.width(Spacing.xs))
+                                        Icon(
+                                            imageVector = if (isExpanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                                            contentDescription = if (isExpanded) "Collapse" else "Expand",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = androidx.compose.ui.Modifier.size(18.dp),
+                                        )
+                                    }
+                                }
+                                // Domain understanding card — only shown when domain is expanded.
+                                val lifeState = domainLifeStateMap[domain]
+                                if (isExpanded && lifeState != null && lifeState.currentSituation.isNotBlank() &&
+                                    domain !in dismissedUnderstandingCards) {
+                                    item(key = "understanding_$domain") {
+                                        DomainUnderstandingCard(
+                                            lifeState = lifeState,
+                                            onDismiss = {
+                                                dismissedUnderstandingCards =
+                                                    dismissedUnderstandingCards + domain
+                                            },
+                                        )
                                     }
                                 }
                             }
-                            items(objects, key = { it.objectId }) { obj ->
-                                val statusColor = when (obj.status) {
-                                    ObjectStatus.ACTIVE -> StatusActive
-                                    ObjectStatus.RENEWAL_DUE -> StatusRenewalDue
-                                    ObjectStatus.EXPIRED -> StatusExpired
-                                    ObjectStatus.ARCHIVED -> StatusArchived
-                                    ObjectStatus.DRAFT -> MaterialTheme.colorScheme.onSurfaceVariant
+                            // Objects only show when domain is expanded (or when a domain filter is active).
+                            if (selectedDomainFilter != null || domain in expandedDomains) {
+                                items(objects, key = { it.objectId }) { obj ->
+                                    val statusColor = when (obj.status) {
+                                        ObjectStatus.ACTIVE -> StatusActive
+                                        ObjectStatus.RENEWAL_DUE -> StatusRenewalDue
+                                        ObjectStatus.EXPIRED -> StatusExpired
+                                        ObjectStatus.ARCHIVED -> StatusArchived
+                                        ObjectStatus.INACTIVE -> MaterialTheme.colorScheme.onSurfaceVariant
+                                        ObjectStatus.DRAFT -> MaterialTheme.colorScheme.onSurfaceVariant
+                                    }
+                                    val statusLabel = when (obj.status) {
+                                        ObjectStatus.ACTIVE -> "Active"
+                                        ObjectStatus.RENEWAL_DUE -> "Renewal due"
+                                        ObjectStatus.EXPIRED -> "Expired"
+                                        ObjectStatus.ARCHIVED -> "Archived"
+                                        ObjectStatus.INACTIVE -> "Inactive"
+                                        ObjectStatus.DRAFT -> "Draft"
+                                    }
+                                    val isSelected = obj.objectId in uiState.selectedObjectIds
+                                    ObjectCard(
+                                        title = obj.title,
+                                        subtitle = obj.description,
+                                        objectType = obj.objectType,
+                                        domain = obj.domain,
+                                        statusLabel = statusLabel,
+                                        statusColor = statusColor,
+                                        icon = domainIcon(obj.domain),
+                                        isSelected = isSelected,
+                                        onClick = {
+                                            if (uiState.isSelecting) {
+                                                viewModel.toggleObjectSelection(obj.objectId)
+                                            } else {
+                                                onNavigateToObject(obj.objectId)
+                                            }
+                                        },
+                                        onLongClick = {
+                                            if (!uiState.isSelecting) {
+                                                viewModel.enterSelectionMode(obj.objectId)
+                                            }
+                                        },
+                                    )
                                 }
-                                val statusLabel = when (obj.status) {
-                                    ObjectStatus.ACTIVE -> "Active"
-                                    ObjectStatus.RENEWAL_DUE -> "Renewal due"
-                                    ObjectStatus.EXPIRED -> "Expired"
-                                    ObjectStatus.ARCHIVED -> "Archived"
-                                    ObjectStatus.DRAFT -> "Draft"
-                                }
-                                val isSelected = obj.objectId in uiState.selectedObjectIds
-                                ObjectCard(
-                                    title = obj.title,
-                                    subtitle = obj.description,
-                                    objectType = obj.objectType,
-                                    domain = obj.domain,
-                                    statusLabel = statusLabel,
-                                    statusColor = statusColor,
-                                    icon = domainIcon(obj.domain),
-                                    isSelected = isSelected,
-                                    onClick = {
-                                        if (uiState.isSelecting) {
-                                            viewModel.toggleObjectSelection(obj.objectId)
-                                        } else {
-                                            onNavigateToObject(obj.objectId)
-                                        }
-                                    },
-                                    onLongClick = {
-                                        if (!uiState.isSelecting) {
-                                            viewModel.enterSelectionMode(obj.objectId)
-                                        }
-                                    },
-                                )
                             }
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DomainUnderstandingCard(
+    lifeState: DomainLifeState,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+        ),
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(Spacing.md)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    text = "Current Understanding",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f),
+                )
+                Icon(
+                    imageVector = Icons.Outlined.Close,
+                    contentDescription = "Dismiss",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .size(16.dp)
+                        .clickable(onClick = onDismiss),
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = lifeState.currentSituation,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            if (lifeState.recommendations.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "→ ${lifeState.recommendations.first()}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }

@@ -1,0 +1,139 @@
+{
+  "objectType": "Marriage",
+  "domain": "Major Life Events",
+  "displayName": "Marriage",
+  "icon": "favorite_border",
+  "description": "Marriage or wedding record",
+  "schemaVersion": 1,
+  "fields": [
+    {
+      "fieldId": "spouseName",
+      "displayName": "Spouse / Partner Name",
+      "fieldType": "TEXT",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [
+        {
+          "ruleType": "REQUIRED",
+          "message": "Spouse or partner name is required"
+        }
+      ],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "marriageDate",
+      "displayName": "Marriage Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "location",
+      "displayName": "Location",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "City, venue or address",
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "status",
+      "displayName": "Status",
+      "fieldType": "ENUM",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "enumValues": [
+        "PLANNED",
+        "COMPLETED",
+        "SEPARATED",
+        "DIVORCED"
+      ],
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "notes",
+      "displayName": "Notes",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    }
+  ],
+  "lifecycle": {
+    "initialState": "ACTIVE",
+    "states": [
+      {
+        "stateId": "ACTIVE",
+        "displayName": "Active"
+      },
+      {
+        "stateId": "COMPLETED",
+        "displayName": "Completed"
+      },
+      {
+        "stateId": "ARCHIVED",
+        "displayName": "Archived",
+        "isFinal": true
+      }
+    ],
+    "transitions": [
+      {
+        "fromState": "ACTIVE",
+        "toState": "COMPLETED",
+        "trigger": "COMPLETED",
+        "label": "Married"
+      },
+      {
+        "fromState": "COMPLETED",
+        "toState": "ARCHIVED",
+        "trigger": "ARCHIVE",
+        "label": "Archive"
+      }
+    ]
+  },
+  "reminderRules": [],
+  "searchConfig": {
+    "primaryFields": [
+      "spouseName",
+      "location"
+    ],
+    "fullTextFields": [
+      "spouseName",
+      "location",
+      "notes"
+    ],
+    "filterableFields": [
+      "status"
+    ]
+  },
+  "aiConfig": {
+    "extractableFields": [
+      "spouseName",
+      "marriageDate",
+      "location",
+      "status"
+    ],
+    "aiWritableFields": [],
+    "classificationHints": [
+      "marriage",
+      "wedding",
+      "married",
+      "spouse"
+    ]
+  }
+}

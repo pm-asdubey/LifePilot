@@ -67,6 +67,7 @@ class ExtractMetadataUseCaseTest {
         coEvery { schemaEngine.getSchema("passport") } returns passportSchema
         coEvery { aiProvider.complete(any(), any(), any()) } returns AiCompletionResult.Success(
             content = """{"passport_number": "AB123456", "expiry_date": "2029-01-15"}""",
+            model = "test-model",
         )
 
         val result = useCase("passport", "Sample OCR text with passport info")
@@ -84,6 +85,7 @@ class ExtractMetadataUseCaseTest {
         coEvery { schemaEngine.getSchema("passport") } returns passportSchema
         coEvery { aiProvider.complete(any(), any(), any()) } returns AiCompletionResult.Success(
             content = """{"passport_number": "XY987654"}""",
+            model = "test-model",
         )
 
         val result = useCase("passport", "Partial OCR text")
@@ -133,6 +135,7 @@ class ExtractMetadataUseCaseTest {
         coEvery { schemaEngine.getSchema("passport") } returns passportSchema
         coEvery { aiProvider.complete(any(), any(), any()) } returns AiCompletionResult.Success(
             content = "```json\n{\"passport_number\": \"CD567890\"}\n```",
+            model = "test-model",
         )
 
         val result = useCase("passport", "OCR text")
@@ -156,6 +159,7 @@ class ExtractMetadataUseCaseTest {
         coEvery { schemaEngine.getSchema("passport") } returns schemaWithNumber
         coEvery { aiProvider.complete(any(), any(), any()) } returns AiCompletionResult.Success(
             content = """{"passport_number": "GH445566", "page_count": 32}""",
+            model = "test-model",
         )
 
         val result = useCase("passport", "OCR text")
@@ -178,6 +182,7 @@ class ExtractMetadataUseCaseTest {
         coEvery { schemaEngine.getSchema("passport") } returns schemaWithNonExtractable
         coEvery { aiProvider.complete(any(), any(), any()) } returns AiCompletionResult.Success(
             content = """{"passport_number": "EF111222", "internal_note": "ignored"}""",
+            model = "test-model",
         )
 
         val result = useCase("passport", "OCR text")

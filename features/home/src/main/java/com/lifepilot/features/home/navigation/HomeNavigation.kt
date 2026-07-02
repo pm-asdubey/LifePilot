@@ -1,6 +1,7 @@
 package com.lifepilot.features.home.navigation
 
 import androidx.navigation.NavController
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import com.lifepilot.features.home.ui.HomeScreen
@@ -18,10 +19,25 @@ fun NavGraphBuilder.homeScreen(navController: NavController) {
                 navController.navigate("object/$objectId/verify/$versionId")
             },
             onNavigateToPlanner = {
-                navController.navigate("planner")
+                // Use the same tab-switch pattern as the bottom nav bar so
+                // predictive back on Android 16 treats Planner as a peer tab,
+                // not a child of Home.
+                navController.navigate("planner") {
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
+                }
             },
             onNavigateToSettings = {
-                navController.navigate("settings")
+                navController.navigate("settings") {
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
+                }
             },
         )
     }

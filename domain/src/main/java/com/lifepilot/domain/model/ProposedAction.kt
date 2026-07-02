@@ -21,6 +21,7 @@ sealed class AiProposal {
         val objectTitle: String,
         val objectType: String,
         val fields: List<ProposedField>,
+        val proposalSensitivity: FieldSensitivity = FieldSensitivity.STANDARD,
     ) : AiProposal()
 
     /** Create a new Goal in Planner. Routed through PlanningEngine after approval. */
@@ -63,6 +64,26 @@ sealed class AiProposal {
         val domain: String,
         val title: String,
         val initialNotes: String?,
+        val fields: List<ProposedField> = emptyList(),
+        val attachedFilePath: String? = null,
+        val attachedFileName: String? = null,
+        val attachedMimeType: String? = null,
+    ) : AiProposal()
+
+    /** Update the status of an existing record (cancelled, expired, ended, closed). */
+    data class StatusUpdate(
+        override val proposalId: String,
+        override val summary: String,
+        val objectId: String,
+        val objectTitle: String,
+        val newStatus: ObjectStatus,
+    ) : AiProposal()
+
+    /** A coordinated multi-step action plan requiring user approval before execution. */
+    data class ActionPlan(
+        override val proposalId: String,
+        override val summary: String,
+        val plan: com.lifepilot.domain.model.ActionPlan,
     ) : AiProposal()
 }
 

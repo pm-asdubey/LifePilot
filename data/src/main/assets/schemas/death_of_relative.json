@@ -1,0 +1,126 @@
+{
+  "objectType": "DeathOfRelative",
+  "domain": "Major Life Events",
+  "displayName": "Death of Relative",
+  "icon": "sentiment_very_dissatisfied",
+  "description": "Record of the passing of a relative or loved one",
+  "schemaVersion": 1,
+  "fields": [
+    {
+      "fieldId": "deceasedName",
+      "displayName": "Deceased Name",
+      "fieldType": "TEXT",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [
+        {
+          "ruleType": "REQUIRED",
+          "message": "Deceased name is required"
+        }
+      ],
+      "sensitivityLevel": "SENSITIVE"
+    },
+    {
+      "fieldId": "relationship",
+      "displayName": "Relationship",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "e.g. Father, Grandmother, Uncle",
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "dateOfDeath",
+      "displayName": "Date of Passing",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "location",
+      "displayName": "Location",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "City or address",
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "notes",
+      "displayName": "Notes",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    }
+  ],
+  "lifecycle": {
+    "initialState": "ACTIVE",
+    "states": [
+      {
+        "stateId": "ACTIVE",
+        "displayName": "Active"
+      },
+      {
+        "stateId": "ARCHIVED",
+        "displayName": "Archived",
+        "isFinal": true
+      }
+    ],
+    "transitions": [
+      {
+        "fromState": "ACTIVE",
+        "toState": "ARCHIVED",
+        "trigger": "ARCHIVE",
+        "label": "Archive"
+      }
+    ]
+  },
+  "reminderRules": [],
+  "searchConfig": {
+    "primaryFields": [
+      "deceasedName",
+      "relationship"
+    ],
+    "fullTextFields": [
+      "deceasedName",
+      "relationship",
+      "location",
+      "notes"
+    ],
+    "filterableFields": [
+      "relationship"
+    ]
+  },
+  "aiConfig": {
+    "extractableFields": [
+      "deceasedName",
+      "relationship",
+      "dateOfDeath",
+      "location"
+    ],
+    "aiWritableFields": [],
+    "classificationHints": [
+      "death",
+      "passed away",
+      "demise",
+      "funeral",
+      "relative died"
+    ]
+  }
+}

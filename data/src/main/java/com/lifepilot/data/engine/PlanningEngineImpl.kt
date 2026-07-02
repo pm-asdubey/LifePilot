@@ -140,6 +140,25 @@ class PlanningEngineImpl @Inject constructor(
         task
     }
 
+    override suspend fun updateTask(
+        taskId: String,
+        title: String,
+        description: String?,
+        dueDate: LocalDate?,
+        priority: com.lifepilot.domain.model.TaskPriority,
+    ): Result<Task> = runCatching {
+        val existing = taskRepository.getTaskById(taskId) ?: error("Task $taskId not found")
+        val updated = existing.copy(
+            title = title.trim(),
+            description = description?.trim()?.takeIf { it.isNotBlank() },
+            dueDate = dueDate,
+            priority = priority,
+        )
+        taskRepository.updateTask(updated)
+        Timber.d("PlanningEngine: updated task $taskId")
+        updated
+    }
+
     override suspend fun completeTask(taskId: String): Result<Unit> = runCatching {
         taskRepository.updateTaskStatus(taskId, TaskStatus.COMPLETED)
         // Recalculate parent goal progress
@@ -151,14 +170,24 @@ class PlanningEngineImpl @Inject constructor(
         Timber.d("PlanningEngine: completed task $taskId")
     }
 
+    override suspend fun uncompleteTask(taskId: String): Result<Unit> = runCatching {
+        taskRepository.updateTaskStatus(taskId, TaskStatus.PENDING)
+        val task = taskRepository.getTaskById(taskId)
+        val goalId = task?.goalId
+        if (goalId != null) {
+            recalculateGoalProgress(goalId)
+        }
+        Timber.d("PlanningEngine: reopened task $taskId")
+    }
+
     override suspend fun deleteTask(taskId: String): Result<Unit> = runCatching {
         taskRepository.deleteTask(taskId)
     }
 
     override suspend fun rescheduleTask(taskId: String, newDueDate: LocalDate): Result<Unit> = runCatching {
-        // TaskRepository doesn't have updateDueDate yet — this is a best-effort no-op for now.
-        // Will be wired once TaskRepository.updateDueDate is added.
-        Timber.w("PlanningEngine: rescheduleTask not yet fully implemented")
+        val existing = taskRepository.getTaskById(taskId) ?: error("Task $taskId not found")
+        taskRepository.updateTask(existing.copy(dueDate = newDueDate))
+        Timber.d("PlanningEngine: rescheduled task $taskId to $newDueDate")
     }
 
     override suspend fun generateTasksForGoal(goalId: String): Result<List<Task>> = runCatching {

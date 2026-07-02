@@ -54,13 +54,10 @@ class ConversationRepositoryImpl @Inject constructor(
 
     override suspend fun saveMessage(message: StoredMessage) {
         conversationDao.insertMessage(message.toEntity())
-        // Touch conversation updated_at
-        val conversation = conversationDao.getConversationById(message.conversationId)
-        if (conversation != null) {
-            conversationDao.upsertConversation(
-                conversation.copy(updatedAt = message.timestamp.toEpochMilli())
-            )
-        }
+        // Use a targeted UPDATE (not INSERT OR REPLACE) — upsertConversation triggers
+        // a CASCADE DELETE on chat_messages because SQLite's INSERT OR REPLACE deletes
+        // the old row before inserting the new one, which cascades to child rows.
+        conversationDao.touchConversation(message.conversationId, message.timestamp.toEpochMilli())
     }
 
     override suspend fun getMessages(conversationId: String): List<StoredMessage> =

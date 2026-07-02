@@ -15,8 +15,12 @@
       "searchable": true,
       "aiExtractable": true,
       "validationRules": [
-        { "ruleType": "REQUIRED", "message": "Company name is required" }
-      ]
+        {
+          "ruleType": "REQUIRED",
+          "message": "Company name is required"
+        }
+      ],
+      "sensitivityLevel": "SENSITIVE"
     },
     {
       "fieldId": "jobTitle",
@@ -27,18 +31,23 @@
       "searchable": true,
       "aiExtractable": true,
       "validationRules": [
-        { "ruleType": "REQUIRED", "message": "Job title is required" }
-      ]
+        {
+          "ruleType": "REQUIRED",
+          "message": "Job title is required"
+        }
+      ],
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "joiningDate",
-      "displayName": "Joining Date",
+      "fieldId": "startDate",
+      "displayName": "Start Date",
       "fieldType": "DATE",
       "required": false,
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "endDate",
@@ -48,17 +57,19 @@
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "salary",
       "displayName": "Salary",
-      "fieldType": "CURRENCY",
+      "fieldType": "TEXT",
       "required": false,
       "editable": true,
       "searchable": false,
       "aiExtractable": false,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "SENSITIVE"
     },
     {
       "fieldId": "location",
@@ -68,7 +79,8 @@
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "employmentType",
@@ -78,51 +90,127 @@
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "enumValues": ["FULL_TIME", "PART_TIME", "CONTRACT", "FREELANCE", "INTERN"],
-      "validationRules": []
+      "enumValues": [
+        "FULL_TIME",
+        "PART_TIME",
+        "CONTRACT",
+        "FREELANCE",
+        "INTERN"
+      ],
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "interview_status",
-      "displayName": "Interview Status",
-      "fieldType": "ENUM",
+      "fieldId": "employeeId",
+      "displayName": "Employee ID",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "SENSITIVE"
+    },
+    {
+      "fieldId": "manager",
+      "displayName": "Manager",
+      "fieldType": "TEXT",
       "required": false,
       "editable": true,
       "searchable": false,
       "aiExtractable": false,
-      "enumValues": ["NOT_STARTED", "IN_PROGRESS", "OFFER_RECEIVED", "REJECTED", "ACCEPTED"],
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "career_notes",
-      "displayName": "Career Notes",
-      "fieldType": "MULTILINE_TEXT",
+      "fieldId": "team",
+      "displayName": "Team",
+      "fieldType": "TEXT",
       "required": false,
       "editable": true,
-      "searchable": true,
+      "searchable": false,
       "aiExtractable": false,
-      "aiWritable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "workMode",
+      "displayName": "Work Mode",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "placeholder": "Remote / Hybrid / On-site",
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "exitReason",
+      "displayName": "Exit Reason",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     }
   ],
   "lifecycle": {
     "states": [
-      { "stateId": "ACTIVE", "displayName": "Current" },
-      { "stateId": "ARCHIVED", "displayName": "Past", "isFinal": true }
+      {
+        "stateId": "ACTIVE",
+        "displayName": "Current"
+      },
+      {
+        "stateId": "ARCHIVED",
+        "displayName": "Past",
+        "isFinal": true
+      }
     ],
     "transitions": [
-      { "fromState": "ACTIVE", "toState": "ARCHIVED", "trigger": "ENDED", "label": "Job Ended" }
+      {
+        "fromState": "ACTIVE",
+        "toState": "ARCHIVED",
+        "trigger": "ENDED",
+        "label": "Job Ended"
+      }
     ],
     "initialState": "ACTIVE"
   },
   "reminderRules": [],
   "searchConfig": {
-    "primaryFields": ["companyName", "jobTitle"],
-    "fullTextFields": ["companyName", "jobTitle"],
-    "filterableFields": ["employmentType", "location"]
+    "primaryFields": [
+      "companyName",
+      "jobTitle"
+    ],
+    "fullTextFields": [
+      "companyName",
+      "jobTitle"
+    ],
+    "filterableFields": [
+      "employmentType",
+      "location",
+      "workMode"
+    ]
   },
   "aiConfig": {
-    "extractableFields": ["companyName", "jobTitle", "joiningDate", "endDate", "location", "employmentType"],
-    "aiWritableFields": ["career_notes", "interview_status"],
-    "classificationHints": ["offer letter", "employment contract", "appointment letter", "salary slip"]
+    "extractableFields": [
+      "companyName",
+      "jobTitle",
+      "startDate",
+      "endDate",
+      "location",
+      "employmentType",
+      "employeeId"
+    ],
+    "aiWritableFields": [],
+    "classificationHints": [
+      "offer letter",
+      "employment contract",
+      "appointment letter",
+      "salary slip"
+    ]
   }
 }

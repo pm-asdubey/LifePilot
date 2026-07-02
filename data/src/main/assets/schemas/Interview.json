@@ -1,0 +1,219 @@
+{
+  "objectType": "Interview",
+  "domain": "Employment",
+  "displayName": "Job Interview",
+  "icon": "work_outline",
+  "description": "Job application and interview tracking",
+  "schemaVersion": 1,
+  "fields": [
+    {
+      "fieldId": "company",
+      "displayName": "Company",
+      "fieldType": "TEXT",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [
+        {
+          "ruleType": "REQUIRED",
+          "message": "Company name is required"
+        }
+      ],
+      "sensitivityLevel": "SENSITIVE"
+    },
+    {
+      "fieldId": "role",
+      "displayName": "Role",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "applicationDate",
+      "displayName": "Application Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "YYYY-MM-DD",
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "currentStage",
+      "displayName": "Current Stage",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "placeholder": "e.g. Phone Screen, Technical, Offer",
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "nextInterviewDate",
+      "displayName": "Next Interview Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "YYYY-MM-DD",
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "recruiterName",
+      "displayName": "Recruiter Name",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "recruiterEmail",
+      "displayName": "Recruiter Email",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "compensation",
+      "displayName": "Compensation",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "placeholder": "Expected or offered CTC",
+      "sensitivityLevel": "STANDARD"
+    }
+  ],
+  "lifecycle": {
+    "states": [
+      {
+        "stateId": "APPLIED",
+        "displayName": "Applied"
+      },
+      {
+        "stateId": "IN_PROGRESS",
+        "displayName": "In Progress"
+      },
+      {
+        "stateId": "OFFER_RECEIVED",
+        "displayName": "Offer Received"
+      },
+      {
+        "stateId": "ACCEPTED",
+        "displayName": "Accepted",
+        "isFinal": true
+      },
+      {
+        "stateId": "REJECTED",
+        "displayName": "Rejected",
+        "isFinal": true
+      },
+      {
+        "stateId": "WITHDRAWN",
+        "displayName": "Withdrawn",
+        "isFinal": true
+      }
+    ],
+    "transitions": [
+      {
+        "fromState": "APPLIED",
+        "toState": "IN_PROGRESS",
+        "trigger": "INTERVIEW_SCHEDULED",
+        "label": "Interview Scheduled"
+      },
+      {
+        "fromState": "IN_PROGRESS",
+        "toState": "OFFER_RECEIVED",
+        "trigger": "OFFER_RECEIVED",
+        "label": "Offer Received"
+      },
+      {
+        "fromState": "OFFER_RECEIVED",
+        "toState": "ACCEPTED",
+        "trigger": "ACCEPTED",
+        "label": "Accepted"
+      },
+      {
+        "fromState": "IN_PROGRESS",
+        "toState": "REJECTED",
+        "trigger": "REJECTED",
+        "label": "Rejected"
+      },
+      {
+        "fromState": "OFFER_RECEIVED",
+        "toState": "REJECTED",
+        "trigger": "DECLINED",
+        "label": "Declined"
+      },
+      {
+        "fromState": "APPLIED",
+        "toState": "WITHDRAWN",
+        "trigger": "WITHDRAWN",
+        "label": "Withdrawn"
+      }
+    ],
+    "initialState": "APPLIED"
+  },
+  "reminderRules": [
+    {
+      "ruleId": "interview_reminder_1d",
+      "triggerField": "nextInterviewDate",
+      "offsetDays": -1,
+      "priority": "HIGH",
+      "title": "Interview Tomorrow",
+      "messageTemplate": "You have an interview tomorrow. Prepare well!"
+    }
+  ],
+  "searchConfig": {
+    "primaryFields": [
+      "company",
+      "role"
+    ],
+    "fullTextFields": [
+      "company",
+      "role"
+    ],
+    "filterableFields": [
+      "currentStage"
+    ]
+  },
+  "aiConfig": {
+    "extractableFields": [
+      "company",
+      "role",
+      "applicationDate",
+      "nextInterviewDate",
+      "recruiterName",
+      "recruiterEmail"
+    ],
+    "classificationHints": [
+      "job offer",
+      "interview",
+      "recruiter",
+      "application",
+      "JD",
+      "job description"
+    ],
+    "aiWritableFields": []
+  }
+}

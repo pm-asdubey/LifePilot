@@ -47,7 +47,7 @@ android {
         versionCode = appVersionCode
         versionName = appVersionName
 
-        testInstrumentationRunner = "com.lifepilot.app.HiltTestRunner"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         vectorDrawables {
             useSupportLibrary = true
@@ -107,7 +107,12 @@ android {
 
     packaging {
         resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += setOf(
+                "/META-INF/{AL2.0,LGPL2.1}",
+                "META-INF/LICENSE.md",
+                "META-INF/LICENSE-notice.md",
+                "META-INF/NOTICE.md",
+            )
         }
     }
 }
@@ -153,8 +158,10 @@ dependencies {
     debugImplementation(libs.leakcanary)
 
     testImplementation(libs.bundles.testing.unit)
+    androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.bundles.testing.android)
     androidTestImplementation(libs.hilt.testing)
     androidTestImplementation(libs.compose.ui.test.junit4)
+    androidTestImplementation(libs.uiautomator)
     kspAndroidTest(libs.hilt.compiler)
 }

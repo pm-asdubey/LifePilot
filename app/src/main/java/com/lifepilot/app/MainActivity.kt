@@ -4,10 +4,11 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.fragment.app.FragmentActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -18,16 +19,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.lifepilot.app.BuildConfig
 import com.lifepilot.app.navigation.LifePilotNavHost
 import com.lifepilot.app.security.BiometricLockScreen
 import com.lifepilot.data.security.BiometricAuthManager
+import com.lifepilot.data.security.BiometricAuthState
 import com.lifepilot.designsystem.theme.LifePilotTheme
 import dagger.hilt.android.AndroidEntryPoint
 import timber.log.Timber
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
 
     @Inject
     lateinit var biometricAuthManager: BiometricAuthManager
@@ -42,6 +45,9 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        if (BuildConfig.DEBUG) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
         requestNotificationPermissionIfNeeded()
 
         val deepLinkObjectId = intent?.getStringExtra("objectId")
@@ -54,9 +60,16 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        if (biometricAuthManager.isBiometricLockEnabled()) {
+    override fun onPause() {
+        super.onPause()
+        // Reset auth when the app genuinely goes to background (not when a biometric
+        // dialog opens — that also triggers onPause/onResume which caused an infinite
+        // loop where the BiometricPrompt result was immediately discarded).
+        // We only reset if the user was already authenticated so that the first-launch
+        // auth flow is not interrupted.
+        if (biometricAuthManager.isBiometricLockEnabled() &&
+            biometricAuthManager.authState.value is BiometricAuthState.Authenticated
+        ) {
             biometricAuthManager.resetAuthState()
         }
     }

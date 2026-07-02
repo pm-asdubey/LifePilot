@@ -1,0 +1,169 @@
+{
+  "objectType": "MedicalReport",
+  "domain": "Health",
+  "displayName": "Medical Report",
+  "icon": "biotech",
+  "description": "Lab test, radiology report, prescription, or clinical report",
+  "schemaVersion": 1,
+  "fields": [
+    {
+      "fieldId": "reportType",
+      "displayName": "Report Type",
+      "fieldType": "ENUM",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "enumValues": [
+        "Blood Test", "Urine Test", "X-Ray", "MRI", "CT Scan",
+        "Ultrasound", "ECG", "Prescription", "Discharge Summary",
+        "Pathology Report", "Eye Test", "Dental Report", "Other"
+      ],
+      "validationRules": [
+        { "ruleType": "REQUIRED", "message": "Report type is required" }
+      ],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "reportDate",
+      "displayName": "Report Date",
+      "fieldType": "DATE",
+      "required": true,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [
+        { "ruleType": "REQUIRED", "message": "Report date is required" }
+      ],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "doctorName",
+      "displayName": "Doctor / Physician",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "hospitalOrLab",
+      "displayName": "Hospital / Lab / Clinic",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "diagnosis",
+      "displayName": "Diagnosis / Findings",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "SENSITIVE"
+    },
+    {
+      "fieldId": "keyValues",
+      "displayName": "Key Values / Measurements",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "SENSITIVE"
+    },
+    {
+      "fieldId": "referredBy",
+      "displayName": "Referred By",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "followUpDate",
+      "displayName": "Follow-up Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "linkedCondition",
+      "displayName": "Related Condition",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "SENSITIVE"
+    },
+    {
+      "fieldId": "notes",
+      "displayName": "Notes",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    }
+  ],
+  "lifecycle": {
+    "states": [
+      { "stateId": "ACTIVE", "displayName": "On File" },
+      { "stateId": "FOLLOW_UP_DUE", "displayName": "Follow-up Due" },
+      { "stateId": "ARCHIVED", "displayName": "Archived", "isFinal": true }
+    ],
+    "transitions": [
+      { "fromState": "ACTIVE", "toState": "FOLLOW_UP_DUE", "trigger": "FOLLOW_UP_APPROACHING", "label": "Follow-up Approaching" },
+      { "fromState": "FOLLOW_UP_DUE", "toState": "ACTIVE", "trigger": "FOLLOW_UP_DONE", "label": "Follow-up Done" },
+      { "fromState": "ACTIVE", "toState": "ARCHIVED", "trigger": "ARCHIVED", "label": "Archived" }
+    ],
+    "initialState": "ACTIVE"
+  },
+  "reminderRules": [
+    {
+      "ruleId": "medical_followup",
+      "triggerField": "followUpDate",
+      "offsetDays": -7,
+      "priority": "HIGH",
+      "title": "Medical Follow-up Due",
+      "messageTemplate": "Follow-up appointment due in 7 days for your {reportType}."
+    }
+  ],
+  "searchConfig": {
+    "primaryFields": ["reportType", "reportDate"],
+    "fullTextFields": ["reportType", "doctorName", "hospitalOrLab", "diagnosis", "linkedCondition"],
+    "filterableFields": ["reportType", "hospitalOrLab"]
+  },
+  "aiConfig": {
+    "extractableFields": [
+      "reportType", "reportDate", "doctorName", "hospitalOrLab",
+      "diagnosis", "keyValues", "referredBy", "followUpDate"
+    ],
+    "classificationHints": [
+      "lab report", "blood test", "test report", "radiology", "MRI", "CT scan",
+      "X-ray", "prescription", "discharge summary", "pathology", "medical report",
+      "clinical report", "diagnostic report", "doctor report"
+    ],
+    "aiWritableFields": []
+  }
+}

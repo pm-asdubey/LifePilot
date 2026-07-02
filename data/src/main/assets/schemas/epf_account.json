@@ -1,0 +1,164 @@
+{
+  "objectType": "EPFAccount",
+  "domain": "Finance",
+  "displayName": "EPF Account",
+  "icon": "savings",
+  "description": "Employees' Provident Fund account (EPFO)",
+  "schemaVersion": 1,
+  "fields": [
+    {
+      "fieldId": "uan",
+      "displayName": "UAN (Universal Account Number)",
+      "fieldType": "TEXT",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [
+        { "ruleType": "REQUIRED", "message": "UAN is required" },
+        { "ruleType": "REGEX", "parameter": "^\\d{12}$", "message": "UAN must be a 12-digit number" }
+      ],
+      "sensitivityLevel": "SENSITIVE"
+    },
+    {
+      "fieldId": "memberName",
+      "displayName": "Member Name",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "currentEmployer",
+      "displayName": "Current Employer",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "epfoOffice",
+      "displayName": "EPFO Regional Office",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "employeeContribution",
+      "displayName": "Employee Contribution Rate",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "employerContribution",
+      "displayName": "Employer Contribution Rate",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "totalBalance",
+      "displayName": "Total Balance (approx.)",
+      "fieldType": "NUMBER",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "SENSITIVE"
+    },
+    {
+      "fieldId": "lastPassbookDate",
+      "displayName": "Last Passbook Update",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "linkedBankAccount",
+      "displayName": "Linked Bank Account (for withdrawal)",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "nominee",
+      "displayName": "Nominee",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "notes",
+      "displayName": "Notes",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    }
+  ],
+  "lifecycle": {
+    "states": [
+      { "stateId": "ACTIVE", "displayName": "Active" },
+      { "stateId": "INACTIVE", "displayName": "Inactive (No contributions)" },
+      { "stateId": "TRANSFER_PENDING", "displayName": "Transfer Pending" },
+      { "stateId": "WITHDRAWN", "displayName": "Withdrawn", "isFinal": true }
+    ],
+    "transitions": [
+      { "fromState": "ACTIVE", "toState": "INACTIVE", "trigger": "EMPLOYMENT_ENDED", "label": "Employment Ended" },
+      { "fromState": "INACTIVE", "toState": "ACTIVE", "trigger": "NEW_EMPLOYMENT", "label": "New Employment" },
+      { "fromState": "INACTIVE", "toState": "TRANSFER_PENDING", "trigger": "TRANSFER_INITIATED", "label": "Transfer Initiated" },
+      { "fromState": "TRANSFER_PENDING", "toState": "ACTIVE", "trigger": "TRANSFER_COMPLETE", "label": "Transfer Complete" },
+      { "fromState": "INACTIVE", "toState": "WITHDRAWN", "trigger": "WITHDRAWAL_COMPLETE", "label": "Withdrawn" }
+    ],
+    "initialState": "ACTIVE"
+  },
+  "reminderRules": [],
+  "searchConfig": {
+    "primaryFields": ["uan", "memberName"],
+    "fullTextFields": ["memberName", "currentEmployer"],
+    "filterableFields": ["currentEmployer"]
+  },
+  "aiConfig": {
+    "extractableFields": ["uan", "memberName", "currentEmployer", "epfoOffice"],
+    "classificationHints": [
+      "EPF", "provident fund", "UAN", "EPFO", "PF account",
+      "employee provident fund", "PF passbook", "PF balance"
+    ],
+    "aiWritableFields": []
+  }
+}

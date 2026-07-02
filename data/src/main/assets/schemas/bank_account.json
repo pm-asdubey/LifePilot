@@ -1,5 +1,5 @@
 {
-  "objectType": "bank_account",
+  "objectType": "BankAccount",
   "domain": "Finance",
   "displayName": "Bank Account",
   "icon": "account_balance",
@@ -7,7 +7,7 @@
   "schemaVersion": 1,
   "fields": [
     {
-      "fieldId": "bank_name",
+      "fieldId": "bankName",
       "displayName": "Bank / Institution",
       "fieldType": "TEXT",
       "required": true,
@@ -20,42 +20,31 @@
           "parameter": "2",
           "message": "Bank name required"
         }
-      ]
+      ],
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "account_type",
+      "fieldId": "accountType",
       "displayName": "Account Type",
-      "fieldType": "ENUM",
+      "fieldType": "TEXT",
       "required": true,
       "editable": true,
       "searchable": true,
       "aiExtractable": true,
       "validationRules": [],
-      "enumValues": [
-        "CURRENT",
-        "SAVINGS",
-        "JOINT",
-        "BUSINESS",
-        "FIXED_DEPOSIT",
-        "OTHER"
-      ]
+      "sensitivityLevel": "SENSITIVE"
     },
     {
-      "fieldId": "account_number_last4",
-      "displayName": "Last 4 Digits",
+      "fieldId": "accountNumber",
+      "displayName": "Account Number",
       "fieldType": "TEXT",
       "required": false,
       "editable": true,
       "searchable": false,
       "aiExtractable": false,
-      "validationRules": [
-        {
-          "ruleType": "max_length",
-          "parameter": "4",
-          "message": "Enter last 4 digits only"
-        }
-      ],
-      "hint": "For identification only \u2014 do not store full account number"
+      "validationRules": [],
+      "hint": "For identification only \u2014 do not store full account number if concerned about privacy",
+      "sensitivityLevel": "SENSITIVE"
     },
     {
       "fieldId": "branch",
@@ -65,57 +54,60 @@
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "ifsc_sort_swift",
-      "displayName": "IFSC / Sort Code / SWIFT",
+      "fieldId": "ifscCode",
+      "displayName": "IFSC Code",
       "fieldType": "TEXT",
       "required": false,
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "SENSITIVE"
     },
     {
-      "fieldId": "currency",
-      "displayName": "Currency",
+      "fieldId": "linkedEmail",
+      "displayName": "Linked Email",
       "fieldType": "TEXT",
       "required": false,
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "notes",
-      "displayName": "Notes",
-      "fieldType": "MULTILINE_TEXT",
+      "fieldId": "nomineeName",
+      "displayName": "Nominee Name",
+      "fieldType": "TEXT",
       "required": false,
       "editable": true,
-      "searchable": true,
+      "searchable": false,
       "aiExtractable": false,
-      "aiWritable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     }
   ],
   "lifecycle": {
-    "initialState": "active",
+    "initialState": "ACTIVE",
     "states": [
       {
-        "stateId": "active",
+        "stateId": "ACTIVE",
         "displayName": "Active"
       },
       {
-        "stateId": "closed",
+        "stateId": "CLOSED",
         "displayName": "Closed",
         "isFinal": true
       }
     ],
     "transitions": [
       {
-        "fromState": "active",
-        "toState": "closed",
+        "fromState": "ACTIVE",
+        "toState": "CLOSED",
         "trigger": "CLOSE_ACCOUNT",
         "label": "Close Account"
       }
@@ -124,25 +116,24 @@
   "reminderRules": [],
   "searchConfig": {
     "primaryFields": [
-      "bank_name",
-      "account_type"
+      "bankName",
+      "accountType"
     ],
     "fullTextFields": [
-      "bank_name",
-      "account_type",
+      "bankName",
+      "accountType",
       "branch"
     ],
     "filterableFields": [
-      "account_type"
+      "accountType"
     ]
   },
   "aiConfig": {
     "extractableFields": [
-      "bank_name",
-      "account_type",
+      "bankName",
+      "accountType",
       "branch",
-      "ifsc_sort_swift",
-      "currency"
+      "ifscCode"
     ],
     "classificationHints": [
       "bank statement",
@@ -151,8 +142,6 @@
       "passbook",
       "cheque book"
     ],
-    "aiWritableFields": [
-      "notes"
-    ]
+    "aiWritableFields": []
   }
 }

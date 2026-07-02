@@ -15,7 +15,8 @@
       "searchable": true,
       "aiExtractable": true,
       "validationRules": [],
-      "placeholder": "Netflix, Spotify, etc."
+      "placeholder": "Netflix, Spotify, etc.",
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "plan_name",
@@ -26,7 +27,8 @@
       "searchable": false,
       "aiExtractable": true,
       "validationRules": [],
-      "placeholder": "Premium, Basic, etc."
+      "placeholder": "Premium, Basic, etc.",
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "billing_cycle",
@@ -42,7 +44,8 @@
         "QUARTERLY",
         "ANNUALLY",
         "WEEKLY"
-      ]
+      ],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "amount",
@@ -53,7 +56,8 @@
       "searchable": false,
       "aiExtractable": true,
       "validationRules": [],
-      "placeholder": "9.99"
+      "placeholder": "9.99",
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "currency",
@@ -64,7 +68,8 @@
       "searchable": false,
       "aiExtractable": true,
       "validationRules": [],
-      "placeholder": "USD"
+      "placeholder": "USD",
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "renewal_date",
@@ -75,7 +80,8 @@
       "searchable": false,
       "aiExtractable": true,
       "validationRules": [],
-      "placeholder": "YYYY-MM-DD"
+      "placeholder": "YYYY-MM-DD",
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "status",
@@ -91,7 +97,8 @@
         "PAUSED",
         "CANCELLED",
         "TRIAL"
-      ]
+      ],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "payment_method",
@@ -102,7 +109,8 @@
       "searchable": false,
       "aiExtractable": false,
       "validationRules": [],
-      "placeholder": "Visa ending 1234"
+      "placeholder": "Visa ending 1234",
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "notes",
@@ -113,7 +121,8 @@
       "searchable": true,
       "aiExtractable": false,
       "aiWritable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     }
   ],
   "lifecycle": {

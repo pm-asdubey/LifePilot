@@ -1,0 +1,173 @@
+{
+  "objectType": "Certificate",
+  "domain": "Identity",
+  "displayName": "Certificate",
+  "icon": "verified",
+  "description": "Birth, marriage, death, degree, or other certificates",
+  "schemaVersion": 1,
+  "fields": [
+    {
+      "fieldId": "certificateType",
+      "displayName": "Certificate Type",
+      "fieldType": "ENUM",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "enumValues": [
+        "BIRTH",
+        "MARRIAGE",
+        "DEATH",
+        "DEGREE",
+        "COURSE",
+        "EXPERIENCE",
+        "OTHER"
+      ],
+      "validationRules": [
+        {
+          "ruleType": "REQUIRED",
+          "message": "Certificate type is required"
+        }
+      ],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "certificateNumber",
+      "displayName": "Certificate Number",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "SENSITIVE"
+    },
+    {
+      "fieldId": "issuedTo",
+      "displayName": "Issued To",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "issuedBy",
+      "displayName": "Issued By",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "issueDate",
+      "displayName": "Issue Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "expiryDate",
+      "displayName": "Expiry / Renewal Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "notes",
+      "displayName": "Notes",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    }
+  ],
+  "lifecycle": {
+    "initialState": "ACTIVE",
+    "states": [
+      {
+        "stateId": "ACTIVE",
+        "displayName": "Valid"
+      },
+      {
+        "stateId": "EXPIRED",
+        "displayName": "Expired"
+      },
+      {
+        "stateId": "ARCHIVED",
+        "displayName": "Archived",
+        "isFinal": true
+      }
+    ],
+    "transitions": [
+      {
+        "fromState": "ACTIVE",
+        "toState": "EXPIRED",
+        "trigger": "EXPIRED",
+        "label": "Expired"
+      },
+      {
+        "fromState": "ACTIVE",
+        "toState": "ARCHIVED",
+        "trigger": "ARCHIVE",
+        "label": "Archive"
+      },
+      {
+        "fromState": "EXPIRED",
+        "toState": "ARCHIVED",
+        "trigger": "ARCHIVE",
+        "label": "Archive"
+      }
+    ]
+  },
+  "reminderRules": [],
+  "searchConfig": {
+    "primaryFields": [
+      "certificateType",
+      "issuedTo"
+    ],
+    "fullTextFields": [
+      "certificateType",
+      "issuedTo",
+      "issuedBy",
+      "certificateNumber"
+    ],
+    "filterableFields": [
+      "certificateType"
+    ]
+  },
+  "aiConfig": {
+    "extractableFields": [
+      "certificateType",
+      "certificateNumber",
+      "issuedTo",
+      "issuedBy",
+      "issueDate",
+      "expiryDate"
+    ],
+    "aiWritableFields": [],
+    "classificationHints": [
+      "certificate",
+      "birth certificate",
+      "marriage certificate",
+      "death certificate",
+      "degree certificate"
+    ]
+  }
+}

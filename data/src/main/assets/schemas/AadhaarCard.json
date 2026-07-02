@@ -1,0 +1,130 @@
+{
+  "objectType": "AadhaarCard",
+  "domain": "Identity",
+  "displayName": "Aadhaar Card",
+  "icon": "badge",
+  "description": "Government-issued Aadhaar identity document",
+  "schemaVersion": 1,
+  "fields": [
+    {
+      "fieldId": "aadhaarNumber",
+      "displayName": "Aadhaar Number",
+      "fieldType": "TEXT",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [
+        {
+          "ruleType": "REQUIRED",
+          "message": "Aadhaar number is required"
+        }
+      ],
+      "sensitivityLevel": "SENSITIVE"
+    },
+    {
+      "fieldId": "fullName",
+      "displayName": "Full Name",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "dateOfBirth",
+      "displayName": "Date of Birth",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "SENSITIVE"
+    },
+    {
+      "fieldId": "address",
+      "displayName": "Address",
+      "fieldType": "MULTILINE_TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "gender",
+      "displayName": "Gender",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "linkedMobile",
+      "displayName": "Linked Mobile",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "SENSITIVE"
+    }
+  ],
+  "lifecycle": {
+    "states": [
+      {
+        "stateId": "ACTIVE",
+        "displayName": "Active"
+      },
+      {
+        "stateId": "ARCHIVED",
+        "displayName": "Archived",
+        "isFinal": true
+      }
+    ],
+    "transitions": [
+      {
+        "fromState": "ACTIVE",
+        "toState": "ARCHIVED",
+        "trigger": "ARCHIVE",
+        "label": "Archive"
+      }
+    ],
+    "initialState": "ACTIVE"
+  },
+  "reminderRules": [],
+  "searchConfig": {
+    "primaryFields": [
+      "aadhaarNumber",
+      "fullName"
+    ],
+    "fullTextFields": [
+      "fullName"
+    ],
+    "filterableFields": []
+  },
+  "aiConfig": {
+    "extractableFields": [
+      "aadhaarNumber",
+      "fullName",
+      "dateOfBirth",
+      "address",
+      "gender"
+    ],
+    "classificationHints": [
+      "aadhaar",
+      "UIDAI",
+      "unique identification",
+      "aadhaar card"
+    ],
+    "aiWritableFields": []
+  }
+}

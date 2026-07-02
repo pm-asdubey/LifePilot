@@ -1,5 +1,5 @@
 {
-  "objectType": "education",
+  "objectType": "Education",
   "domain": "Education",
   "displayName": "Education Record",
   "icon": "school",
@@ -20,7 +20,8 @@
           "parameter": "2",
           "message": "Institution name required"
         }
-      ]
+      ],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "degree",
@@ -30,97 +31,92 @@
       "editable": true,
       "searchable": true,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "field_of_study",
+      "fieldId": "fieldOfStudy",
       "displayName": "Field of Study",
       "fieldType": "TEXT",
       "required": false,
       "editable": true,
       "searchable": true,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "start_date",
+      "fieldId": "startDate",
       "displayName": "Start Date",
       "fieldType": "DATE",
       "required": false,
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "end_date",
-      "displayName": "End / Graduation Date",
-      "fieldType": "DATE",
-      "required": false,
-      "editable": true,
-      "searchable": false,
-      "aiExtractable": true,
-      "validationRules": []
-    },
-    {
-      "fieldId": "grade",
-      "displayName": "Grade / GPA",
+      "fieldId": "graduationYear",
+      "displayName": "Graduation Year",
       "fieldType": "TEXT",
       "required": false,
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "certificate_number",
-      "displayName": "Certificate / Transcript Number",
+      "fieldId": "cgpa",
+      "displayName": "CGPA / Grade",
       "fieldType": "TEXT",
       "required": false,
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "notes",
-      "displayName": "Notes",
-      "fieldType": "MULTILINE_TEXT",
+      "fieldId": "rollNumber",
+      "displayName": "Roll Number / Enrolment ID",
+      "fieldType": "TEXT",
       "required": false,
       "editable": true,
-      "searchable": true,
-      "aiExtractable": false,
-      "aiWritable": true,
-      "validationRules": []
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     }
   ],
   "lifecycle": {
-    "initialState": "active",
+    "initialState": "ACTIVE",
     "states": [
       {
-        "stateId": "active",
+        "stateId": "ACTIVE",
         "displayName": "Active"
       },
       {
-        "stateId": "completed",
+        "stateId": "COMPLETED",
         "displayName": "Completed"
       },
       {
-        "stateId": "archived",
+        "stateId": "ARCHIVED",
         "displayName": "Archived",
         "isFinal": true
       }
     ],
     "transitions": [
       {
-        "fromState": "active",
-        "toState": "completed",
+        "fromState": "ACTIVE",
+        "toState": "COMPLETED",
         "trigger": "GRADUATED",
         "label": "Mark as Completed"
       },
       {
-        "fromState": "completed",
-        "toState": "archived",
+        "fromState": "COMPLETED",
+        "toState": "ARCHIVED",
         "trigger": "ARCHIVE",
         "label": "Archive"
       }
@@ -135,31 +131,30 @@
     "fullTextFields": [
       "institution",
       "degree",
-      "field_of_study"
+      "fieldOfStudy"
     ],
     "filterableFields": [
-      "field_of_study"
+      "fieldOfStudy"
     ]
   },
   "aiConfig": {
     "extractableFields": [
       "institution",
       "degree",
-      "field_of_study",
-      "start_date",
-      "end_date",
-      "grade",
-      "certificate_number"
+      "fieldOfStudy",
+      "startDate",
+      "graduationYear",
+      "cgpa",
+      "rollNumber"
     ],
     "classificationHints": [
       "degree",
       "diploma",
       "transcript",
       "certificate",
-      "graduation"
+      "graduation",
+      "marksheet"
     ],
-    "aiWritableFields": [
-      "notes"
-    ]
+    "aiWritableFields": []
   }
 }

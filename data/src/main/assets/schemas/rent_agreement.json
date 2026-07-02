@@ -1,0 +1,203 @@
+{
+  "objectType": "RentAgreement",
+  "domain": "Property",
+  "displayName": "Rent Agreement",
+  "icon": "home_work",
+  "description": "Rental lease or tenancy agreement",
+  "schemaVersion": 1,
+  "fields": [
+    {
+      "fieldId": "propertyAddress",
+      "displayName": "Property Address",
+      "fieldType": "TEXT",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [
+        {
+          "ruleType": "REQUIRED",
+          "message": "Property address is required"
+        }
+      ],
+      "placeholder": "Full address of rented property",
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "landlordName",
+      "displayName": "Landlord Name",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "tenantName",
+      "displayName": "Tenant Name",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "monthlyRent",
+      "displayName": "Monthly Rent",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "securityDeposit",
+      "displayName": "Security Deposit",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "leaseStartDate",
+      "displayName": "Lease Start Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "leaseEndDate",
+      "displayName": "Lease End Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "noticePeriodDays",
+      "displayName": "Notice Period (days)",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "notes",
+      "displayName": "Notes",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    }
+  ],
+  "lifecycle": {
+    "initialState": "ACTIVE",
+    "states": [
+      {
+        "stateId": "ACTIVE",
+        "displayName": "Active"
+      },
+      {
+        "stateId": "EXPIRING",
+        "displayName": "Expiring Soon"
+      },
+      {
+        "stateId": "EXPIRED",
+        "displayName": "Expired"
+      },
+      {
+        "stateId": "ARCHIVED",
+        "displayName": "Archived",
+        "isFinal": true
+      }
+    ],
+    "transitions": [
+      {
+        "fromState": "ACTIVE",
+        "toState": "EXPIRING",
+        "trigger": "EXPIRING",
+        "label": "Expiring Soon"
+      },
+      {
+        "fromState": "ACTIVE",
+        "toState": "EXPIRED",
+        "trigger": "EXPIRED",
+        "label": "Expired"
+      },
+      {
+        "fromState": "EXPIRING",
+        "toState": "EXPIRED",
+        "trigger": "EXPIRED",
+        "label": "Expired"
+      },
+      {
+        "fromState": "EXPIRED",
+        "toState": "ARCHIVED",
+        "trigger": "ARCHIVE",
+        "label": "Archive"
+      }
+    ]
+  },
+  "reminderRules": [
+    {
+      "ruleId": "rent_lease_expiry",
+      "title": "Rent Agreement Expiring",
+      "triggerField": "leaseEndDate",
+      "offsetDays": -30,
+      "priority": "HIGH",
+      "messageTemplate": "Your rent agreement at {propertyAddress} ends in 30 days. Plan renewal or move."
+    }
+  ],
+  "searchConfig": {
+    "primaryFields": [
+      "propertyAddress",
+      "landlordName"
+    ],
+    "fullTextFields": [
+      "propertyAddress",
+      "landlordName",
+      "tenantName",
+      "notes"
+    ],
+    "filterableFields": []
+  },
+  "aiConfig": {
+    "extractableFields": [
+      "propertyAddress",
+      "landlordName",
+      "tenantName",
+      "leaseStartDate",
+      "leaseEndDate"
+    ],
+    "aiWritableFields": [],
+    "classificationHints": [
+      "rent agreement",
+      "lease",
+      "tenancy",
+      "rental",
+      "landlord"
+    ]
+  }
+}

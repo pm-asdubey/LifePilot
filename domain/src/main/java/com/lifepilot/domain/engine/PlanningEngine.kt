@@ -59,8 +59,20 @@ interface PlanningEngine {
         priority: com.lifepilot.domain.model.TaskPriority,
     ): Result<Task>
 
+    /** Update task fields. All values replace the current state. */
+    suspend fun updateTask(
+        taskId: String,
+        title: String,
+        description: String?,
+        dueDate: LocalDate?,
+        priority: com.lifepilot.domain.model.TaskPriority,
+    ): Result<Task>
+
     /** Mark a task as completed. Updates parent goal progress automatically. */
     suspend fun completeTask(taskId: String): Result<Unit>
+
+    /** Reopen a completed task — sets status back to PENDING and clears completedAt. */
+    suspend fun uncompleteTask(taskId: String): Result<Unit>
 
     /** Delete a task. Does not affect Life State. */
     suspend fun deleteTask(taskId: String): Result<Unit>

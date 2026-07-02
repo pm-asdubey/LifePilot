@@ -37,6 +37,11 @@ class TaskRepositoryImpl @Inject constructor(
         return task
     }
 
+    override suspend fun updateTask(task: Task) {
+        val profileId = preferenceManager.getActiveProfileId() ?: error("No active profile")
+        taskDao.updateTask(task.toEntity(profileId))
+    }
+
     override suspend fun updateTaskStatus(taskId: String, status: TaskStatus) {
         val completedAt = if (status == TaskStatus.COMPLETED) Instant.now().toEpochMilli() else null
         taskDao.updateTaskStatus(taskId, status.name, completedAt)

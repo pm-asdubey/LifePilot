@@ -3,13 +3,13 @@
   "domain": "Property",
   "displayName": "Property",
   "icon": "home",
-  "description": "Real estate property",
+  "description": "Rental property or residence",
   "schemaVersion": 1,
   "fields": [
     {
-      "fieldId": "propertyName",
-      "displayName": "Property Name",
-      "fieldType": "TEXT",
+      "fieldId": "address",
+      "displayName": "Address",
+      "fieldType": "MULTILINE_TEXT",
       "required": true,
       "editable": true,
       "searchable": true,
@@ -17,131 +17,176 @@
       "validationRules": [
         {
           "ruleType": "REQUIRED",
-          "message": "Property name is required"
+          "message": "Address is required"
         }
-      ]
+      ],
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "address",
-      "displayName": "Address",
+      "fieldId": "landlordName",
+      "displayName": "Landlord Name",
       "fieldType": "TEXT",
       "required": false,
       "editable": true,
       "searchable": true,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "propertyType",
-      "displayName": "Property Type",
-      "fieldType": "ENUM",
+      "fieldId": "landlordPhone",
+      "displayName": "Landlord Phone",
+      "fieldType": "TEXT",
       "required": false,
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "enumValues": [
-        "APARTMENT",
-        "HOUSE",
-        "LAND",
-        "COMMERCIAL",
-        "OTHER"
-      ],
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "SENSITIVE"
     },
     {
-      "fieldId": "purchaseDate",
-      "displayName": "Purchase Date",
+      "fieldId": "rentAmount",
+      "displayName": "Rent Amount",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "Monthly rent",
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "depositPaid",
+      "displayName": "Deposit Paid",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "leaseStartDate",
+      "displayName": "Lease Start Date",
       "fieldType": "DATE",
       "required": false,
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "placeholder": "YYYY-MM-DD",
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "purchasePrice",
-      "displayName": "Purchase Price",
-      "fieldType": "CURRENCY",
+      "fieldId": "leaseEndDate",
+      "displayName": "Lease End Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "YYYY-MM-DD",
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "amenities",
+      "displayName": "Amenities",
+      "fieldType": "MULTILINE_TEXT",
       "required": false,
       "editable": true,
       "searchable": false,
       "aiExtractable": false,
-      "validationRules": []
-    },
-    {
-      "fieldId": "registrationNumber",
-      "displayName": "Registration Number",
-      "fieldType": "TEXT",
-      "required": false,
-      "editable": true,
-      "searchable": true,
-      "aiExtractable": true,
-      "validationRules": []
-    },
-    {
-      "fieldId": "notes",
-      "displayName": "Notes",
-      "fieldType": "MULTILINE_TEXT",
-      "required": false,
-      "editable": true,
-      "searchable": true,
-      "aiExtractable": false,
-      "aiWritable": true,
-      "validationRules": []
+      "validationRules": [],
+      "placeholder": "Parking, gym, lift, etc.",
+      "sensitivityLevel": "STANDARD"
     }
   ],
   "lifecycle": {
     "states": [
       {
         "stateId": "ACTIVE",
-        "displayName": "Owned"
+        "displayName": "Current"
       },
       {
-        "stateId": "SOLD",
-        "displayName": "Sold",
+        "stateId": "EXPIRING",
+        "displayName": "Lease Expiring"
+      },
+      {
+        "stateId": "ENDED",
+        "displayName": "Ended",
         "isFinal": true
       }
     ],
     "transitions": [
       {
         "fromState": "ACTIVE",
-        "toState": "SOLD",
-        "trigger": "SOLD",
-        "label": "Property Sold"
+        "toState": "EXPIRING",
+        "trigger": "LEASE_EXPIRING",
+        "label": "Lease Expiring"
+      },
+      {
+        "fromState": "EXPIRING",
+        "toState": "ACTIVE",
+        "trigger": "RENEWED",
+        "label": "Lease Renewed"
+      },
+      {
+        "fromState": "EXPIRING",
+        "toState": "ENDED",
+        "trigger": "VACATED",
+        "label": "Vacated"
       }
     ],
     "initialState": "ACTIVE"
   },
-  "reminderRules": [],
+  "reminderRules": [
+    {
+      "ruleId": "lease_expiry_60d",
+      "triggerField": "leaseEndDate",
+      "offsetDays": -60,
+      "priority": "HIGH",
+      "title": "Lease Expiring Soon",
+      "messageTemplate": "Your lease expires in 60 days. Negotiate renewal or plan to move."
+    },
+    {
+      "ruleId": "lease_expiry_30d",
+      "triggerField": "leaseEndDate",
+      "offsetDays": -30,
+      "priority": "CRITICAL",
+      "title": "Lease Expiring in 30 Days",
+      "messageTemplate": "Your lease expires in 30 days. Take action immediately."
+    }
+  ],
   "searchConfig": {
     "primaryFields": [
-      "propertyName",
-      "address"
+      "address",
+      "landlordName"
     ],
     "fullTextFields": [
-      "propertyName",
-      "address"
+      "address",
+      "landlordName"
     ],
-    "filterableFields": [
-      "propertyType"
-    ]
+    "filterableFields": []
   },
   "aiConfig": {
     "extractableFields": [
-      "propertyName",
       "address",
-      "propertyType",
-      "purchaseDate",
-      "registrationNumber"
+      "landlordName",
+      "landlordPhone",
+      "rentAmount",
+      "depositPaid",
+      "leaseStartDate",
+      "leaseEndDate"
     ],
     "classificationHints": [
-      "sale deed",
-      "property registration",
-      "house deed",
-      "land record"
+      "rental agreement",
+      "lease deed",
+      "rent receipt",
+      "tenancy agreement"
     ],
-    "aiWritableFields": [
-      "notes"
-    ]
+    "aiWritableFields": []
   }
 }

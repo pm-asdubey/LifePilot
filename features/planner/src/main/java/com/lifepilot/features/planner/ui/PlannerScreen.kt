@@ -10,15 +10,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.EmojiEvents
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import com.lifepilot.designsystem.components.PlannerSkeleton
@@ -31,6 +35,9 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Tab
@@ -39,6 +46,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -74,14 +82,50 @@ fun PlannerScreen(
     viewModel: PlannerViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var selectedTab by remember { mutableIntStateOf(0) }
+    val highlightedTaskId = uiState.highlightedTaskId
+    var selectedTab by remember { mutableIntStateOf(if (highlightedTaskId.isNullOrBlank()) 0 else 1) }
     val tabs = listOf("Goals", "Tasks")
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(uiState.lastCompletedTaskId) {
+        val taskId = uiState.lastCompletedTaskId ?: return@LaunchedEffect
+        val title = uiState.lastCompletedTaskTitle ?: "Task"
+        val result = snackbarHostState.showSnackbar(
+            message = "\"$title\" completed",
+            actionLabel = "Undo",
+            withDismissAction = false,
+        )
+        when (result) {
+            SnackbarResult.ActionPerformed -> viewModel.undoComplete()
+            SnackbarResult.Dismissed -> viewModel.clearUndoState()
+        }
+    }
 
     if (uiState.showCreateGoalSheet) {
         CreateGoalSheet(
             onDismiss = viewModel::hideCreateGoalSheet,
             onCreateGoal = { title, description, deadline ->
                 viewModel.createGoal(title, description, deadline)
+            },
+        )
+    }
+
+    uiState.editingTask?.let { task ->
+        TaskDetailSheet(
+            task = task,
+            onDismiss = viewModel::closeEditTask,
+            onSave = { taskId, title, description, dueDate, priority ->
+                viewModel.saveEditedTask(taskId, title, description, dueDate, priority)
+            },
+        )
+    }
+
+    uiState.editingGoal?.let { goal ->
+        GoalDetailSheet(
+            goal = goal,
+            onDismiss = viewModel::closeEditGoal,
+            onSave = { goalId, title, description, deadline ->
+                viewModel.saveEditedGoal(goalId, title, description, deadline)
             },
         )
     }
@@ -124,6 +168,7 @@ fun PlannerScreen(
                 }
             }
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         modifier = modifier,
     ) { innerPadding ->
         if (uiState.isLoading) {
@@ -158,15 +203,16 @@ fun PlannerScreen(
                     goals = uiState.activeGoals,
                     onCompleteGoal = viewModel::completeGoal,
                     onDismissGoal = viewModel::dismissGoal,
-                    onGoalClick = { goal ->
-                        goal.objectId?.let { onNavigateToObject(it) }
-                    },
+                    onGoalClick = viewModel::openEditGoal,
                 )
                 1 -> TasksTab(
                     tasks = uiState.tasks,
                     selectedFilter = uiState.selectedTaskFilter,
+                    highlightedTaskId = highlightedTaskId,
                     onFilterChange = viewModel::setTaskFilter,
                     onCompleteTask = viewModel::completeTask,
+                    onReopenTask = viewModel::reopenTask,
+                    onEditTask = viewModel::openEditTask,
                 )
             }
         }
@@ -179,7 +225,7 @@ private fun GoalsTab(
     goals: List<Goal>,
     onCompleteGoal: (String) -> Unit,
     onDismissGoal: (String) -> Unit,
-    onGoalClick: (Goal) -> Unit,
+    onGoalClick: (Goal) -> Unit,  // opens edit sheet
     modifier: Modifier = Modifier,
 ) {
     if (goals.isEmpty()) {
@@ -317,10 +363,22 @@ private fun GoalCard(
 private fun TasksTab(
     tasks: List<Task>,
     selectedFilter: TaskFilter,
+    highlightedTaskId: String?,
     onFilterChange: (TaskFilter) -> Unit,
     onCompleteTask: (String) -> Unit,
+    onReopenTask: (String) -> Unit,
+    onEditTask: (Task) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val listState: LazyListState = rememberLazyListState()
+
+    LaunchedEffect(highlightedTaskId, tasks) {
+        val index = tasks.indexOfFirst { it.taskId == highlightedTaskId }
+        if (index >= 0) {
+            listState.animateScrollToItem(index)
+        }
+    }
+
     Column(modifier = modifier.fillMaxSize()) {
         Row(
             modifier = Modifier
@@ -369,6 +427,7 @@ private fun TasksTab(
             }
         } else {
             LazyColumn(
+                state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
                     horizontal = Spacing.sm,
@@ -377,15 +436,31 @@ private fun TasksTab(
             ) {
                 items(tasks, key = { it.taskId }) { task ->
                     val isCompleted = selectedFilter == TaskFilter.COMPLETED
+                    val isHighlighted = task.taskId == highlightedTaskId
                     val priorityColor = when (task.priority) {
                         TaskPriority.URGENT -> MaterialTheme.colorScheme.error
                         TaskPriority.HIGH -> Warning
                         TaskPriority.MEDIUM -> MaterialTheme.colorScheme.primary
                         TaskPriority.LOW -> MaterialTheme.colorScheme.onSurfaceVariant
                     }
+                    if (isCompleted) {
+                        SwipeToReopenTask(onReopen = { onReopenTask(task.taskId) }) {
+                            TaskCard(
+                                title = task.title,
+                                dueDateLabel = task.dueDate?.format(DateTimeFormatter.ofPattern("MMM d")),
+                                priorityLabel = task.priority.name.lowercase()
+                                    .replaceFirstChar { it.uppercase() },
+                                priorityColor = priorityColor,
+                                isCompleted = true,
+                                onComplete = {},
+                                onClick = {},
+                                modifier = Modifier.padding(horizontal = Spacing.xs),
+                            )
+                        }
+                    } else {
                     SwipeToCompleteTask(
-                        onComplete = { if (!isCompleted) onCompleteTask(task.taskId) },
-                        enabled = !isCompleted,
+                        onComplete = { onCompleteTask(task.taskId) },
+                        enabled = true,
                     ) {
                         TaskCard(
                             title = task.title,
@@ -393,12 +468,27 @@ private fun TasksTab(
                             priorityLabel = task.priority.name.lowercase()
                                 .replaceFirstChar { it.uppercase() },
                             priorityColor = priorityColor,
-                            isCompleted = isCompleted,
-                            onComplete = { if (!isCompleted) onCompleteTask(task.taskId) },
-                            onClick = {},
-                            modifier = Modifier.padding(horizontal = Spacing.xs),
+                            isCompleted = false,
+                            onComplete = { onCompleteTask(task.taskId) },
+                            onClick = { onEditTask(task) },
+                            modifier = Modifier
+                                .padding(horizontal = Spacing.xs)
+                                .then(
+                                    if (isHighlighted) {
+                                        Modifier
+                                            .padding(Spacing.xs)
+                                            .border(
+                                                width = 2.dp,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+                                            )
+                                    } else {
+                                        Modifier
+                                    }
+                                ),
                         )
                     }
+                    } // end else (non-completed)
                 }
             }
         }
@@ -443,6 +533,47 @@ private fun SwipeToCompleteTask(
                     imageVector = Icons.Outlined.CheckCircle,
                     contentDescription = "Complete",
                     tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+        },
+    ) {
+        content()
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SwipeToReopenTask(
+    onReopen: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    val haptic = LocalHapticFeedback.current
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            if (value == SwipeToDismissBoxValue.EndToStart) {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onReopen()
+                true
+            } else {
+                false
+            }
+        }
+    )
+    SwipeToDismissBox(
+        state = dismissState,
+        enableDismissFromStartToEnd = false,
+        enableDismissFromEndToStart = true,
+        backgroundContent = {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = Spacing.sm),
+                contentAlignment = Alignment.CenterEnd,
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Refresh,
+                    contentDescription = "Reopen",
+                    tint = MaterialTheme.colorScheme.secondary,
                 )
             }
         },

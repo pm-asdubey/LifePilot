@@ -34,6 +34,7 @@ data class MetadataFieldDefinition(
     val editable: Boolean = true,
     val searchable: Boolean = true,
     val aiExtractable: Boolean = true,
+    val sensitivityLevel: String = "STANDARD",
     val validationRules: List<ValidationRule> = emptyList(),
     val enumValues: List<String> = emptyList(),
     val hint: String? = null,

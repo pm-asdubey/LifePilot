@@ -1,10 +1,12 @@
 package com.lifepilot.features.planner.viewmodel
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lifepilot.data.repository.PreferenceManager
 import com.lifepilot.domain.engine.PlanningEngine
 import com.lifepilot.domain.model.Task
+import com.lifepilot.domain.model.TaskPriority
 import com.lifepilot.domain.model.TaskStatus
 import com.lifepilot.domain.repository.GoalRepository
 import com.lifepilot.domain.repository.TaskRepository
@@ -24,17 +26,22 @@ import javax.inject.Inject
 
 @HiltViewModel
 class PlannerViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
     private val goalRepository: GoalRepository,
     private val taskRepository: TaskRepository,
     private val planningEngine: PlanningEngine,
     private val preferenceManager: PreferenceManager,
 ) : ViewModel() {
 
+    private val selectedTaskId: String? = savedStateHandle["taskId"]
+
     private val _uiState = MutableStateFlow(PlannerUiState())
     val uiState: StateFlow<PlannerUiState> = _uiState.asStateFlow()
 
     // Drives filter changes without spawning new collectors.
-    private val selectedFilter = MutableStateFlow(TaskFilter.ALL)
+    private val selectedFilter = MutableStateFlow(
+        if (selectedTaskId.isNullOrBlank()) TaskFilter.ALL else TaskFilter.ALL
+    )
 
     init {
         observeData()
@@ -59,12 +66,14 @@ class PlannerViewModel @Inject constructor(
                     _uiState.update { it.copy(isLoading = false, error = e.message) }
                 }
                 .collect { (goals, tasks, filter) ->
+                    val effectiveFilter = if (!selectedTaskId.isNullOrBlank()) TaskFilter.ALL else filter
                     _uiState.update { state ->
                         state.copy(
                             isLoading = false,
                             activeGoals = goals,
-                            tasks = filterTasks(tasks, filter),
-                            selectedTaskFilter = filter,
+                            tasks = filterTasks(tasks, effectiveFilter),
+                            selectedTaskFilter = effectiveFilter,
+                            highlightedTaskId = selectedTaskId,
                             error = null,
                         )
                     }
@@ -115,9 +124,82 @@ class PlannerViewModel @Inject constructor(
     }
 
     fun completeTask(taskId: String) {
+        val title = _uiState.value.tasks.find { it.taskId == taskId }?.title
         viewModelScope.launch {
             planningEngine.completeTask(taskId)
+                .onSuccess {
+                    _uiState.update { it.copy(lastCompletedTaskId = taskId, lastCompletedTaskTitle = title) }
+                }
                 .onFailure { e -> Timber.e(e, "Failed to complete task: $taskId") }
+        }
+    }
+
+    fun undoComplete() {
+        val taskId = _uiState.value.lastCompletedTaskId ?: return
+        _uiState.update { it.copy(lastCompletedTaskId = null, lastCompletedTaskTitle = null) }
+        viewModelScope.launch {
+            planningEngine.uncompleteTask(taskId)
+                .onFailure { e -> Timber.e(e, "Failed to reopen task: $taskId") }
+        }
+    }
+
+    fun clearUndoState() {
+        _uiState.update { it.copy(lastCompletedTaskId = null, lastCompletedTaskTitle = null) }
+    }
+
+    fun reopenTask(taskId: String) {
+        viewModelScope.launch {
+            planningEngine.uncompleteTask(taskId)
+                .onFailure { e -> Timber.e(e, "Failed to reopen task: $taskId") }
+        }
+    }
+
+    fun openEditTask(task: Task) {
+        _uiState.update { it.copy(editingTask = task) }
+    }
+
+    fun closeEditTask() {
+        _uiState.update { it.copy(editingTask = null) }
+    }
+
+    fun saveEditedTask(
+        taskId: String,
+        title: String,
+        description: String?,
+        dueDate: LocalDate?,
+        priority: TaskPriority,
+    ) {
+        if (title.isBlank()) return
+        viewModelScope.launch {
+            planningEngine.updateTask(taskId, title, description, dueDate, priority)
+                .onFailure { e -> Timber.e(e, "Failed to update task: $taskId") }
+            _uiState.update { it.copy(editingTask = null) }
+        }
+    }
+
+    fun openEditGoal(goal: com.lifepilot.domain.model.Goal) {
+        _uiState.update { it.copy(editingGoal = goal) }
+    }
+
+    fun closeEditGoal() {
+        _uiState.update { it.copy(editingGoal = null) }
+    }
+
+    fun saveEditedGoal(
+        goalId: String,
+        title: String,
+        description: String?,
+        deadline: LocalDate?,
+    ) {
+        if (title.isBlank()) return
+        viewModelScope.launch {
+            planningEngine.updateGoal(
+                goalId = goalId,
+                title = title,
+                description = description,
+                deadline = deadline,
+            ).onFailure { e -> Timber.e(e, "Failed to update goal: $goalId") }
+            _uiState.update { it.copy(editingGoal = null) }
         }
     }
 

@@ -1,0 +1,125 @@
+{
+  "objectType": "Person",
+  "domain": "People",
+  "displayName": "Person",
+  "icon": "person",
+  "description": "Contact or person in your life",
+  "schemaVersion": 1,
+  "fields": [
+    {
+      "fieldId": "fullName",
+      "displayName": "Full Name",
+      "fieldType": "TEXT",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [
+        {
+          "ruleType": "REQUIRED",
+          "message": "Full name is required"
+        }
+      ],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "relationship",
+      "displayName": "Relationship",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": false,
+      "validationRules": [],
+      "placeholder": "e.g. Friend, Colleague, Family",
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "phone",
+      "displayName": "Phone",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "SENSITIVE"
+    },
+    {
+      "fieldId": "city",
+      "displayName": "City",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "occupation",
+      "displayName": "Occupation",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    }
+  ],
+  "lifecycle": {
+    "states": [
+      {
+        "stateId": "ACTIVE",
+        "displayName": "Active"
+      },
+      {
+        "stateId": "ARCHIVED",
+        "displayName": "Archived",
+        "isFinal": true
+      }
+    ],
+    "transitions": [
+      {
+        "fromState": "ACTIVE",
+        "toState": "ARCHIVED",
+        "trigger": "ARCHIVE",
+        "label": "Archive"
+      }
+    ],
+    "initialState": "ACTIVE"
+  },
+  "reminderRules": [],
+  "searchConfig": {
+    "primaryFields": [
+      "fullName",
+      "relationship"
+    ],
+    "fullTextFields": [
+      "fullName",
+      "relationship",
+      "city"
+    ],
+    "filterableFields": [
+      "relationship",
+      "city"
+    ]
+  },
+  "aiConfig": {
+    "extractableFields": [
+      "fullName",
+      "phone",
+      "city",
+      "occupation"
+    ],
+    "classificationHints": [
+      "contact",
+      "person",
+      "colleague",
+      "friend",
+      "family"
+    ],
+    "aiWritableFields": []
+  }
+}

@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.lifepilot.data.database.LifePilotDatabase
 import com.lifepilot.data.database.dao.ConversationDao
 import com.lifepilot.data.database.dao.DocumentDao
+import com.lifepilot.data.database.dao.DomainLifeStateDao
 import com.lifepilot.data.database.dao.EventDao
 import com.lifepilot.data.database.dao.GoalDao
 import com.lifepilot.data.database.dao.MetadataDao
@@ -33,7 +34,11 @@ object DatabaseModule {
             LifePilotDatabase::class.java,
             LifePilotDatabase.DATABASE_NAME,
         )
-            .addMigrations(LifePilotDatabase.MIGRATION_1_2, LifePilotDatabase.MIGRATION_2_3)
+            .addMigrations(
+                LifePilotDatabase.MIGRATION_1_2,
+                LifePilotDatabase.MIGRATION_2_3,
+                LifePilotDatabase.MIGRATION_3_4,
+            )
             .build()
 
     @Provides
@@ -68,4 +73,7 @@ object DatabaseModule {
 
     @Provides
     fun provideConversationDao(db: LifePilotDatabase): ConversationDao = db.conversationDao()
+
+    @Provides
+    fun provideDomainLifeStateDao(db: LifePilotDatabase): DomainLifeStateDao = db.domainLifeStateDao()
 }

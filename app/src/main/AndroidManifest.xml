@@ -21,7 +21,8 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.LifePilot"
         android:hardwareAccelerated="true"
-        android:largeHeap="true">
+        android:largeHeap="true"
+        android:enableOnBackInvokedCallback="true">
 
         <provider
             android:name="androidx.core.content.FileProvider"

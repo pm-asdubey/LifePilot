@@ -16,6 +16,7 @@ class OfflineAiProvider @Inject constructor() : AiProvider {
         systemPrompt: String,
         userMessage: String,
         conversationHistory: List<AiMessage>,
+        readTimeoutSeconds: Long,
     ): AiCompletionResult {
         val lower = userMessage.lowercase()
         val context = systemPrompt

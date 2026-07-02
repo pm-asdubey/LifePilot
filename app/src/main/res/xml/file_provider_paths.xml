@@ -4,6 +4,10 @@
     <external-files-path
         name="camera_captures"
         path="camera_captures/" />
+    <!-- Camera captures fallback when external storage is unavailable -->
+    <files-path
+        name="camera_captures_internal"
+        path="camera_captures/" />
     <!-- Internal files for documents copied from content:// URIs -->
     <files-path
         name="documents"

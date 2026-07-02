@@ -7,6 +7,7 @@ interface AiProvider {
         systemPrompt: String,
         userMessage: String,
         conversationHistory: List<AiMessage>,
+        readTimeoutSeconds: Long = 60,
     ): AiCompletionResult
 }
 

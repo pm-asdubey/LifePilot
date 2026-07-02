@@ -20,6 +20,7 @@ data class LifeObject(
 enum class ObjectStatus {
     DRAFT,
     ACTIVE,
+    INACTIVE,
     RENEWAL_DUE,
     EXPIRED,
     ARCHIVED,

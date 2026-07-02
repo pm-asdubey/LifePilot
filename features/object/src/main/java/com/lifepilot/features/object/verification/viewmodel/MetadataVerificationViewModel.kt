@@ -126,6 +126,15 @@ class MetadataVerificationViewModel @Inject constructor(
 
             _state.update { it.copy(isSaving = true) }
             try {
+                // Remove any previously extracted metadata for this object before
+                // persisting the new set. This prevents duplicate rows when a
+                // document is re-uploaded or re-processed (ISSUE-025).
+                val existingExtracted = metadataRepository.getMetadataByObject(objectId)
+                    .filter { it.source == MetadataSource.AI_EXTRACTED || it.source == MetadataSource.OCR }
+                existingExtracted.forEach {
+                    metadataRepository.deleteMetadata(it.metadataId)
+                }
+
                 val entries = acceptedFields.map { suggestion ->
                     MetadataEntry(
                         metadataId = UUID.randomUUID().toString(),

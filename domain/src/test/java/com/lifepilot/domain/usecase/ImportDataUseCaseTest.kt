@@ -82,7 +82,7 @@ class ImportDataUseCaseTest {
             objectRepository.createObject("profile-1", "Passport", "Identity", "My Passport", null)
         } returns createdObject
         coEvery { objectRepository.updateObjectStatus(any(), any()) } returns Unit
-        coEvery { metadataRepository.upsertMetadataBatch(any()) } returns Unit
+        coEvery { metadataRepository.upsertMetadataBatch(any()) } returns emptyList()
 
         val result = useCase(json, "profile-1")
 
@@ -148,7 +148,7 @@ class ImportDataUseCaseTest {
         coEvery {
             objectRepository.createObject("profile-1", "BrokenType", "Identity", "Bad Object", null)
         } throws RuntimeException("Unknown type")
-        coEvery { metadataRepository.upsertMetadataBatch(any()) } returns Unit
+        coEvery { metadataRepository.upsertMetadataBatch(any()) } returns emptyList()
 
         val result = useCase(json, "profile-1")
 

@@ -1,0 +1,107 @@
+{
+  "objectType": "PanCard",
+  "domain": "Identity",
+  "displayName": "PAN Card",
+  "icon": "badge",
+  "description": "Permanent Account Number card issued by Income Tax Department",
+  "schemaVersion": 1,
+  "fields": [
+    {
+      "fieldId": "panNumber",
+      "displayName": "PAN Number",
+      "fieldType": "TEXT",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [
+        {
+          "ruleType": "REQUIRED",
+          "message": "PAN number is required"
+        }
+      ],
+      "sensitivityLevel": "SENSITIVE"
+    },
+    {
+      "fieldId": "fullName",
+      "displayName": "Full Name",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "dateOfBirth",
+      "displayName": "Date of Birth",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "SENSITIVE"
+    },
+    {
+      "fieldId": "fatherName",
+      "displayName": "Father's Name",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    }
+  ],
+  "lifecycle": {
+    "states": [
+      {
+        "stateId": "ACTIVE",
+        "displayName": "Active"
+      },
+      {
+        "stateId": "ARCHIVED",
+        "displayName": "Archived",
+        "isFinal": true
+      }
+    ],
+    "transitions": [
+      {
+        "fromState": "ACTIVE",
+        "toState": "ARCHIVED",
+        "trigger": "ARCHIVE",
+        "label": "Archive"
+      }
+    ],
+    "initialState": "ACTIVE"
+  },
+  "reminderRules": [],
+  "searchConfig": {
+    "primaryFields": [
+      "panNumber",
+      "fullName"
+    ],
+    "fullTextFields": [
+      "fullName"
+    ],
+    "filterableFields": []
+  },
+  "aiConfig": {
+    "extractableFields": [
+      "panNumber",
+      "fullName",
+      "dateOfBirth",
+      "fatherName"
+    ],
+    "classificationHints": [
+      "PAN",
+      "permanent account number",
+      "income tax",
+      "PAN card"
+    ],
+    "aiWritableFields": []
+  }
+}

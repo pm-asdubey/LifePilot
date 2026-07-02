@@ -1,0 +1,190 @@
+{
+  "objectType": "Visa",
+  "domain": "Identity",
+  "displayName": "Visa",
+  "icon": "flight_takeoff",
+  "description": "Travel visa or entry permit for a foreign country",
+  "schemaVersion": 1,
+  "fields": [
+    {
+      "fieldId": "country",
+      "displayName": "Country",
+      "fieldType": "TEXT",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [
+        {
+          "ruleType": "REQUIRED",
+          "message": "Country is required"
+        }
+      ],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "visaType",
+      "displayName": "Visa Type",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "visaNumber",
+      "displayName": "Visa Number / Reference",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "SENSITIVE"
+    },
+    {
+      "fieldId": "entryType",
+      "displayName": "Entry Type",
+      "fieldType": "ENUM",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "enumValues": ["Single Entry", "Double Entry", "Multiple Entry"],
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "issueDate",
+      "displayName": "Issue Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "expiryDate",
+      "displayName": "Expiry Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "validityDays",
+      "displayName": "Max Stay (days)",
+      "fieldType": "NUMBER",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "applicationDate",
+      "displayName": "Application Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "embassy",
+      "displayName": "Embassy / Consulate",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "linkedPassport",
+      "displayName": "Stamped On Passport",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "notes",
+      "displayName": "Notes",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": false,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    }
+  ],
+  "lifecycle": {
+    "states": [
+      { "stateId": "NOT_APPLIED", "displayName": "Not Applied" },
+      { "stateId": "APPLIED", "displayName": "Applied" },
+      { "stateId": "APPROVED", "displayName": "Approved" },
+      { "stateId": "REJECTED", "displayName": "Rejected", "isFinal": false },
+      { "stateId": "ACTIVE", "displayName": "Active" },
+      { "stateId": "EXPIRED", "displayName": "Expired", "isFinal": false },
+      { "stateId": "ARCHIVED", "displayName": "Archived", "isFinal": true }
+    ],
+    "transitions": [
+      { "fromState": "NOT_APPLIED", "toState": "APPLIED", "trigger": "APPLICATION_SUBMITTED", "label": "Application Submitted" },
+      { "fromState": "APPLIED", "toState": "APPROVED", "trigger": "VISA_GRANTED", "label": "Visa Granted" },
+      { "fromState": "APPLIED", "toState": "REJECTED", "trigger": "VISA_REJECTED", "label": "Visa Rejected" },
+      { "fromState": "APPROVED", "toState": "ACTIVE", "trigger": "VISA_RECEIVED", "label": "Visa Received" },
+      { "fromState": "ACTIVE", "toState": "EXPIRED", "trigger": "EXPIRED", "label": "Expired" }
+    ],
+    "initialState": "NOT_APPLIED"
+  },
+  "reminderRules": [
+    {
+      "ruleId": "visa_expiry_60d",
+      "triggerField": "expiryDate",
+      "offsetDays": -60,
+      "priority": "MEDIUM",
+      "title": "Visa Expiring Soon",
+      "messageTemplate": "Your visa for {country} expires in 60 days."
+    },
+    {
+      "ruleId": "visa_expiry_14d",
+      "triggerField": "expiryDate",
+      "offsetDays": -14,
+      "priority": "HIGH",
+      "title": "Visa Expiring in 2 Weeks",
+      "messageTemplate": "Your visa for {country} expires in 14 days. Check if renewal or re-entry is needed."
+    }
+  ],
+  "searchConfig": {
+    "primaryFields": ["country", "visaType"],
+    "fullTextFields": ["country", "visaType", "embassy"],
+    "filterableFields": ["country", "entryType"]
+  },
+  "aiConfig": {
+    "extractableFields": [
+      "country", "visaType", "visaNumber", "entryType",
+      "issueDate", "expiryDate", "validityDays", "embassy"
+    ],
+    "classificationHints": [
+      "visa", "entry permit", "sticker visa", "e-visa", "tourist visa",
+      "business visa", "student visa", "work permit"
+    ],
+    "aiWritableFields": []
+  }
+}

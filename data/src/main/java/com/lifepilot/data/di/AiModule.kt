@@ -23,7 +23,8 @@ object AiModule {
                 systemPrompt: String,
                 userMessage: String,
                 conversationHistory: List<com.lifepilot.domain.ai.AiMessage>,
-            ) = factory.getProvider().complete(systemPrompt, userMessage, conversationHistory)
+                readTimeoutSeconds: Long,
+            ) = factory.getProvider().complete(systemPrompt, userMessage, conversationHistory, readTimeoutSeconds)
         }
     }
 }

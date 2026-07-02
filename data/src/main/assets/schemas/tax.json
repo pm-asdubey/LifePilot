@@ -15,7 +15,8 @@
       "searchable": true,
       "aiExtractable": true,
       "validationRules": [],
-      "placeholder": "2024-25"
+      "placeholder": "2024-25",
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "filing_status",
@@ -32,7 +33,8 @@
         "ASSESSED",
         "REFUND_RECEIVED",
         "TAX_DUE"
-      ]
+      ],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "filing_date",
@@ -43,7 +45,8 @@
       "searchable": false,
       "aiExtractable": true,
       "validationRules": [],
-      "placeholder": "YYYY-MM-DD"
+      "placeholder": "YYYY-MM-DD",
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "due_date",
@@ -54,7 +57,8 @@
       "searchable": false,
       "aiExtractable": true,
       "validationRules": [],
-      "placeholder": "YYYY-MM-DD"
+      "placeholder": "YYYY-MM-DD",
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "income_total",
@@ -65,7 +69,8 @@
       "searchable": false,
       "aiExtractable": true,
       "validationRules": [],
-      "placeholder": "50000"
+      "placeholder": "50000",
+      "sensitivityLevel": "SENSITIVE"
     },
     {
       "fieldId": "tax_paid",
@@ -76,7 +81,8 @@
       "searchable": false,
       "aiExtractable": true,
       "validationRules": [],
-      "placeholder": "12000"
+      "placeholder": "12000",
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "refund_amount",
@@ -87,7 +93,8 @@
       "searchable": false,
       "aiExtractable": true,
       "validationRules": [],
-      "placeholder": "0"
+      "placeholder": "0",
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "reference_number",
@@ -98,7 +105,8 @@
       "searchable": false,
       "aiExtractable": true,
       "validationRules": [],
-      "placeholder": "UTR or national reference"
+      "placeholder": "UTR or national reference",
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "notes",
@@ -109,7 +117,8 @@
       "searchable": true,
       "aiExtractable": false,
       "aiWritable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     }
   ],
   "lifecycle": {

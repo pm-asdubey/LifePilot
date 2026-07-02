@@ -15,7 +15,8 @@
       "searchable": true,
       "aiExtractable": true,
       "validationRules": [],
-      "placeholder": "Toyota, Honda, etc."
+      "placeholder": "Toyota, Honda, etc.",
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "model",
@@ -26,7 +27,8 @@
       "searchable": true,
       "aiExtractable": true,
       "validationRules": [],
-      "placeholder": "Corolla, Civic, etc."
+      "placeholder": "Corolla, Civic, etc.",
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "year",
@@ -37,7 +39,8 @@
       "searchable": false,
       "aiExtractable": true,
       "validationRules": [],
-      "placeholder": "2020"
+      "placeholder": "2020",
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "registration_number",
@@ -48,7 +51,8 @@
       "searchable": true,
       "aiExtractable": true,
       "validationRules": [],
-      "placeholder": "AB12 CDE"
+      "placeholder": "AB12 CDE",
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "vin",
@@ -59,7 +63,8 @@
       "searchable": false,
       "aiExtractable": true,
       "validationRules": [],
-      "placeholder": "17-character VIN"
+      "placeholder": "17-character VIN",
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "fuel_type",
@@ -76,7 +81,8 @@
         "ELECTRIC",
         "HYBRID",
         "LPG"
-      ]
+      ],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "insurance_expiry",
@@ -87,7 +93,8 @@
       "searchable": false,
       "aiExtractable": true,
       "validationRules": [],
-      "placeholder": "YYYY-MM-DD"
+      "placeholder": "YYYY-MM-DD",
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "mot_due",
@@ -98,7 +105,8 @@
       "searchable": false,
       "aiExtractable": true,
       "validationRules": [],
-      "placeholder": "YYYY-MM-DD"
+      "placeholder": "YYYY-MM-DD",
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "tax_due",
@@ -109,7 +117,8 @@
       "searchable": false,
       "aiExtractable": true,
       "validationRules": [],
-      "placeholder": "YYYY-MM-DD"
+      "placeholder": "YYYY-MM-DD",
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "notes",
@@ -120,7 +129,8 @@
       "searchable": true,
       "aiExtractable": false,
       "aiWritable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     }
   ],
   "lifecycle": {

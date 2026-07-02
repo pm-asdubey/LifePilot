@@ -6,6 +6,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.lifepilot.data.database.dao.ConversationDao
 import com.lifepilot.data.database.dao.DocumentDao
+import com.lifepilot.data.database.dao.DomainLifeStateDao
 import com.lifepilot.data.database.dao.EventDao
 import com.lifepilot.data.database.dao.GoalDao
 import com.lifepilot.data.database.dao.MetadataDao
@@ -19,6 +20,7 @@ import com.lifepilot.data.database.entity.ChatMessageEntity
 import com.lifepilot.data.database.entity.ConversationEntity
 import com.lifepilot.data.database.entity.DocumentEntity
 import com.lifepilot.data.database.entity.DocumentVersionEntity
+import com.lifepilot.data.database.entity.DomainLifeStateEntity
 import com.lifepilot.data.database.entity.EventEntity
 import com.lifepilot.data.database.entity.GoalEntity
 import com.lifepilot.data.database.entity.MetadataEntity
@@ -44,8 +46,9 @@ import com.lifepilot.data.database.entity.TimelineEntity
         GoalEntity::class,
         ConversationEntity::class,
         ChatMessageEntity::class,
+        DomainLifeStateEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 abstract class LifePilotDatabase : RoomDatabase() {
@@ -60,6 +63,7 @@ abstract class LifePilotDatabase : RoomDatabase() {
     abstract fun relationshipDao(): RelationshipDao
     abstract fun goalDao(): GoalDao
     abstract fun conversationDao(): ConversationDao
+    abstract fun domainLifeStateDao(): DomainLifeStateDao
 
     companion object {
         const val DATABASE_NAME = "lifepilot.db"
@@ -130,6 +134,34 @@ abstract class LifePilotDatabase : RoomDatabase() {
                 // Default UNVERIFIED preserves existing rows without data loss.
                 database.execSQL(
                     "ALTER TABLE metadata ADD COLUMN verification_status TEXT NOT NULL DEFAULT 'UNVERIFIED'"
+                )
+            }
+        }
+
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Introduce domain_life_states table for Domain Life State Architecture.
+                // Stores continuously-maintained AI understanding per domain.
+                // Composite primary key: (profile_id, domain) — one document per domain per profile.
+                database.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS domain_life_states (
+                        profile_id TEXT NOT NULL,
+                        domain TEXT NOT NULL,
+                        current_situation TEXT NOT NULL DEFAULT '',
+                        current_priorities TEXT NOT NULL DEFAULT '',
+                        known_risks TEXT NOT NULL DEFAULT '',
+                        open_questions TEXT NOT NULL DEFAULT '',
+                        recommendations TEXT NOT NULL DEFAULT '',
+                        recent_changes TEXT NOT NULL DEFAULT '',
+                        last_updated INTEGER NOT NULL DEFAULT 0,
+                        version INTEGER NOT NULL DEFAULT 0,
+                        PRIMARY KEY (profile_id, domain)
+                    )
+                    """.trimIndent()
+                )
+                database.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_domain_life_states_profile_id ON domain_life_states(profile_id)"
                 )
             }
         }

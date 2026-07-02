@@ -94,7 +94,7 @@ class LinkObjectsUseCaseTest {
         coEvery { objectRepository.getObjectById("obj-2") } returns targetObject
         coEvery { relationshipRepository.createRelationship(any(), any(), any()) } returns testRelationship
         coEvery { eventRepository.recordEvent(any(), any(), any(), any(), any()) } returns testEvent
-        coEvery { timelineRepository.addTimelineEntry(any()) } returns Unit
+        coEvery { timelineRepository.addTimelineEntry(any()) } answers { firstArg() }
 
         val result = useCase("obj-1", "obj-2", "RELATED_TO")
 

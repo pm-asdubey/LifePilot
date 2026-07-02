@@ -19,7 +19,8 @@
           "ruleType": "REQUIRED",
           "message": "Policy name is required"
         }
-      ]
+      ],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "policyNumber",
@@ -29,7 +30,8 @@
       "editable": true,
       "searchable": true,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "insurer",
@@ -39,7 +41,8 @@
       "editable": true,
       "searchable": true,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "insuranceType",
@@ -57,7 +60,8 @@
         "TRAVEL",
         "OTHER"
       ],
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "startDate",
@@ -67,48 +71,89 @@
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "expiryDate",
-      "displayName": "Expiry Date",
+      "fieldId": "renewalDate",
+      "displayName": "Renewal Date",
       "fieldType": "DATE",
       "required": false,
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "premiumAmount",
+      "fieldId": "premium",
       "displayName": "Premium Amount",
-      "fieldType": "CURRENCY",
+      "fieldType": "TEXT",
       "required": false,
       "editable": true,
       "searchable": false,
       "aiExtractable": false,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "sumInsured",
       "displayName": "Sum Insured",
-      "fieldType": "CURRENCY",
+      "fieldType": "TEXT",
       "required": false,
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "notes",
-      "displayName": "Notes",
-      "fieldType": "MULTILINE_TEXT",
+      "fieldId": "claimContact",
+      "displayName": "Claim Contact",
+      "fieldType": "TEXT",
       "required": false,
       "editable": true,
-      "searchable": true,
-      "aiExtractable": false,
-      "aiWritable": true,
-      "validationRules": []
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "Phone or email for claims",
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "hospitalNetwork",
+      "displayName": "Hospital Network",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "Cashless hospital network",
+      "sensitivityLevel": "SENSITIVE"
+    },
+    {
+      "fieldId": "idvValue",
+      "displayName": "IDV Value",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "Insured Declared Value",
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "vehicleReg",
+      "displayName": "Vehicle Registration",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "placeholder": "e.g. DL01AB1234",
+      "sensitivityLevel": "STANDARD"
     }
   ],
   "lifecycle": {
@@ -155,20 +200,20 @@
   },
   "reminderRules": [
     {
-      "ruleId": "insurance_expiry_30d",
-      "triggerField": "expiryDate",
+      "ruleId": "insurance_renewal_30d",
+      "triggerField": "renewalDate",
       "offsetDays": -30,
       "priority": "HIGH",
-      "title": "Insurance Policy Expiring",
-      "messageTemplate": "Your insurance policy expires in 30 days. Renew to maintain coverage."
+      "title": "Insurance Policy Renewal Due",
+      "messageTemplate": "Your insurance policy renews in 30 days. Review and pay premium."
     },
     {
-      "ruleId": "insurance_expiry_7d",
-      "triggerField": "expiryDate",
+      "ruleId": "insurance_renewal_7d",
+      "triggerField": "renewalDate",
       "offsetDays": -7,
       "priority": "CRITICAL",
-      "title": "Insurance Policy Expiring in 7 Days",
-      "messageTemplate": "Your insurance policy expires in 7 days. Renew immediately."
+      "title": "Insurance Renewal in 7 Days",
+      "messageTemplate": "Your insurance policy renews in 7 days. Renew immediately."
     }
   ],
   "searchConfig": {
@@ -192,8 +237,10 @@
       "insurer",
       "insuranceType",
       "startDate",
-      "expiryDate",
-      "sumInsured"
+      "renewalDate",
+      "sumInsured",
+      "claimContact",
+      "vehicleReg"
     ],
     "classificationHints": [
       "insurance policy",
@@ -201,8 +248,6 @@
       "policy schedule",
       "renewal notice"
     ],
-    "aiWritableFields": [
-      "notes"
-    ]
+    "aiWritableFields": []
   }
 }

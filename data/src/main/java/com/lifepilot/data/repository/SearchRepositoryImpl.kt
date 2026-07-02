@@ -1,5 +1,6 @@
 package com.lifepilot.data.repository
 
+import com.lifepilot.data.database.dao.ConversationDao
 import com.lifepilot.data.database.dao.DocumentDao
 import com.lifepilot.data.database.dao.GoalDao
 import com.lifepilot.data.database.dao.MetadataDao
@@ -21,6 +22,7 @@ class SearchRepositoryImpl @Inject constructor(
     private val documentDao: DocumentDao,
     private val goalDao: GoalDao,
     private val taskDao: TaskDao,
+    private val conversationDao: ConversationDao,
     private val preferenceManager: PreferenceManager,
 ) : SearchRepository {
 
@@ -50,7 +52,11 @@ class SearchRepositoryImpl @Inject constructor(
 
         // Load objects that matched via metadata but not already in object results
         val metadataOnlyIds = (metadataObjectIds - existingObjectIds).toList()
-        val metadataOnlyEntities = objectDao.getObjectsByIds(metadataOnlyIds).associateBy { it.objectId }
+        val metadataOnlyEntities = if (metadataOnlyIds.isEmpty()) {
+            emptyMap()
+        } else {
+            objectDao.getObjectsByIds(metadataOnlyIds).associateBy { it.objectId }
+        }
         val additionalObjects = metadataOnlyIds.mapNotNull { objectId ->
             val entity = metadataOnlyEntities[objectId] ?: return@mapNotNull null
             val matchingField = metadataMatches.first { it.objectId == objectId }
@@ -71,7 +77,11 @@ class SearchRepositoryImpl @Inject constructor(
         val existingObjectIds2 = (objectResults.map { it.entityId } + additionalObjects.map { it.entityId }).toSet()
 
         val docOnlyIds = (docObjectIds - existingObjectIds2).toList()
-        val docEntities = objectDao.getObjectsByIds(docOnlyIds).associateBy { it.objectId }
+        val docEntities = if (docOnlyIds.isEmpty()) {
+            emptyMap()
+        } else {
+            objectDao.getObjectsByIds(docOnlyIds).associateBy { it.objectId }
+        }
         val docObjects = docOnlyIds.mapNotNull { objectId ->
             val entity = docEntities[objectId] ?: return@mapNotNull null
             val matchingDoc = documentMatches.first { it.objectId == objectId }
@@ -123,7 +133,21 @@ class SearchRepositoryImpl @Inject constructor(
                 )
             }
 
-        return (boostedObjectResults + additionalObjects + docObjects + goalResults + taskResults)
+        // Conversation search (title + message content)
+        val conversationResults = conversationDao.searchConversations(profileId, query)
+            .map { entity ->
+                SearchResult(
+                    entityId = entity.conversationId,
+                    entityType = SearchEntityType.CONVERSATION,
+                    title = entity.title,
+                    subtitle = "Past conversation",
+                    objectType = null,
+                    domain = null,
+                    relevanceScore = computeScore(query, entity.title, null) * 0.8f,
+                )
+            }
+
+        return (boostedObjectResults + additionalObjects + docObjects + goalResults + taskResults + conversationResults)
             .sortedByDescending { it.relevanceScore }
     }
 

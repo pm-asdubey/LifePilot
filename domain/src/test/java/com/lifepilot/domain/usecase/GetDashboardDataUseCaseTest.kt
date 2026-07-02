@@ -133,6 +133,7 @@ class GetDashboardDataUseCaseTest {
 
     private fun makeTask(id: String) = Task(
         taskId = id,
+        goalId = null,
         objectId = "obj-1",
         title = "Task $id",
         description = null,
@@ -156,11 +157,12 @@ class GetDashboardDataUseCaseTest {
 
     private fun makeTimeline(id: String) = TimelineEntry(
         timelineId = id,
-        objectId = "obj-1",
-        eventId = null,
+        sourceId = "src-1",
+        sourceType = TimelineSourceType.USER_ACTION,
+        timestamp = Instant.now(),
         title = "Event $id",
         summary = null,
-        timestamp = Instant.now(),
-        sourceType = TimelineSourceType.USER_ACTION,
+        objectId = "obj-1",
+        objectType = "passport",
     )
 }

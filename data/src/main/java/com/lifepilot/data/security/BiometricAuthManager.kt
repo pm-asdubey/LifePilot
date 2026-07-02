@@ -3,7 +3,6 @@ package com.lifepilot.data.security
 import android.content.Context
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
-import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
 import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
 import com.lifepilot.data.repository.PreferenceManager
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -34,7 +33,7 @@ class BiometricAuthManager @Inject constructor(
 
     fun checkAvailability(): BiometricAvailability {
         val manager = BiometricManager.from(context)
-        return when (manager.canAuthenticate(BIOMETRIC_STRONG or BIOMETRIC_WEAK or DEVICE_CREDENTIAL)) {
+        return when (manager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)) {
             BiometricManager.BIOMETRIC_SUCCESS -> BiometricAvailability.Available
             BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> BiometricAvailability.NotEnrolled
             else -> BiometricAvailability.NotAvailable

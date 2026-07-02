@@ -1,0 +1,166 @@
+{
+  "objectType": "VoterID",
+  "domain": "Identity",
+  "displayName": "Voter ID",
+  "icon": "how_to_vote",
+  "description": "Election Commission of India voter identity card (EPIC)",
+  "schemaVersion": 1,
+  "fields": [
+    {
+      "fieldId": "epicNumber",
+      "displayName": "EPIC Number",
+      "fieldType": "TEXT",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [
+        { "ruleType": "REQUIRED", "message": "EPIC number is required" }
+      ],
+      "sensitivityLevel": "SENSITIVE"
+    },
+    {
+      "fieldId": "fullName",
+      "displayName": "Full Name",
+      "fieldType": "TEXT",
+      "required": true,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [
+        { "ruleType": "REQUIRED", "message": "Full name is required" }
+      ],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "fatherOrHusbandName",
+      "displayName": "Father's / Husband's Name",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "dateOfBirth",
+      "displayName": "Date of Birth",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "SENSITIVE"
+    },
+    {
+      "fieldId": "gender",
+      "displayName": "Gender",
+      "fieldType": "ENUM",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "enumValues": ["Male", "Female", "Other"],
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "constituencyName",
+      "displayName": "Constituency",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "stateName",
+      "displayName": "State",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": true,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "partNumber",
+      "displayName": "Part Number",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "serialNumber",
+      "displayName": "Serial Number",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "issueDate",
+      "displayName": "Issue Date",
+      "fieldType": "DATE",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    },
+    {
+      "fieldId": "registeredAddress",
+      "displayName": "Registered Address",
+      "fieldType": "TEXT",
+      "required": false,
+      "editable": true,
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
+    }
+  ],
+  "lifecycle": {
+    "states": [
+      { "stateId": "ACTIVE", "displayName": "Active" },
+      { "stateId": "CORRECTION_PENDING", "displayName": "Correction Pending" },
+      { "stateId": "ARCHIVED", "displayName": "Archived", "isFinal": true }
+    ],
+    "transitions": [
+      { "fromState": "ACTIVE", "toState": "CORRECTION_PENDING", "trigger": "CORRECTION_FILED", "label": "Correction Filed" },
+      { "fromState": "CORRECTION_PENDING", "toState": "ACTIVE", "trigger": "CORRECTION_DONE", "label": "Correction Done" }
+    ],
+    "initialState": "ACTIVE"
+  },
+  "reminderRules": [],
+  "searchConfig": {
+    "primaryFields": ["epicNumber", "fullName"],
+    "fullTextFields": ["fullName", "constituencyName", "stateName"],
+    "filterableFields": ["stateName", "constituencyName"]
+  },
+  "aiConfig": {
+    "extractableFields": [
+      "epicNumber", "fullName", "fatherOrHusbandName", "dateOfBirth",
+      "gender", "constituencyName", "stateName", "partNumber",
+      "serialNumber", "issueDate", "registeredAddress"
+    ],
+    "classificationHints": [
+      "voter id", "EPIC", "election commission", "voter identity card",
+      "voter card", "electoral photo identity"
+    ],
+    "aiWritableFields": []
+  }
+}

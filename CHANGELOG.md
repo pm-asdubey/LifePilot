@@ -4,6 +4,19 @@ All notable changes to LifePilot are documented here.
 
 ---
 
+## [Unreleased] — P0 Bug Fixes
+
+### Fixed
+
+- **ISSUE-004** — Search screen no longer crashes: replaced conditional early-return layout with stable `when`-based content and aligned placeholder/empty copy with smoke tests.
+- **ISSUE-018** — `FLAG_SECURE` verified on `MainActivity`; added `SensitiveFieldRegistry` and a `ScrubbingTree` so Timber logs never emit sensitive field values.
+- **ISSUE-055** — Added formal data-flow documentation (`docs/security/DATA_FLOW.md`) and privacy declaration (`docs/security/PRIVACY_DECLARATION.md`); `PromptBuilderImpl` now scrubs structured metadata before transmission; automated redaction tests added.
+- **ISSUE-001** — New AI conversations no longer append to the first conversation: added `startNewConversation()` and auto-clear conversation ID after an idle threshold when returning to the AI workspace.
+- **ISSUE-022** — AI status changes now work: added `STATUS_UPDATE` parsing and execution path in `HomeViewModel`, plus a `StatusUpdateCard` proposal UI.
+- **ISSUE-025** — Document re-upload no longer duplicates AI-extracted metadata: stale extracted metadata is deleted before saving verified fields, and `ObjectReasonerImpl` deduplicates any existing duplicate field rows.
+
+---
+
 ## [Unreleased] — Architecture Stabilization Pass
 
 ### Added

@@ -1,5 +1,6 @@
 package com.lifepilot.features.library.state
 
+import com.lifepilot.domain.model.DomainLifeState
 import com.lifepilot.domain.model.LifeObject
 
 enum class LibrarySortOrder(val label: String) {
@@ -25,4 +26,6 @@ data class DomainItem(
     val domain: String,
     val objectCount: Int,
     val displayName: String,
+    /** Accumulated AI understanding for this domain. Null until first AI conversation. */
+    val lifeState: DomainLifeState? = null,
 )

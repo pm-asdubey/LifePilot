@@ -1,6 +1,7 @@
 package com.lifepilot.features.home.state
 
 import com.lifepilot.domain.model.AiProposal
+import com.lifepilot.domain.model.AttachedDocumentContext
 import com.lifepilot.domain.model.Conversation
 import com.lifepilot.domain.model.Goal
 import com.lifepilot.domain.model.StoredMessage
@@ -19,10 +20,12 @@ data class HomeUiState(
     val messages: List<StoredMessage> = emptyList(),
     val inputText: String = "",
     val isAiLoading: Boolean = false,
+    val aiStatusMessage: String? = null,
     val isAiConfigured: Boolean = false,
     val error: String? = null,
     val pendingAction: AiProposal? = null,
     val pendingContextQuestion: String? = null,
+    val attachedDocumentContext: AttachedDocumentContext? = null,
     val showConversationHistory: Boolean = false,
     val allConversations: List<Conversation> = emptyList(),
 )

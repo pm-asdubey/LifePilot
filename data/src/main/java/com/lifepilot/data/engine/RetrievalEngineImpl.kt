@@ -2,9 +2,11 @@ package com.lifepilot.data.engine
 
 import com.lifepilot.domain.engine.ObjectReasoner
 import com.lifepilot.domain.engine.RetrievalEngine
+import com.lifepilot.domain.model.DomainLifeState
 import com.lifepilot.domain.model.LifeObject
 import com.lifepilot.domain.model.MetadataEntry
 import com.lifepilot.domain.model.RetrievalContext
+import com.lifepilot.domain.repository.DomainRepository
 import com.lifepilot.domain.repository.MetadataRepository
 import com.lifepilot.domain.repository.ObjectRepository
 import com.lifepilot.domain.repository.ProfileRepository
@@ -29,6 +31,7 @@ class RetrievalEngineImpl @Inject constructor(
     private val taskRepository: TaskRepository,
     private val reminderRepository: ReminderRepository,
     private val objectReasoner: ObjectReasoner,
+    private val domainRepository: DomainRepository,
 ) : RetrievalEngine {
 
     companion object {
@@ -56,6 +59,16 @@ class RetrievalEngineImpl @Inject constructor(
         }.getOrElse { emptyMap() }
 
         val allObjectIndex = allObjects.associate { it.objectId to (it.title to it.objectType) }
+        val allObjectDomainIndex = allObjects.associate { it.objectId to it.domain }
+
+        // Load domain life states — highest priority context for prompt construction.
+        val domainLifeStates: Map<String, DomainLifeState> = runCatching {
+            domainRepository.observeAllDomainLifeStates(resolvedProfileId)
+                .catch { }
+                .firstOrNull() ?: emptyList()
+        }.getOrElse { emptyList() }
+            .filter { it.currentSituation.isNotBlank() }
+            .associateBy { it.domain }
 
         // Score once — keep (objectId, score) pairs so we don't re-score below.
         val topScored = scoreObjects(userQuery, allObjects, allMetadata).take(MAX_RELEVANT_OBJECTS)
@@ -90,9 +103,11 @@ class RetrievalEngineImpl @Inject constructor(
         return RetrievalContext(
             profileId = resolvedProfileId,
             profileName = profile?.displayName,
+            domainLifeStates = domainLifeStates,
             relevantSnapshots = relevantSnapshots,
             totalObjectCount = allObjects.size,
             allObjectIndex = allObjectIndex,
+            allObjectDomainIndex = allObjectDomainIndex,
             allObjectMetadata = allMetadata,
             pendingTasks = pendingTasks,
             upcomingReminders = upcomingReminders,

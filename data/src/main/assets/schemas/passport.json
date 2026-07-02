@@ -24,7 +24,8 @@
           "parameter": "20",
           "message": "Passport number too long"
         }
-      ]
+      ],
+      "sensitivityLevel": "SENSITIVE"
     },
     {
       "fieldId": "fullName",
@@ -39,7 +40,8 @@
           "ruleType": "REQUIRED",
           "message": "Full name is required"
         }
-      ]
+      ],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "nationality",
@@ -49,7 +51,8 @@
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
       "fieldId": "dateOfBirth",
@@ -59,48 +62,52 @@
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "SENSITIVE"
     },
     {
-      "fieldId": "issueDate",
-      "displayName": "Issue Date",
+      "fieldId": "dateOfIssue",
+      "displayName": "Date of Issue",
       "fieldType": "DATE",
       "required": false,
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "expiryDate",
-      "displayName": "Expiry Date",
+      "fieldId": "dateOfExpiry",
+      "displayName": "Date of Expiry",
       "fieldType": "DATE",
       "required": false,
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "issuingCountry",
-      "displayName": "Issuing Country",
+      "fieldId": "issuingAuthority",
+      "displayName": "Issuing Authority",
       "fieldType": "TEXT",
       "required": false,
       "editable": true,
       "searchable": false,
       "aiExtractable": true,
-      "validationRules": []
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     },
     {
-      "fieldId": "notes",
-      "displayName": "Notes",
-      "fieldType": "MULTILINE_TEXT",
+      "fieldId": "placeOfBirth",
+      "displayName": "Place of Birth",
+      "fieldType": "TEXT",
       "required": false,
       "editable": true,
-      "searchable": true,
-      "aiExtractable": false,
-      "aiWritable": true,
-      "validationRules": []
+      "searchable": false,
+      "aiExtractable": true,
+      "validationRules": [],
+      "sensitivityLevel": "STANDARD"
     }
   ],
   "lifecycle": {
@@ -149,7 +156,7 @@
   "reminderRules": [
     {
       "ruleId": "passport_expiry_12m",
-      "triggerField": "expiryDate",
+      "triggerField": "dateOfExpiry",
       "offsetDays": -365,
       "priority": "MEDIUM",
       "title": "Passport Expiring Soon",
@@ -157,7 +164,7 @@
     },
     {
       "ruleId": "passport_expiry_6m",
-      "triggerField": "expiryDate",
+      "triggerField": "dateOfExpiry",
       "offsetDays": -180,
       "priority": "HIGH",
       "title": "Passport Expiring in 6 Months",
@@ -165,7 +172,7 @@
     },
     {
       "ruleId": "passport_expiry_3m",
-      "triggerField": "expiryDate",
+      "triggerField": "dateOfExpiry",
       "offsetDays": -90,
       "priority": "CRITICAL",
       "title": "Passport Expiring in 3 Months",
@@ -182,7 +189,7 @@
     ],
     "filterableFields": [
       "nationality",
-      "issuingCountry"
+      "issuingAuthority"
     ]
   },
   "aiConfig": {
@@ -191,9 +198,10 @@
       "fullName",
       "nationality",
       "dateOfBirth",
-      "issueDate",
-      "expiryDate",
-      "issuingCountry"
+      "dateOfIssue",
+      "dateOfExpiry",
+      "issuingAuthority",
+      "placeOfBirth"
     ],
     "classificationHints": [
       "passport",
@@ -201,8 +209,6 @@
       "international",
       "MRZ"
     ],
-    "aiWritableFields": [
-      "notes"
-    ]
+    "aiWritableFields": []
   }
 }

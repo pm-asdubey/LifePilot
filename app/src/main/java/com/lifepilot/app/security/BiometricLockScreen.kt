@@ -1,7 +1,6 @@
 package com.lifepilot.app.security
 
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
-import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
 import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
 import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.background
@@ -22,6 +21,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -40,6 +42,8 @@ fun BiometricLockScreen(
 ) {
     val authState by biometricAuthManager.authState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    // Track whether the initial auto-prompt has fired so we know when to show the retry button.
+    var initialPromptFired by remember { mutableStateOf(false) }
 
     LaunchedEffect(authState) {
         if (authState is BiometricAuthState.Authenticated) {
@@ -49,6 +53,7 @@ fun BiometricLockScreen(
 
     LaunchedEffect(Unit) {
         promptBiometric(context, biometricAuthManager)
+        initialPromptFired = true
     }
 
     Box(
@@ -82,18 +87,21 @@ fun BiometricLockScreen(
                 textAlign = TextAlign.Center,
             )
             if (authState is BiometricAuthState.Failed) {
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = (authState as BiometricAuthState.Failed).error ?: "Authentication failed",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                     textAlign = TextAlign.Center,
                 )
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(
-                    onClick = { promptBiometric(context, biometricAuthManager) }
-                ) {
-                    Text("Try Again")
+            }
+            // Always show retry button after the initial auto-prompt has fired.
+            // This covers: (a) failed attempts, (b) cancelled dialogs (state stays Idle),
+            // (c) hardware errors. Without this the user has no way to try again.
+            if (initialPromptFired && authState !is BiometricAuthState.Authenticated) {
+                Spacer(modifier = Modifier.height(24.dp))
+                Button(onClick = { promptBiometric(context, biometricAuthManager) }) {
+                    Text("Unlock")
                 }
             }
         }
@@ -127,8 +135,8 @@ private fun promptBiometric(
 
     val promptInfo = BiometricPrompt.PromptInfo.Builder()
         .setTitle("Unlock LifePilot")
-        .setSubtitle("Use biometric or device credential to access your life data")
-        .setAllowedAuthenticators(BIOMETRIC_STRONG or BIOMETRIC_WEAK or DEVICE_CREDENTIAL)
+        .setSubtitle("Use fingerprint or PIN/pattern to access your life data")
+        .setAllowedAuthenticators(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
         .build()
 
     BiometricPrompt(activity, executor, callback).authenticate(promptInfo)

@@ -15,6 +15,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import timber.log.Timber
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -33,6 +34,7 @@ class AnthropicAiProvider @Inject constructor(
         systemPrompt: String,
         userMessage: String,
         conversationHistory: List<AiMessage>,
+        readTimeoutSeconds: Long,
     ): AiCompletionResult {
         val apiKey = preferenceManager.aiApiKey.firstOrNull()
         val model = preferenceManager.aiModel.firstOrNull()?.takeIf { it.isNotBlank() }
@@ -43,7 +45,7 @@ class AnthropicAiProvider @Inject constructor(
         }
 
         return withContext(Dispatchers.IO) {
-            executeRequest(apiKey, model, systemPrompt, userMessage, conversationHistory)
+            executeRequest(apiKey, model, systemPrompt, userMessage, conversationHistory, readTimeoutSeconds)
         }
     }
 
@@ -53,6 +55,7 @@ class AnthropicAiProvider @Inject constructor(
         systemPrompt: String,
         userMessage: String,
         conversationHistory: List<AiMessage>,
+        readTimeoutSeconds: Long,
     ): AiCompletionResult {
         return try {
             val messages = JSONArray()
@@ -86,7 +89,10 @@ class AnthropicAiProvider @Inject constructor(
                 .post(body.toString().toRequestBody("application/json".toMediaType()))
                 .build()
 
-            val response = httpClient.newCall(request).execute()
+            val client = httpClient.newBuilder()
+                .readTimeout(readTimeoutSeconds, TimeUnit.SECONDS)
+                .build()
+            val response = client.newCall(request).execute()
             val responseBody = response.body?.string()
 
             if (!response.isSuccessful) {
