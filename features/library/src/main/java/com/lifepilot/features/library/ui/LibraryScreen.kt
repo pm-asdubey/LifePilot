@@ -27,11 +27,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.outlined.AccountTree
-import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.FolderOpen
-import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material.icons.outlined.Sort
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomAppBar
 import com.lifepilot.designsystem.components.ObjectCardSkeleton
@@ -49,8 +44,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -76,11 +69,12 @@ import com.lifepilot.designsystem.theme.StatusRenewalDue
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.FolderOpen
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Sort
 import com.lifepilot.domain.model.DomainLifeState
 import com.lifepilot.domain.model.ObjectStatus
-import com.lifepilot.domain.model.Project
-import com.lifepilot.domain.model.ProjectStatus
-import com.lifepilot.features.library.state.LibraryTab
 import com.lifepilot.features.library.state.LibrarySortOrder
 import com.lifepilot.features.library.viewmodel.LibraryViewModel
 
@@ -97,9 +91,7 @@ fun LibraryScreen(
     val uiState by viewModel.uiState.collectAsState()
     var showSortMenu by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
-    // All domain groups start collapsed; user taps the header to expand.
     var expandedDomains by remember { mutableStateOf(emptySet<String>()) }
-    // Tracks which domain understanding cards have been dismissed for this session.
     var dismissedUnderstandingCards by remember { mutableStateOf(emptySet<String>()) }
 
     if (showDeleteDialog) {
@@ -258,11 +250,11 @@ fun LibraryScreen(
         modifier = modifier,
     ) { innerPadding ->
         if (uiState.isLoading) {
-            androidx.compose.foundation.lazy.LazyColumn(
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
-                contentPadding = PaddingValues(vertical = com.lifepilot.designsystem.theme.Spacing.sm),
+                contentPadding = PaddingValues(vertical = Spacing.sm),
             ) {
                 items(6) { ObjectCardSkeleton() }
             }
@@ -277,40 +269,6 @@ fun LibraryScreen(
                 .padding(innerPadding),
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-                // Top-level tab switcher: Records | Projects
-                TabRow(
-                    selectedTabIndex = uiState.selectedTab.ordinal,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Tab(
-                        selected = uiState.selectedTab == LibraryTab.RECORDS,
-                        onClick = { viewModel.selectTab(LibraryTab.RECORDS) },
-                        text = { Text("Records") },
-                    )
-                    Tab(
-                        selected = uiState.selectedTab == LibraryTab.PROJECTS,
-                        onClick = { viewModel.selectTab(LibraryTab.PROJECTS) },
-                        text = { Text("Projects") },
-                        icon = {
-                            Icon(
-                                imageVector = Icons.Outlined.AccountTree,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                            )
-                        },
-                    )
-                }
-
-                when (uiState.selectedTab) {
-                    LibraryTab.PROJECTS -> {
-                        ProjectsTabContent(
-                            projects = uiState.projects,
-                            onNavigateToProject = onNavigateToProject,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                    LibraryTab.RECORDS -> {
-                // Records tab content below
                 if (uiState.domains.isNotEmpty()) {
                     LazyRow(
                         contentPadding = PaddingValues(horizontal = Spacing.md),
@@ -344,7 +302,6 @@ fun LibraryScreen(
                         modifier = Modifier.weight(1f),
                     )
                 } else {
-                    // Group by domain when no domain filter is active (Object Tree view)
                     val selectedDomainFilter = uiState.selectedDomain
                     val domainLifeStateMap = uiState.domains.associate { it.domain to it.lifeState }
                     val domainGroups: List<Pair<String, List<com.lifepilot.domain.model.LifeObject>>> =
@@ -364,8 +321,6 @@ fun LibraryScreen(
                         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                         modifier = Modifier.weight(1f),
                     ) {
-                        // When a specific domain is selected, show its understanding card at top.
-                        // This fixes ISSUE-011 where the card was hidden in filtered view.
                         if (selectedDomainFilter != null) {
                             val filteredLifeState = domainLifeStateMap[selectedDomainFilter]
                             if (filteredLifeState != null && filteredLifeState.currentSituation.isNotBlank() &&
@@ -427,7 +382,6 @@ fun LibraryScreen(
                                         )
                                     }
                                 }
-                                // Domain understanding card — only shown when domain is expanded.
                                 val lifeState = domainLifeStateMap[domain]
                                 if (isExpanded && lifeState != null && lifeState.currentSituation.isNotBlank() &&
                                     domain !in dismissedUnderstandingCards) {
@@ -442,7 +396,6 @@ fun LibraryScreen(
                                     }
                                 }
                             }
-                            // Objects only show when domain is expanded (or when a domain filter is active).
                             if (selectedDomainFilter != null || domain in expandedDomains) {
                                 items(objects, key = { it.objectId }) { obj ->
                                     val statusColor = when (obj.status) {
@@ -489,8 +442,6 @@ fun LibraryScreen(
                         }
                     }
                 }
-                    } // end LibraryTab.RECORDS
-                } // end when(selectedTab)
             }
         }
     }
@@ -541,100 +492,6 @@ private fun DomainUnderstandingCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ProjectsTabContent(
-    projects: List<Project>,
-    onNavigateToProject: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    if (projects.isEmpty()) {
-        EmptyState(
-            icon = Icons.Outlined.AccountTree,
-            title = "No projects yet",
-            description = "Tell the AI about a trip, purchase, or life event and it will create a project to keep everything together.",
-            modifier = modifier.fillMaxWidth(),
-        )
-        return
-    }
-
-    LazyColumn(
-        contentPadding = PaddingValues(horizontal = Spacing.md, vertical = Spacing.sm),
-        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-        modifier = modifier.fillMaxSize(),
-    ) {
-        items(projects, key = { it.projectId }) { project ->
-            ProjectCard(project = project, onClick = { onNavigateToProject(project.projectId) })
-        }
-    }
-}
-
-@Composable
-private fun ProjectCard(
-    project: Project,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val statusColor = when (project.status) {
-        ProjectStatus.ACTIVE -> MaterialTheme.colorScheme.primary
-        ProjectStatus.COMPLETED -> MaterialTheme.colorScheme.secondary
-        ProjectStatus.ARCHIVED -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
-    Card(
-        onClick = onClick,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        ),
-        modifier = modifier.fillMaxWidth(),
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(Spacing.md),
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.AccountTree,
-                contentDescription = null,
-                tint = statusColor,
-                modifier = Modifier.size(24.dp),
-            )
-            Spacer(modifier = Modifier.width(Spacing.md))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = project.title,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                project.description?.let { desc ->
-                    Text(
-                        text = desc.take(80),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                    )
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    project.domain?.let { domain ->
-                        Text(
-                            text = domain,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            text = " · ",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Text(
-                        text = project.status.name.lowercase().replaceFirstChar { it.uppercase() },
-                        style = MaterialTheme.typography.labelSmall,
-                        color = statusColor,
-                    )
-                }
             }
         }
     }

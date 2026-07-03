@@ -6,11 +6,9 @@ import com.lifepilot.domain.engine.SchemaEngine
 import com.lifepilot.domain.repository.DomainRepository
 import com.lifepilot.domain.repository.ObjectRepository
 import com.lifepilot.domain.repository.ProfileRepository
-import com.lifepilot.domain.repository.ProjectRepository
 import com.lifepilot.domain.usecase.ArchiveObjectUseCase
 import com.lifepilot.domain.usecase.DeleteObjectUseCase
 import com.lifepilot.features.library.state.DomainItem
-import com.lifepilot.features.library.state.LibraryTab
 import com.lifepilot.features.library.state.LibraryUiState
 import com.lifepilot.features.library.state.LibrarySortOrder
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -37,7 +35,6 @@ class LibraryViewModel @Inject constructor(
     private val schemaEngine: SchemaEngine,
     private val archiveObjectUseCase: ArchiveObjectUseCase,
     private val deleteObjectUseCase: DeleteObjectUseCase,
-    private val projectRepository: ProjectRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LibraryUiState())
@@ -55,7 +52,6 @@ class LibraryViewModel @Inject constructor(
             profileRepository.observeActiveProfile()
                 .flatMapLatest { profile ->
                     if (profile == null) return@flatMapLatest flowOf(null)
-                    // combine supports at most 5 flows; nest two combines to handle 6 inputs.
                     val recordsFlow = combine(
                         objectRepository.observeObjectsByProfile(profile.profileId)
                             .onStart { emit(emptyList()) },
@@ -63,10 +59,8 @@ class LibraryViewModel @Inject constructor(
                             .onStart { emit(emptyMap()) },
                         domainRepository.observeAllDomainLifeStates(profile.profileId)
                             .onStart { emit(emptyList()) },
-                        projectRepository.observeProjects(profile.profileId)
-                            .onStart { emit(emptyList()) },
-                    ) { objects, domainCounts, lifeStates, projects ->
-                        RecordsData(objects, domainCounts, lifeStates.associateBy { it.domain }, projects)
+                    ) { objects, domainCounts, lifeStates ->
+                        RecordsData(objects, domainCounts, lifeStates.associateBy { it.domain })
                     }
                     combine(
                         recordsFlow,
@@ -112,7 +106,6 @@ class LibraryViewModel @Inject constructor(
                             isLoading = false,
                             domains = domains,
                             objects = filteredObjects,
-                            projects = result.records.projects,
                             selectedDomain = result.domain,
                             sortOrder = result.sort,
                             error = null,
@@ -126,7 +119,6 @@ class LibraryViewModel @Inject constructor(
         val objects: List<com.lifepilot.domain.model.LifeObject>,
         val domainCounts: Map<String, Int>,
         val lifeStateMap: Map<String, com.lifepilot.domain.model.DomainLifeState>,
-        val projects: List<com.lifepilot.domain.model.Project>,
     )
 
     private data class LibraryData(
@@ -134,10 +126,6 @@ class LibraryViewModel @Inject constructor(
         val domain: String?,
         val sort: LibrarySortOrder,
     )
-
-    fun selectTab(tab: LibraryTab) {
-        _uiState.update { it.copy(selectedTab = tab) }
-    }
 
     fun selectDomain(domain: String?) {
         selectedDomain.value = domain
@@ -148,7 +136,6 @@ class LibraryViewModel @Inject constructor(
     }
 
     fun refresh() {
-        // Room observables keep data live — no manual reload needed.
         _uiState.update { it.copy(isRefreshing = false) }
     }
 

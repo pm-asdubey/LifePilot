@@ -37,9 +37,14 @@ class SchemaEngineImpl @Inject constructor(
             .map { it.objectType }
             .sorted()
 
+    private val canonicalDomains = listOf(
+        "Career", "Education", "Finance", "Health", "Home",
+        "Identity", "Legal", "Major Life Events", "People",
+        "Property", "Transport", "Travel",
+    )
+
     override fun getAllDomains(): List<String> =
-        _registeredSchemas.value.values
-            .map { it.domain }
+        (canonicalDomains + _registeredSchemas.value.values.map { it.domain })
             .distinct()
             .sorted()
 

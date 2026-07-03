@@ -5,7 +5,7 @@
 >
 > **IMPORTANT: Do not begin implementing any issue unless the user explicitly asks for it by issue number or description. This log is for planning and reference only.**
 
-**Last updated:** 2026-07-02 | **Total open:** 46 | **Resolved:** 27 (marked ✓ below) | **Partially resolved:** 1
+**Last updated:** 2026-07-03 | **Total open:** 49 | **Resolved:** 27 (marked ✓ below) | **Partially resolved:** 1
 
 ---
 
@@ -15,6 +15,97 @@
 - **P2 — Medium:** Missing feature the user expects. Product feels incomplete without it.
 - **P3 — Low:** AI quality and UX polish improvements.
 - **P4 — Roadmap:** Deliberate future work, not expected in the current build.
+
+---
+
+# P1 — High (Session 7 — discovered 2026-07-03)
+
+---
+
+## ISSUE-47: Projects tab still visible in Library — ADR-002 not fully applied
+
+**Priority:** P1  
+**Status:** Open — root cause confirmed, not yet fixed
+
+**Observed behaviour:**  
+The Library screen still shows a "Projects" tab alongside "Records". Per ADR-002, Library must be Records-only. Projects belong in Planner.
+
+**Root cause:**  
+The agent's implementation of `LibraryUiState.kt` did NOT remove `PROJECTS` from the `LibraryTab` enum — it still has:
+```kotlin
+enum class LibraryTab { RECORDS, PROJECTS }
+```
+And `LibraryScreen.kt` still renders the Projects tab (lines 291–312), the `ProjectsTabContent` composable (line 550), and all related tab-switching logic. `LibraryViewModel` still sets `uiState.projects`.
+
+The agent edited the wrong file or the copy step brought back the old version from the worktree which still had the Projects tab.
+
+**Files to fix:**
+- `features/library/src/main/java/com/lifepilot/features/library/state/LibraryUiState.kt` — remove `PROJECTS` from enum, remove `projects: List<Project>` field
+- `features/library/src/main/java/com/lifepilot/features/library/ui/LibraryScreen.kt` — remove the tab row entirely (only one tab = no tab row needed), remove `ProjectsTabContent` composable, remove all `LibraryTab.PROJECTS` branches
+- `features/library/src/main/java/com/lifepilot/features/library/viewmodel/LibraryViewModel.kt` — remove `projects` observation, remove `selectTab` if only used for Projects switching
+
+**Fix approach:** Show Records content directly with no `TabRow`. The `LibraryTab` enum can be deleted entirely.
+
+---
+
+## ISSUE-48: Life domains missing from Library and AI context — SchemaEngine only returns domains from loaded schemas, not the full canonical list
+
+**Priority:** P1  
+**Status:** Open — root cause confirmed, not yet fixed
+
+**Observed behaviour:**  
+Not all expected life domains are visible in the Library domain filter chips. The full canonical set (Career, Finance, Health, Property, Identity, Travel, Education, Transport, Legal, Home, People, Major Life Events) should always be visible, even with zero objects.
+
+**Root cause:**  
+`SchemaEngineImpl.getAllDomains()` derives its list by reading the `domain` field from loaded JSON schemas:
+```kotlin
+override fun getAllDomains(): List<String> =
+    _registeredSchemas.value.values.map { it.domain }.distinct().sorted()
+```
+This means domains only appear if there is at least one schema file that declares that domain. Any domain whose schemas are missing, unloaded, or use a different string will not appear.
+
+The schemas use these domain values (from asset scan):
+`Career, Education, Employment, Finance, Health, Home, Identity, Legal, Major Life Events, People, Property, Transport, Travel`
+
+Note `Employment` vs `Career` inconsistency — some schemas use `Employment` while the UI and AI expect `Career`.
+
+**Files to fix:**
+- `data/src/main/java/com/lifepilot/data/schema/SchemaEngineImpl.kt` — replace derived `getAllDomains()` with a hardcoded canonical domain list as the baseline, then union with schema-derived domains. This ensures all domains always appear.
+- Schema files using `"domain": "Employment"` — normalise to `"domain": "Career"`.
+- `data/src/main/java/com/lifepilot/data/engine/PromptBuilderImpl.kt` — verify all canonical domains are listed in the AI prompt as valid domain values.
+
+**Canonical domain list (source of truth):**
+```
+Career, Education, Finance, Health, Home, Identity, Legal, Major Life Events, People, Property, Transport, Travel
+```
+
+---
+
+## ISSUE-49: Library, Planner, and AI conversation do not occupy full screen — extra top padding from root Scaffold
+
+**Priority:** P1  
+**Status:** Open — root cause confirmed, not yet fixed
+
+**Observed behaviour:**  
+Library, Planner, and the AI conversation screen all have a gap at the top — they do not extend to the status bar. The screens feel clipped and do not use full screen height.
+
+**Root cause:**  
+`LifePilotNavHost.kt` wraps the entire `NavHost` in a `Scaffold` with a `bottomBar`:
+```kotlin
+Scaffold(bottomBar = { ... }) { innerPadding ->
+    NavHost(modifier = Modifier.padding(innerPadding), ...)
+}
+```
+The `innerPadding` from this root `Scaffold` adds top padding equal to the status bar height to every screen in the graph — even screens that have their own `Scaffold` or `TopAppBar`. This double-applies the status bar inset.
+
+Screens that have their own `Scaffold` (Library, Planner, Home AI workspace) already consume the insets internally. The root Scaffold's `innerPadding` should only contribute bottom padding (nav bar height) — not top.
+
+**Files to fix:**
+- `app/src/main/java/com/lifepilot/app/navigation/LifePilotNavHost.kt` — change the `NavHost` modifier to only apply the bottom component of `innerPadding`:
+```kotlin
+modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding())
+```
+This lets the bottom nav bar be avoided by all screens while each screen manages its own top inset via its own `Scaffold`/`TopAppBar`.
 
 ---
 

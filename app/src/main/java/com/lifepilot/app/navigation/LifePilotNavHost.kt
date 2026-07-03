@@ -1,5 +1,6 @@
 package com.lifepilot.app.navigation
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -9,9 +10,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -45,6 +43,20 @@ fun LifePilotNavHost(deepLinkObjectId: String? = null) {
         currentDestination?.hierarchy?.any { it.route?.substringBefore('?') == route } == true
     }
 
+    val isOnStartDestination = currentDestination?.hierarchy?.any {
+        it.route?.substringBefore('?') == HOME.route
+    } == true
+
+    BackHandler(enabled = !isOnStartDestination && showBottomBar) {
+        navController.navigate(HOME.route) {
+            popUpTo(navController.graph.findStartDestination().id) {
+                saveState = true
+            }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+
     Scaffold(
         bottomBar = {
             if (showBottomBar) {
@@ -67,7 +79,7 @@ fun LifePilotNavHost(deepLinkObjectId: String? = null) {
         NavHost(
             navController = navController,
             startDestination = HOME.route,
-            modifier = Modifier.padding(innerPadding),
+            modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding()),
             enterTransition = { slideInHorizontally(initialOffsetX = { it / 4 }) + fadeIn() },
             exitTransition = { slideOutHorizontally(targetOffsetX = { -it / 4 }) + fadeOut() },
             popEnterTransition = { slideInHorizontally(initialOffsetX = { -it / 4 }) + fadeIn() },
