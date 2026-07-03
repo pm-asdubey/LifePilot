@@ -11,6 +11,7 @@ import androidx.room.PrimaryKey
         Index(value = ["profile_id"]),
         Index(value = ["status"]),
         Index(value = ["deadline"]),
+        Index(value = ["project_id"]),
     ]
 )
 data class GoalEntity(
@@ -47,4 +48,7 @@ data class GoalEntity(
 
     @ColumnInfo(name = "updated_at")
     val updatedAt: Long,
+
+    @ColumnInfo(name = "project_id")
+    val projectId: String? = null,
 )

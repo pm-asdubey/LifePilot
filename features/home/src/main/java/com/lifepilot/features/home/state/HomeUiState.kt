@@ -28,6 +28,10 @@ data class HomeUiState(
     val attachedDocumentContext: AttachedDocumentContext? = null,
     val showConversationHistory: Boolean = false,
     val allConversations: List<Conversation> = emptyList(),
+    // Pending attachment: queued after scanning, processed on first Send
+    val pendingAttachmentPath: String? = null,
+    val pendingAttachmentDisplayName: String? = null,
+    val pendingAttachmentMimeType: String? = null,
 )
 
 enum class HomeMode { DAILY_BRIEF, AI_WORKSPACE }

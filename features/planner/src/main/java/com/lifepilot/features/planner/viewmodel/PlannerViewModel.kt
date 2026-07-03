@@ -8,7 +8,7 @@ import com.lifepilot.domain.engine.PlanningEngine
 import com.lifepilot.domain.model.Task
 import com.lifepilot.domain.model.TaskPriority
 import com.lifepilot.domain.model.TaskStatus
-import com.lifepilot.domain.repository.GoalRepository
+import com.lifepilot.domain.repository.ProjectRepository
 import com.lifepilot.domain.repository.TaskRepository
 import com.lifepilot.features.planner.state.PlannerUiState
 import com.lifepilot.features.planner.state.TaskFilter
@@ -27,23 +27,29 @@ import javax.inject.Inject
 @HiltViewModel
 class PlannerViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    private val goalRepository: GoalRepository,
+    private val projectRepository: ProjectRepository,
     private val taskRepository: TaskRepository,
     private val planningEngine: PlanningEngine,
     private val preferenceManager: PreferenceManager,
 ) : ViewModel() {
 
-    private val selectedTaskId: String? = savedStateHandle["taskId"]
+    // Observed as a flow so re-navigation from search (launchSingleTop) propagates the new taskId.
+    private val deepLinkTaskId: MutableStateFlow<String?> =
+        MutableStateFlow(savedStateHandle["taskId"])
 
     private val _uiState = MutableStateFlow(PlannerUiState())
     val uiState: StateFlow<PlannerUiState> = _uiState.asStateFlow()
 
-    // Drives filter changes without spawning new collectors.
-    private val selectedFilter = MutableStateFlow(
-        if (selectedTaskId.isNullOrBlank()) TaskFilter.ALL else TaskFilter.ALL
-    )
+    private val selectedFilter = MutableStateFlow(TaskFilter.ALL)
 
     init {
+        // React to savedStateHandle updates that arrive when navigating from Search with launchSingleTop.
+        viewModelScope.launch {
+            savedStateHandle.getStateFlow<String>("taskId", "")
+                .collect { taskId ->
+                    deepLinkTaskId.value = taskId.takeIf { it.isNotBlank() }
+                }
+        }
         observeData()
     }
 
@@ -55,25 +61,42 @@ class PlannerViewModel @Inject constructor(
             }
 
             combine(
-                goalRepository.observeActiveGoals(profileId),
+                projectRepository.observeProjects(profileId),
                 taskRepository.observeTasksByProfile(profileId),
                 selectedFilter,
-            ) { goals, tasks, filter ->
-                Triple(goals, tasks, filter)
+                deepLinkTaskId,
+            ) { projects, tasks, filter, taskId ->
+                object {
+                    val projects = projects
+                    val tasks = tasks
+                    val filter = filter
+                    val taskId = taskId
+                }
             }
                 .catch { e ->
                     Timber.e(e, "Error loading planner data")
                     _uiState.update { it.copy(isLoading = false, error = e.message) }
                 }
-                .collect { (goals, tasks, filter) ->
-                    val effectiveFilter = if (!selectedTaskId.isNullOrBlank()) TaskFilter.ALL else filter
+                .collect { data ->
+                    val effectiveFilter = if (!data.taskId.isNullOrBlank()) TaskFilter.ALL else data.filter
+
+                    // Compute task counts per project: projectId -> (openTasks, totalTasks)
+                    val projectTaskCounts = data.projects.associate { project ->
+                        val projectTasks = data.tasks.filter { it.projectId == project.projectId }
+                        val openCount = projectTasks.count {
+                            it.status != TaskStatus.COMPLETED && it.status != TaskStatus.DISMISSED
+                        }
+                        project.projectId to Pair(openCount, projectTasks.size)
+                    }
+
                     _uiState.update { state ->
                         state.copy(
                             isLoading = false,
-                            activeGoals = goals,
-                            tasks = filterTasks(tasks, effectiveFilter),
+                            projects = data.projects,
+                            projectTaskCounts = projectTaskCounts,
+                            tasks = filterTasks(data.tasks, effectiveFilter),
                             selectedTaskFilter = effectiveFilter,
-                            highlightedTaskId = selectedTaskId,
+                            highlightedTaskId = data.taskId,
                             error = null,
                         )
                     }
@@ -85,41 +108,30 @@ class PlannerViewModel @Inject constructor(
         selectedFilter.value = filter
     }
 
-    fun showCreateGoalSheet() {
-        _uiState.update { it.copy(showCreateGoalSheet = true) }
+    fun showCreateProjectSheet() {
+        _uiState.update { it.copy(showCreateProjectSheet = true) }
     }
 
-    fun hideCreateGoalSheet() {
-        _uiState.update { it.copy(showCreateGoalSheet = false) }
+    fun hideCreateProjectSheet() {
+        _uiState.update { it.copy(showCreateProjectSheet = false) }
     }
 
-    fun createGoal(title: String, description: String?, deadline: LocalDate?) {
+    fun createProject(title: String, emoji: String, description: String?, targetDate: LocalDate?) {
         if (title.isBlank()) return
         viewModelScope.launch {
             val profileId = preferenceManager.getActiveProfileId() ?: return@launch
-            planningEngine.createGoal(
-                profileId = profileId,
-                title = title.trim(),
-                description = description?.trim()?.takeIf { it.isNotBlank() },
-                deadline = deadline,
-                linkedObjectId = null,
-                suggestedTaskTitles = emptyList(),
-            ).onFailure { e -> Timber.e(e, "Failed to create goal") }
-            _uiState.update { it.copy(showCreateGoalSheet = false) }
-        }
-    }
-
-    fun completeGoal(goalId: String) {
-        viewModelScope.launch {
-            planningEngine.completeGoal(goalId)
-                .onFailure { e -> Timber.e(e, "Failed to complete goal: $goalId") }
-        }
-    }
-
-    fun dismissGoal(goalId: String) {
-        viewModelScope.launch {
-            planningEngine.cancelGoal(goalId)
-                .onFailure { e -> Timber.e(e, "Failed to cancel goal: $goalId") }
+            runCatching {
+                projectRepository.createProject(
+                    profileId = profileId,
+                    title = title.trim(),
+                    description = description?.trim()?.takeIf { it.isNotBlank() },
+                    domain = null,
+                    emoji = emoji,
+                    targetDate = targetDate,
+                    isAiProposed = false,
+                )
+            }.onFailure { e -> Timber.e(e, "Failed to create project") }
+            _uiState.update { it.copy(showCreateProjectSheet = false) }
         }
     }
 
@@ -148,10 +160,18 @@ class PlannerViewModel @Inject constructor(
     }
 
     fun reopenTask(taskId: String) {
+        val title = _uiState.value.tasks.find { it.taskId == taskId }?.title
         viewModelScope.launch {
             planningEngine.uncompleteTask(taskId)
+                .onSuccess {
+                    _uiState.update { it.copy(lastReopenedTaskTitle = title) }
+                }
                 .onFailure { e -> Timber.e(e, "Failed to reopen task: $taskId") }
         }
+    }
+
+    fun clearReopenState() {
+        _uiState.update { it.copy(lastReopenedTaskTitle = null) }
     }
 
     fun openEditTask(task: Task) {
@@ -174,32 +194,6 @@ class PlannerViewModel @Inject constructor(
             planningEngine.updateTask(taskId, title, description, dueDate, priority)
                 .onFailure { e -> Timber.e(e, "Failed to update task: $taskId") }
             _uiState.update { it.copy(editingTask = null) }
-        }
-    }
-
-    fun openEditGoal(goal: com.lifepilot.domain.model.Goal) {
-        _uiState.update { it.copy(editingGoal = goal) }
-    }
-
-    fun closeEditGoal() {
-        _uiState.update { it.copy(editingGoal = null) }
-    }
-
-    fun saveEditedGoal(
-        goalId: String,
-        title: String,
-        description: String?,
-        deadline: LocalDate?,
-    ) {
-        if (title.isBlank()) return
-        viewModelScope.launch {
-            planningEngine.updateGoal(
-                goalId = goalId,
-                title = title,
-                description = description,
-                deadline = deadline,
-            ).onFailure { e -> Timber.e(e, "Failed to update goal: $goalId") }
-            _uiState.update { it.copy(editingGoal = null) }
         }
     }
 

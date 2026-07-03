@@ -56,7 +56,7 @@ sealed class ActionItem {
         override val isChecked: Boolean = true,
     ) : ActionItem()
 
-    /** Create a new record. */
+    /** Create a new record. Stays in Library; shown in Project Workspace if projectItemId is set. */
     data class CreateRecord(
         override val itemId: String,
         override val summary: String,
@@ -64,6 +64,8 @@ sealed class ActionItem {
         val domain: String,
         val title: String,
         val initialNotes: String? = null,
+        /** References the itemId of a sibling [CreateProject] item to link this record to the project. */
+        val projectItemId: String? = null,
         override val dependsOn: List<String> = emptyList(),
         override val isEnabled: Boolean = true,
         override val isChecked: Boolean = true,
@@ -81,6 +83,19 @@ sealed class ActionItem {
         override val isChecked: Boolean = true,
     ) : ActionItem()
 
+    /** Create a new Project to group all tasks in this plan. Must execute before linked tasks. */
+    data class CreateProject(
+        override val itemId: String,
+        override val summary: String,
+        val title: String,
+        val description: String? = null,
+        val emoji: String = "🎯",
+        val domain: String? = null,
+        override val dependsOn: List<String> = emptyList(),
+        override val isEnabled: Boolean = true,
+        override val isChecked: Boolean = true,
+    ) : ActionItem()
+
     /** Create a new task in Planner. */
     data class CreateTask(
         override val itemId: String,
@@ -91,6 +106,8 @@ sealed class ActionItem {
         val priority: TaskPriority = TaskPriority.MEDIUM,
         val goalId: String? = null,
         val objectId: String? = null,
+        /** References the itemId of a sibling [CreateProject] item to link this task to the project. */
+        val projectItemId: String? = null,
         override val dependsOn: List<String> = emptyList(),
         override val isEnabled: Boolean = true,
         override val isChecked: Boolean = true,

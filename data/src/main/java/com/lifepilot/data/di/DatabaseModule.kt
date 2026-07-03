@@ -11,6 +11,7 @@ import com.lifepilot.data.database.dao.GoalDao
 import com.lifepilot.data.database.dao.MetadataDao
 import com.lifepilot.data.database.dao.ObjectDao
 import com.lifepilot.data.database.dao.ProfileDao
+import com.lifepilot.data.database.dao.ProjectDao
 import com.lifepilot.data.database.dao.RelationshipDao
 import com.lifepilot.data.database.dao.ReminderDao
 import com.lifepilot.data.database.dao.TaskDao
@@ -38,6 +39,8 @@ object DatabaseModule {
                 LifePilotDatabase.MIGRATION_1_2,
                 LifePilotDatabase.MIGRATION_2_3,
                 LifePilotDatabase.MIGRATION_3_4,
+                LifePilotDatabase.MIGRATION_4_5,
+                LifePilotDatabase.MIGRATION_5_6,
             )
             .build()
 
@@ -76,4 +79,7 @@ object DatabaseModule {
 
     @Provides
     fun provideDomainLifeStateDao(db: LifePilotDatabase): DomainLifeStateDao = db.domainLifeStateDao()
+
+    @Provides
+    fun provideProjectDao(db: LifePilotDatabase): ProjectDao = db.projectDao()
 }

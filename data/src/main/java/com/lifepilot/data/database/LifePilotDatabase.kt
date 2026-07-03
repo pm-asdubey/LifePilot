@@ -12,6 +12,7 @@ import com.lifepilot.data.database.dao.GoalDao
 import com.lifepilot.data.database.dao.MetadataDao
 import com.lifepilot.data.database.dao.ObjectDao
 import com.lifepilot.data.database.dao.ProfileDao
+import com.lifepilot.data.database.dao.ProjectDao
 import com.lifepilot.data.database.dao.RelationshipDao
 import com.lifepilot.data.database.dao.ReminderDao
 import com.lifepilot.data.database.dao.TaskDao
@@ -26,6 +27,7 @@ import com.lifepilot.data.database.entity.GoalEntity
 import com.lifepilot.data.database.entity.MetadataEntity
 import com.lifepilot.data.database.entity.ObjectEntity
 import com.lifepilot.data.database.entity.ProfileEntity
+import com.lifepilot.data.database.entity.ProjectEntity
 import com.lifepilot.data.database.entity.RelationshipEntity
 import com.lifepilot.data.database.entity.ReminderEntity
 import com.lifepilot.data.database.entity.TaskEntity
@@ -47,8 +49,9 @@ import com.lifepilot.data.database.entity.TimelineEntity
         ConversationEntity::class,
         ChatMessageEntity::class,
         DomainLifeStateEntity::class,
+        ProjectEntity::class,
     ],
-    version = 4,
+    version = 6,
     exportSchema = true,
 )
 abstract class LifePilotDatabase : RoomDatabase() {
@@ -64,6 +67,7 @@ abstract class LifePilotDatabase : RoomDatabase() {
     abstract fun goalDao(): GoalDao
     abstract fun conversationDao(): ConversationDao
     abstract fun domainLifeStateDao(): DomainLifeStateDao
+    abstract fun projectDao(): ProjectDao
 
     companion object {
         const val DATABASE_NAME = "lifepilot.db"
@@ -163,6 +167,66 @@ abstract class LifePilotDatabase : RoomDatabase() {
                 database.execSQL(
                     "CREATE INDEX IF NOT EXISTS index_domain_life_states_profile_id ON domain_life_states(profile_id)"
                 )
+            }
+        }
+
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Introduce Projects — life initiatives that club Objects, Tasks, Goals, and
+                // Documents under one umbrella (e.g. "Japan Trip", "Job Change").
+                // Nullable project_id FK columns are added to existing tables without defaults
+                // so all existing rows retain NULL (no project) and the migration is safe.
+                database.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS projects (
+                        project_id TEXT NOT NULL PRIMARY KEY,
+                        profile_id TEXT NOT NULL,
+                        title TEXT NOT NULL,
+                        description TEXT,
+                        domain TEXT,
+                        status TEXT NOT NULL,
+                        emoji TEXT NOT NULL DEFAULT '🎯',
+                        target_date INTEGER,
+                        is_ai_proposed INTEGER NOT NULL DEFAULT 0,
+                        created_at INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL,
+                        FOREIGN KEY (profile_id) REFERENCES profiles(profile_id) ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_projects_profile_id ON projects(profile_id)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_projects_status ON projects(status)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_projects_domain ON projects(domain)")
+
+                // Add project_id FK column to life entity tables.
+                database.execSQL("ALTER TABLE objects ADD COLUMN project_id TEXT")
+                database.execSQL("ALTER TABLE tasks ADD COLUMN project_id TEXT")
+                database.execSQL("ALTER TABLE goals ADD COLUMN project_id TEXT")
+
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_objects_project_id ON objects(project_id)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_tasks_project_id ON tasks(project_id)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_goals_project_id ON goals(project_id)")
+            }
+        }
+
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Add emoji, target_date, and is_ai_proposed to projects table.
+                // This migration is a no-op if MIGRATION_4_5 already created the table
+                // with these columns (as is the case for fresh installs).
+                // For existing users who had version 5 with the old schema, these columns
+                // are added here. For fresh installs this migration is still needed to satisfy
+                // Room's version chain — SQLite ALTER TABLE ADD COLUMN is idempotent in spirit
+                // but not in syntax, so we use a try/catch approach.
+                runCatching {
+                    database.execSQL("ALTER TABLE projects ADD COLUMN emoji TEXT NOT NULL DEFAULT '🎯'")
+                }
+                runCatching {
+                    database.execSQL("ALTER TABLE projects ADD COLUMN target_date INTEGER")
+                }
+                runCatching {
+                    database.execSQL("ALTER TABLE projects ADD COLUMN is_ai_proposed INTEGER NOT NULL DEFAULT 0")
+                }
             }
         }
     }

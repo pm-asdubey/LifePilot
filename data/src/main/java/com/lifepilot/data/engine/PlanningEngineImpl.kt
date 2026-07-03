@@ -120,6 +120,7 @@ class PlanningEngineImpl @Inject constructor(
         dueDate: LocalDate?,
         goalId: String?,
         objectId: String?,
+        projectId: String?,
         source: TaskSource,
         priority: TaskPriority,
     ): Result<Task> = runCatching {
@@ -127,6 +128,7 @@ class PlanningEngineImpl @Inject constructor(
             taskId = UUID.randomUUID().toString(),
             goalId = goalId,
             objectId = objectId,
+            projectId = projectId,
             title = title,
             description = description,
             priority = priority,

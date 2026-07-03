@@ -13,6 +13,7 @@ import androidx.room.PrimaryKey
         Index(value = ["status"]),
         Index(value = ["profile_id"]),
         Index(value = ["goal_id"]),
+        Index(value = ["project_id"]),
     ]
 )
 data class TaskEntity(
@@ -49,4 +50,7 @@ data class TaskEntity(
 
     @ColumnInfo(name = "goal_id")
     val goalId: String? = null,
+
+    @ColumnInfo(name = "project_id")
+    val projectId: String? = null,
 )

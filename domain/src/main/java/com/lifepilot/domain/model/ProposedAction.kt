@@ -85,6 +85,16 @@ sealed class AiProposal {
         override val summary: String,
         val plan: com.lifepilot.domain.model.ActionPlan,
     ) : AiProposal()
+
+    /** Create a new Project to organise related Objects, Tasks and Documents. */
+    data class ProjectCreation(
+        override val proposalId: String,
+        override val summary: String,
+        val title: String,
+        val description: String?,
+        val domain: String?,
+        val linkedObjectIds: List<String> = emptyList(),
+    ) : AiProposal()
 }
 
 // ── Supporting types ──────────────────────────────────────────────────────────

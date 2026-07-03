@@ -7,6 +7,7 @@ data class Task(
     val taskId: String,
     val goalId: String?,
     val objectId: String?,
+    val projectId: String? = null,
     val title: String,
     val description: String?,
     val priority: TaskPriority,

@@ -1,5 +1,6 @@
 package com.lifepilot.data.di
 
+import com.lifepilot.data.repository.ProjectRepositoryImpl
 import com.lifepilot.data.repository.ConversationRepositoryImpl
 import com.lifepilot.data.repository.DocumentRepositoryImpl
 import com.lifepilot.data.repository.DomainRepositoryImpl
@@ -33,6 +34,7 @@ import com.lifepilot.domain.engine.RetrievalEngine
 import com.lifepilot.domain.engine.RuleEngine
 import com.lifepilot.domain.engine.SchemaEngine
 import com.lifepilot.domain.ocr.OcrService
+import com.lifepilot.domain.repository.ProjectRepository
 import com.lifepilot.domain.repository.ConversationRepository
 import com.lifepilot.domain.repository.DocumentRepository
 import com.lifepilot.domain.repository.DomainRepository
@@ -153,4 +155,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindActionPlanExecutor(impl: ActionPlanExecutorImpl): ActionPlanExecutor
+
+    @Binds
+    @Singleton
+    abstract fun bindProjectRepository(impl: ProjectRepositoryImpl): ProjectRepository
 }

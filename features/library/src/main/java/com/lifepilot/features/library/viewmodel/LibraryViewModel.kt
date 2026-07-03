@@ -6,9 +6,11 @@ import com.lifepilot.domain.engine.SchemaEngine
 import com.lifepilot.domain.repository.DomainRepository
 import com.lifepilot.domain.repository.ObjectRepository
 import com.lifepilot.domain.repository.ProfileRepository
+import com.lifepilot.domain.repository.ProjectRepository
 import com.lifepilot.domain.usecase.ArchiveObjectUseCase
 import com.lifepilot.domain.usecase.DeleteObjectUseCase
 import com.lifepilot.features.library.state.DomainItem
+import com.lifepilot.features.library.state.LibraryTab
 import com.lifepilot.features.library.state.LibraryUiState
 import com.lifepilot.features.library.state.LibrarySortOrder
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -35,6 +37,7 @@ class LibraryViewModel @Inject constructor(
     private val schemaEngine: SchemaEngine,
     private val archiveObjectUseCase: ArchiveObjectUseCase,
     private val deleteObjectUseCase: DeleteObjectUseCase,
+    private val projectRepository: ProjectRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LibraryUiState())
@@ -52,18 +55,25 @@ class LibraryViewModel @Inject constructor(
             profileRepository.observeActiveProfile()
                 .flatMapLatest { profile ->
                     if (profile == null) return@flatMapLatest flowOf(null)
-                    combine(
+                    // combine supports at most 5 flows; nest two combines to handle 6 inputs.
+                    val recordsFlow = combine(
                         objectRepository.observeObjectsByProfile(profile.profileId)
                             .onStart { emit(emptyList()) },
                         objectRepository.observeObjectCountByDomain(profile.profileId)
                             .onStart { emit(emptyMap()) },
                         domainRepository.observeAllDomainLifeStates(profile.profileId)
                             .onStart { emit(emptyList()) },
+                        projectRepository.observeProjects(profile.profileId)
+                            .onStart { emit(emptyList()) },
+                    ) { objects, domainCounts, lifeStates, projects ->
+                        RecordsData(objects, domainCounts, lifeStates.associateBy { it.domain }, projects)
+                    }
+                    combine(
+                        recordsFlow,
                         selectedDomain,
                         sortOrder,
-                    ) { objects, domainCounts, lifeStates, domain, sort ->
-                        val lifeStateMap = lifeStates.associateBy { it.domain }
-                        Triple(Triple(objects, domainCounts, lifeStateMap), domain, sort)
+                    ) { records, domain, sort ->
+                        LibraryData(records, domain, sort)
                     }
                 }
                 .catch { e ->
@@ -75,42 +85,58 @@ class LibraryViewModel @Inject constructor(
                         _uiState.update { it.copy(isLoading = false) }
                         return@collect
                     }
-                    val (objectsAndCounts, domain, sort) = result
-                    val (objects, domainCounts, lifeStateMap) = objectsAndCounts
-                    val domains = domainCounts.entries.map { (d, count) ->
+                    val allKnownDomains =
+                        (schemaEngine.getAllDomains() + result.records.domainCounts.keys).distinct().sorted()
+                    val domains = allKnownDomains.map { d ->
                         DomainItem(
                             domain = d,
-                            objectCount = count,
+                            objectCount = result.records.domainCounts[d] ?: 0,
                             displayName = d,
-                            lifeState = lifeStateMap[d],
+                            lifeState = result.records.lifeStateMap[d],
                         )
-                    }.sortedBy { it.domain }
-
-                    val filteredObjects = (if (domain != null) {
-                        objects.filter { it.domain == domain }
+                    }
+                    val filteredObjects = (if (result.domain != null) {
+                        result.records.objects.filter { it.domain == result.domain }
                     } else {
-                        objects
+                        result.records.objects
                     }).let { list ->
-                        when (sort) {
+                        when (result.sort) {
                             LibrarySortOrder.TITLE_ASC -> list.sortedBy { it.title.lowercase() }
                             LibrarySortOrder.TITLE_DESC -> list.sortedByDescending { it.title.lowercase() }
                             LibrarySortOrder.UPDATED_RECENT -> list.sortedByDescending { it.updatedAt }
                             LibrarySortOrder.STATUS -> list.sortedBy { it.status.ordinal }
                         }
                     }
-
                     _uiState.update {
                         it.copy(
                             isLoading = false,
                             domains = domains,
                             objects = filteredObjects,
-                            selectedDomain = domain,
-                            sortOrder = sort,
+                            projects = result.records.projects,
+                            selectedDomain = result.domain,
+                            sortOrder = result.sort,
                             error = null,
                         )
                     }
                 }
         }
+    }
+
+    private data class RecordsData(
+        val objects: List<com.lifepilot.domain.model.LifeObject>,
+        val domainCounts: Map<String, Int>,
+        val lifeStateMap: Map<String, com.lifepilot.domain.model.DomainLifeState>,
+        val projects: List<com.lifepilot.domain.model.Project>,
+    )
+
+    private data class LibraryData(
+        val records: RecordsData,
+        val domain: String?,
+        val sort: LibrarySortOrder,
+    )
+
+    fun selectTab(tab: LibraryTab) {
+        _uiState.update { it.copy(selectedTab = tab) }
     }
 
     fun selectDomain(domain: String?) {

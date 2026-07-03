@@ -764,6 +764,15 @@ private fun AiWorkspaceContent(
                 onDismiss = onDismissAction,
                 modifier = cardModifier,
             )
+            is AiProposal.ProjectCreation -> ObjectCreationCard(
+                objectType = "Project",
+                domain = pendingAction.domain ?: "General",
+                title = pendingAction.title,
+                summary = pendingAction.summary,
+                onApprove = onApproveAction,
+                onDismiss = onDismissAction,
+                modifier = cardModifier,
+            )
             null -> Unit
         }
 

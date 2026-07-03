@@ -225,6 +225,7 @@ private fun ActionPlanItemRow(
 }
 
 private fun ActionItem.typeLabel(): String = when (this) {
+    is ActionItem.CreateProject -> "New project"
     is ActionItem.UpdateRecord -> "Record update"
     is ActionItem.CreateRecord -> "New record"
     is ActionItem.UpdateStatus -> "Status update"
@@ -268,6 +269,7 @@ private fun ActionItem.isRecordUpdate(): Boolean = when (this) {
     is ActionItem.UpdateRecord,
     is ActionItem.UpdateStatus,
     is ActionItem.UpdateDomainUnderstanding -> true
+    is ActionItem.CreateProject,
     is ActionItem.CreateRecord,
     is ActionItem.CreateTask -> false
 }
@@ -280,6 +282,7 @@ private fun planWithSelection(plan: ActionPlan, checkedIds: Set<String>): Action
     return plan.copy(
         items = plan.items.map { item ->
             when (item) {
+                is ActionItem.CreateProject -> item.copy(isChecked = item.itemId in checkedIds)
                 is ActionItem.UpdateRecord -> item.copy(isChecked = item.itemId in checkedIds)
                 is ActionItem.CreateRecord -> item.copy(isChecked = item.itemId in checkedIds)
                 is ActionItem.UpdateStatus -> item.copy(isChecked = item.itemId in checkedIds)

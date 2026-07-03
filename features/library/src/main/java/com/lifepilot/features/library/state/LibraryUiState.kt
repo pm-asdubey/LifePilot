@@ -2,12 +2,18 @@ package com.lifepilot.features.library.state
 
 import com.lifepilot.domain.model.DomainLifeState
 import com.lifepilot.domain.model.LifeObject
+import com.lifepilot.domain.model.Project
 
 enum class LibrarySortOrder(val label: String) {
     TITLE_ASC("A – Z"),
     TITLE_DESC("Z – A"),
     UPDATED_RECENT("Recent"),
     STATUS("Status"),
+}
+
+enum class LibraryTab {
+    RECORDS,
+    PROJECTS,
 }
 
 data class LibraryUiState(
@@ -17,6 +23,8 @@ data class LibraryUiState(
     val sortOrder: LibrarySortOrder = LibrarySortOrder.UPDATED_RECENT,
     val domains: List<DomainItem> = emptyList(),
     val objects: List<LifeObject> = emptyList(),
+    val projects: List<Project> = emptyList(),
+    val selectedTab: LibraryTab = LibraryTab.RECORDS,
     val error: String? = null,
     val isSelecting: Boolean = false,
     val selectedObjectIds: Set<String> = emptySet(),

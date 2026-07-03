@@ -14,6 +14,7 @@ import com.lifepilot.domain.model.TaskSource
 import com.lifepilot.domain.model.UpdateMode
 import com.lifepilot.domain.repository.MetadataRepository
 import com.lifepilot.domain.repository.ObjectRepository
+import com.lifepilot.domain.repository.ProjectRepository
 import com.lifepilot.data.repository.PreferenceManager
 import com.lifepilot.domain.usecase.UpdateObjectStatusUseCase
 import timber.log.Timber
@@ -27,6 +28,7 @@ class ActionPlanExecutorImpl @Inject constructor(
     private val planningEngine: PlanningEngine,
     private val objectRepository: ObjectRepository,
     private val metadataRepository: MetadataRepository,
+    private val projectRepository: ProjectRepository,
     private val updateObjectStatusUseCase: UpdateObjectStatusUseCase,
     private val domainLifeStateEngine: DomainLifeStateEngine,
 ) : ActionPlanExecutor {
@@ -45,10 +47,12 @@ class ActionPlanExecutorImpl @Inject constructor(
 
         val executedSummaries = mutableListOf<String>()
         val affectedDomains = mutableSetOf<String>()
+        // Maps CREATE_PROJECT itemId → created projectId so tasks can reference it.
+        val createdProjectIds = mutableMapOf<String, String>()
         var anyFailure = false
 
         for (item in orderedItems) {
-            val result = runCatching { executeItem(profileId, item, affectedDomains) }
+            val result = runCatching { executeItem(profileId, item, affectedDomains, createdProjectIds) }
             if (result.isSuccess) {
                 executedSummaries.add(item.summary)
             } else {
@@ -81,8 +85,22 @@ class ActionPlanExecutorImpl @Inject constructor(
         profileId: String,
         item: ActionItem,
         affectedDomains: MutableSet<String>,
+        createdProjectIds: MutableMap<String, String>,
     ) {
         when (item) {
+            is ActionItem.CreateProject -> {
+                val project = projectRepository.createProject(
+                    profileId = profileId,
+                    title = item.title,
+                    description = item.description,
+                    domain = item.domain,
+                    emoji = item.emoji,
+                    targetDate = null,
+                    isAiProposed = true,
+                )
+                createdProjectIds[item.itemId] = project.projectId
+                item.domain?.let { affectedDomains.add(it) }
+            }
             is ActionItem.UpdateRecord -> {
                 for (field in item.fields) {
                     val finalValue = if (field.mode == UpdateMode.APPEND) {
@@ -102,7 +120,7 @@ class ActionPlanExecutorImpl @Inject constructor(
                 addObjectDomain(item.objectId, affectedDomains)
             }
             is ActionItem.CreateRecord -> {
-                objectRepository.createObject(
+                val obj = objectRepository.createObject(
                     profileId = profileId,
                     objectType = item.objectType,
                     domain = item.domain,
@@ -110,6 +128,14 @@ class ActionPlanExecutorImpl @Inject constructor(
                     description = item.initialNotes,
                 )
                 affectedDomains.add(item.domain)
+                // Link to project so it surfaces in Project Workspace Documents tab.
+                // The record still lives in Library as the source of truth.
+                item.projectItemId?.let { projItemId ->
+                    createdProjectIds[projItemId]?.let { projId ->
+                        runCatching { projectRepository.linkObject(projId, obj.objectId) }
+                            .onFailure { Timber.w(it, "Failed to link record ${obj.objectId} to project $projId") }
+                    }
+                }
             }
             is ActionItem.UpdateStatus -> {
                 updateObjectStatusUseCase(
@@ -119,16 +145,23 @@ class ActionPlanExecutorImpl @Inject constructor(
                 addObjectDomain(item.objectId, affectedDomains)
             }
             is ActionItem.CreateTask -> {
-                planningEngine.createTask(
+                val resolvedProjectId = item.projectItemId?.let { createdProjectIds[it] }
+                val task = planningEngine.createTask(
                     profileId = profileId,
                     title = item.title,
                     description = item.description,
                     dueDate = item.dueDate,
                     goalId = item.goalId,
                     objectId = item.objectId,
+                    projectId = resolvedProjectId,
                     source = TaskSource.AI_PROPOSED,
                     priority = item.priority,
                 ).getOrThrow()
+                // Also register the link in ProjectDao so observeTasksForProject works.
+                resolvedProjectId?.let { projId ->
+                    runCatching { projectRepository.linkTask(projId, task.taskId) }
+                        .onFailure { Timber.w(it, "Failed to link task ${task.taskId} to project $projId") }
+                }
                 // Tasks don't directly map to a domain; infer from objectId if present.
                 item.objectId?.let { objId ->
                     runCatching { objectRepository.getObjectById(objId)?.domain }?.getOrNull()?.let {

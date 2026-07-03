@@ -9,6 +9,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -39,7 +42,7 @@ fun LifePilotNavHost(deepLinkObjectId: String? = null) {
 
     val topLevelRoutes = TopLevelDestination.entries.map { it.route }
     val showBottomBar = topLevelRoutes.any { route ->
-        currentDestination?.hierarchy?.any { it.route == route } == true
+        currentDestination?.hierarchy?.any { it.route?.substringBefore('?') == route } == true
     }
 
     Scaffold(

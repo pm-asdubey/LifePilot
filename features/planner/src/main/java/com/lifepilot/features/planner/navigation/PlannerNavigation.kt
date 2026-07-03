@@ -6,6 +6,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.lifepilot.features.planner.ui.PlannerScreen
+import com.lifepilot.features.planner.ui.ProjectWorkspaceScreen
 
 fun NavGraphBuilder.plannerScreen(navController: NavController) {
     composable(
@@ -23,6 +24,24 @@ fun NavGraphBuilder.plannerScreen(navController: NavController) {
             },
             onNavigateToSearch = {
                 navController.navigate("search")
+            },
+            onNavigateToProject = { projectId ->
+                navController.navigate("project/$projectId")
+            },
+        )
+    }
+    composable(
+        route = "project/{projectId}",
+        arguments = listOf(
+            navArgument("projectId") {
+                type = NavType.StringType
+            }
+        )
+    ) {
+        ProjectWorkspaceScreen(
+            onBack = { navController.popBackStack() },
+            onNavigateToObject = { objectId ->
+                navController.navigate("object/$objectId")
             },
         )
     }

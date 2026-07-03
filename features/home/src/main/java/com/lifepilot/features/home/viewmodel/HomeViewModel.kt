@@ -41,6 +41,7 @@ import com.lifepilot.domain.repository.GoalRepository
 import com.lifepilot.domain.repository.MetadataRepository
 import com.lifepilot.domain.repository.ObjectRepository
 import com.lifepilot.domain.repository.ProfileRepository
+import com.lifepilot.domain.repository.ProjectRepository
 import com.lifepilot.domain.usecase.UpdateObjectStatusUseCase
 import com.lifepilot.features.home.state.AttentionItem
 import com.lifepilot.features.home.state.AttentionType
@@ -93,6 +94,7 @@ class HomeViewModel @Inject constructor(
     private val fileStorageManager: FileStorageManager,
     private val ocrService: OcrService,
     private val uploadDocumentUseCase: UploadDocumentUseCase,
+    private val projectRepository: ProjectRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -776,6 +778,7 @@ class HomeViewModel @Inject constructor(
                 ?: currentRetrievalDomains.firstOrNull()
         is AiProposal.TaskCompletion -> currentRetrievalDomains.firstOrNull()
         is AiProposal.ActionPlan -> currentRetrievalDomains.firstOrNull()
+        is AiProposal.ProjectCreation -> proposal.domain ?: currentRetrievalDomains.firstOrNull()
     }
 
     private suspend fun executeProposal(proposal: AiProposal): String {
@@ -878,6 +881,26 @@ class HomeViewModel @Inject constructor(
             }
             is AiProposal.ActionPlan -> {
                 error("ActionPlan proposals must be executed via executeActionPlan(), not executeProposal()")
+            }
+            is AiProposal.ProjectCreation -> {
+                val project = projectRepository.createProject(
+                    profileId = profileId,
+                    title = proposal.title,
+                    description = proposal.description,
+                    domain = proposal.domain,
+                    emoji = "🎯",
+                    targetDate = null,
+                    isAiProposed = true,
+                )
+                // Link any objects the AI identified as belonging to this initiative.
+                for (objectId in proposal.linkedObjectIds) {
+                    runCatching { projectRepository.linkObject(project.projectId, objectId) }
+                        .onFailure { Timber.w(it, "Failed to link objectId=$objectId to project ${project.projectId}") }
+                }
+                val linkedSuffix = if (proposal.linkedObjectIds.isNotEmpty()) {
+                    " (${proposal.linkedObjectIds.size} records linked)"
+                } else ""
+                "Project \"${proposal.title}\" created.$linkedSuffix You can find it in Planner → Projects."
             }
         }
     }
@@ -1113,6 +1136,20 @@ class HomeViewModel @Inject constructor(
                         newStatus = newStatus,
                     )
                 }
+                "PROJECT_CREATION" -> {
+                    val linkedObjectsArray = obj.optJSONArray("linkedObjectIds")
+                    val linkedObjectIds = buildList {
+                        if (linkedObjectsArray != null) for (i in 0 until linkedObjectsArray.length()) add(linkedObjectsArray.getString(i))
+                    }
+                    AiProposal.ProjectCreation(
+                        proposalId = UUID.randomUUID().toString(),
+                        summary = summary,
+                        title = obj.optString("title", "New project"),
+                        description = obj.optString("description", "").takeIf { it.isNotBlank() && it != "null" },
+                        domain = obj.optString("domain", "").takeIf { it.isNotBlank() && it != "null" },
+                        linkedObjectIds = linkedObjectIds,
+                    )
+                }
                 "ACTION_PLAN" -> parseActionPlan(obj, summary)
                 else -> parseMetadataUpdate(obj, summary)
             }
@@ -1219,6 +1256,7 @@ class HomeViewModel @Inject constructor(
                     domain = obj.optString("domain", "General"),
                     title = obj.optString("title", "New record"),
                     initialNotes = obj.optString("initialNotes", "").takeIf { it.isNotBlank() && it != "null" },
+                    projectItemId = obj.optString("projectItemId", "").takeIf { it.isNotBlank() && it != "null" },
                     dependsOn = dependsOn,
                 )
                 "UPDATE_STATUS" -> {
@@ -1232,6 +1270,15 @@ class HomeViewModel @Inject constructor(
                         dependsOn = dependsOn,
                     )
                 }
+                "CREATE_PROJECT" -> ActionItem.CreateProject(
+                    itemId = itemId,
+                    summary = itemSummary,
+                    title = obj.optString("title", "New project"),
+                    description = obj.optString("description", "").takeIf { it.isNotBlank() && it != "null" },
+                    emoji = obj.optString("emoji", "🎯").takeIf { it.isNotBlank() && it != "null" } ?: "🎯",
+                    domain = obj.optString("domain", "").takeIf { it.isNotBlank() && it != "null" },
+                    dependsOn = dependsOn,
+                )
                 "CREATE_TASK" -> ActionItem.CreateTask(
                     itemId = itemId,
                     summary = itemSummary,
@@ -1244,6 +1291,7 @@ class HomeViewModel @Inject constructor(
                     }.getOrDefault(TaskPriority.MEDIUM),
                     goalId = obj.optString("goalId", "").takeIf { it.isNotBlank() && it != "null" },
                     objectId = obj.optString("objectId", "").takeIf { it.isNotBlank() && it != "null" },
+                    projectItemId = obj.optString("projectItemId", "").takeIf { it.isNotBlank() && it != "null" },
                     dependsOn = dependsOn,
                 )
                 "UPDATE_DOMAIN_UNDERSTANDING" -> ActionItem.UpdateDomainUnderstanding(
@@ -1435,6 +1483,7 @@ class HomeViewModel @Inject constructor(
         is ActionItem.UpdateRecord,
         is ActionItem.UpdateStatus,
         is ActionItem.UpdateDomainUnderstanding -> true
+        is ActionItem.CreateProject,
         is ActionItem.CreateRecord,
         is ActionItem.CreateTask -> false
     }

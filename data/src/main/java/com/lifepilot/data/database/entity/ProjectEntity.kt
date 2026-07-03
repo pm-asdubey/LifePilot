@@ -7,7 +7,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 
 @Entity(
-    tableName = "objects",
+    tableName = "projects",
     foreignKeys = [
         ForeignKey(
             entity = ProfileEntity::class,
@@ -18,25 +18,17 @@ import androidx.room.PrimaryKey
     ],
     indices = [
         Index(value = ["profile_id"]),
-        Index(value = ["object_type"]),
-        Index(value = ["domain"]),
         Index(value = ["status"]),
-        Index(value = ["project_id"]),
+        Index(value = ["domain"]),
     ]
 )
-data class ObjectEntity(
+data class ProjectEntity(
     @PrimaryKey
-    @ColumnInfo(name = "object_id")
-    val objectId: String,
+    @ColumnInfo(name = "project_id")
+    val projectId: String,
 
     @ColumnInfo(name = "profile_id")
     val profileId: String,
-
-    @ColumnInfo(name = "object_type")
-    val objectType: String,
-
-    @ColumnInfo(name = "domain")
-    val domain: String,
 
     @ColumnInfo(name = "title")
     val title: String,
@@ -44,21 +36,24 @@ data class ObjectEntity(
     @ColumnInfo(name = "description")
     val description: String?,
 
+    @ColumnInfo(name = "domain")
+    val domain: String?,
+
     @ColumnInfo(name = "status")
     val status: String,
 
-    @ColumnInfo(name = "archived")
-    val archived: Boolean,
+    @ColumnInfo(name = "emoji", defaultValue = "🎯")
+    val emoji: String = "🎯",
 
-    @ColumnInfo(name = "deleted")
-    val deleted: Boolean,
+    @ColumnInfo(name = "target_date")
+    val targetDate: Long? = null,
+
+    @ColumnInfo(name = "is_ai_proposed", defaultValue = "0")
+    val isAiProposed: Boolean = false,
 
     @ColumnInfo(name = "created_at")
     val createdAt: Long,
 
     @ColumnInfo(name = "updated_at")
     val updatedAt: Long,
-
-    @ColumnInfo(name = "project_id")
-    val projectId: String? = null,
 )

@@ -55,6 +55,7 @@ interface PlanningEngine {
         dueDate: LocalDate?,
         goalId: String?,
         objectId: String?,
+        projectId: String? = null,
         source: com.lifepilot.domain.model.TaskSource,
         priority: com.lifepilot.domain.model.TaskPriority,
     ): Result<Task>

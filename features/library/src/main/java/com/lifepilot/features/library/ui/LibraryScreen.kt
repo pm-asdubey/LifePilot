@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.outlined.AccountTree
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Search
@@ -48,6 +49,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -75,6 +78,9 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import com.lifepilot.domain.model.DomainLifeState
 import com.lifepilot.domain.model.ObjectStatus
+import com.lifepilot.domain.model.Project
+import com.lifepilot.domain.model.ProjectStatus
+import com.lifepilot.features.library.state.LibraryTab
 import com.lifepilot.features.library.state.LibrarySortOrder
 import com.lifepilot.features.library.viewmodel.LibraryViewModel
 
@@ -84,6 +90,7 @@ fun LibraryScreen(
     onNavigateToObject: (String) -> Unit,
     onAddObject: () -> Unit,
     onNavigateToSearch: () -> Unit = {},
+    onNavigateToProject: (String) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: LibraryViewModel = hiltViewModel(),
 ) {
@@ -270,6 +277,40 @@ fun LibraryScreen(
                 .padding(innerPadding),
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
+                // Top-level tab switcher: Records | Projects
+                TabRow(
+                    selectedTabIndex = uiState.selectedTab.ordinal,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Tab(
+                        selected = uiState.selectedTab == LibraryTab.RECORDS,
+                        onClick = { viewModel.selectTab(LibraryTab.RECORDS) },
+                        text = { Text("Records") },
+                    )
+                    Tab(
+                        selected = uiState.selectedTab == LibraryTab.PROJECTS,
+                        onClick = { viewModel.selectTab(LibraryTab.PROJECTS) },
+                        text = { Text("Projects") },
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Outlined.AccountTree,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                            )
+                        },
+                    )
+                }
+
+                when (uiState.selectedTab) {
+                    LibraryTab.PROJECTS -> {
+                        ProjectsTabContent(
+                            projects = uiState.projects,
+                            onNavigateToProject = onNavigateToProject,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    LibraryTab.RECORDS -> {
+                // Records tab content below
                 if (uiState.domains.isNotEmpty()) {
                     LazyRow(
                         contentPadding = PaddingValues(horizontal = Spacing.md),
@@ -448,6 +489,8 @@ fun LibraryScreen(
                         }
                     }
                 }
+                    } // end LibraryTab.RECORDS
+                } // end when(selectedTab)
             }
         }
     }
@@ -498,6 +541,100 @@ private fun DomainUnderstandingCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProjectsTabContent(
+    projects: List<Project>,
+    onNavigateToProject: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (projects.isEmpty()) {
+        EmptyState(
+            icon = Icons.Outlined.AccountTree,
+            title = "No projects yet",
+            description = "Tell the AI about a trip, purchase, or life event and it will create a project to keep everything together.",
+            modifier = modifier.fillMaxWidth(),
+        )
+        return
+    }
+
+    LazyColumn(
+        contentPadding = PaddingValues(horizontal = Spacing.md, vertical = Spacing.sm),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+        modifier = modifier.fillMaxSize(),
+    ) {
+        items(projects, key = { it.projectId }) { project ->
+            ProjectCard(project = project, onClick = { onNavigateToProject(project.projectId) })
+        }
+    }
+}
+
+@Composable
+private fun ProjectCard(
+    project: Project,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val statusColor = when (project.status) {
+        ProjectStatus.ACTIVE -> MaterialTheme.colorScheme.primary
+        ProjectStatus.COMPLETED -> MaterialTheme.colorScheme.secondary
+        ProjectStatus.ARCHIVED -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    Card(
+        onClick = onClick,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(Spacing.md),
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.AccountTree,
+                contentDescription = null,
+                tint = statusColor,
+                modifier = Modifier.size(24.dp),
+            )
+            Spacer(modifier = Modifier.width(Spacing.md))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = project.title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                project.description?.let { desc ->
+                    Text(
+                        text = desc.take(80),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    project.domain?.let { domain ->
+                        Text(
+                            text = domain,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = " · ",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Text(
+                        text = project.status.name.lowercase().replaceFirstChar { it.uppercase() },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = statusColor,
+                    )
+                }
             }
         }
     }
