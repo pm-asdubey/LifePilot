@@ -15,8 +15,8 @@ plugins {
 // versionName follows semver: MAJOR.MINOR.PATCH
 // GitHub Release tag = "v{versionName}" (e.g. v1.0.0)
 // ---------------------------------------------------------------------------
-val appVersionCode = 1
-val appVersionName = "1.0.0"
+val appVersionCode = 2
+val appVersionName = "1.0.1"
 
 // Load local.properties explicitly — findProperty() does NOT read custom keys from it.
 val localProps = Properties().also { props ->
