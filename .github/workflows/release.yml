@@ -1,9 +1,13 @@
 name: Release
 
+# Fires ONLY when you push a version tag (e.g. v1.2.0).
+# Every regular branch/PR push goes through ci.yml (tests only) — not this file.
+# To release: bump versionCode + versionName in app/build.gradle.kts, commit, then:
+#   git tag v1.2.0 && git push origin v1.2.0
 on:
   push:
-    branches:
-      - "release/**"
+    tags:
+      - 'v*'
   workflow_dispatch:
     inputs:
       notes:
@@ -13,7 +17,7 @@ on:
 
 concurrency:
   group: release
-  cancel-in-progress: false  # Never cancel a release in progress
+  cancel-in-progress: false
 
 jobs:
   release:
@@ -21,13 +25,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
-      contents: write  # Required to create GitHub Releases
+      contents: write
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Full history for accurate release notes
+          fetch-depth: 0
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -37,18 +41,11 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
-        with:
-          cache-read-only: false
-
-      - name: Validate Gradle wrapper
-        uses: gradle/actions/wrapper-validation@v3
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # ---------------------------------------------------------------------------
-      # Extract version from Gradle build file (single source of truth)
-      # ---------------------------------------------------------------------------
+      # ── Extract version from build file (single source of truth) ───────────
       - name: Extract version info
         id: version
         run: |
@@ -56,103 +53,82 @@ jobs:
           VERSION_CODE=$(grep 'val appVersionCode' app/build.gradle.kts | grep -oP '\d+')
           echo "name=${VERSION_NAME}" >> $GITHUB_OUTPUT
           echo "code=${VERSION_CODE}" >> $GITHUB_OUTPUT
-          echo "tag=v${VERSION_NAME}" >> $GITHUB_OUTPUT
           echo "build_time=$(date -u '+%Y-%m-%d %H:%M UTC')" >> $GITHUB_OUTPUT
           echo "Version: ${VERSION_NAME} (${VERSION_CODE})"
 
-      # ---------------------------------------------------------------------------
-      # Signing: decode keystore from GitHub Secret
-      # ---------------------------------------------------------------------------
+      # ── Signing: decode keystore from GitHub Secret ─────────────────────────
       - name: Decode keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
           if [ -n "$KEYSTORE_BASE64" ]; then
             echo "$KEYSTORE_BASE64" | base64 --decode > keystore.jks
-            echo "Keystore decoded successfully"
+            echo "KEYSTORE_PATH=${{ github.workspace }}/keystore.jks" >> $GITHUB_ENV
+            echo "Keystore decoded"
           else
-            echo "WARNING: KEYSTORE_BASE64 not set — APK will be unsigned"
+            echo "WARNING: KEYSTORE_BASE64 not set — APKs will be unsigned (debug-signed)"
           fi
 
-      # ---------------------------------------------------------------------------
-      # Run tests before building release
-      # ---------------------------------------------------------------------------
+      # ── Tests ───────────────────────────────────────────────────────────────
       - name: Run unit tests
-        run: ./gradlew testDebugUnitTest --no-daemon --stacktrace
+        run: ./gradlew test --no-daemon
 
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-test-results
-          path: "**/build/reports/tests/"
-          retention-days: 14
-
-      # ---------------------------------------------------------------------------
-      # Build signed release APK
-      # ---------------------------------------------------------------------------
-      - name: Build release APK
+      # ── Build demo flavor ───────────────────────────────────────────────────
+      - name: Build demo release APK
         env:
-          KEYSTORE_PATH: ${{ github.workspace }}/keystore.jks
+          KEYSTORE_PATH: ${{ env.KEYSTORE_PATH }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          DEMO_API_KEY: ${{ secrets.DEMO_API_KEY }}
+        run: |
+          ./gradlew assembleDemoRelease \
+            -Pgithub.repo=${{ github.repository }} \
+            --no-daemon
+
+      # ── Build standard flavor ───────────────────────────────────────────────
+      - name: Build standard release APK
+        env:
+          KEYSTORE_PATH: ${{ env.KEYSTORE_PATH }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          ./gradlew assembleRelease \
+          ./gradlew assembleStandardRelease \
             -Pgithub.repo=${{ github.repository }} \
-            --no-daemon \
-            --stacktrace
+            --no-daemon
 
-      - name: Locate APK
-        id: apk
-        run: |
-          APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
-          APK_NAME="LifePilot-${{ steps.version.outputs.name }}-${{ github.sha }}.apk"
-          mv "$APK_PATH" "$APK_NAME"
-          echo "path=${APK_NAME}" >> $GITHUB_OUTPUT
-          echo "APK: ${APK_NAME}"
-
-      # ---------------------------------------------------------------------------
-      # Assemble release notes
-      # ---------------------------------------------------------------------------
+      # ── Assemble release notes ──────────────────────────────────────────────
       - name: Assemble release notes
         id: notes
         run: |
           MANUAL_NOTES="${{ github.event.inputs.notes }}"
-          COMMITS=$(git log --pretty=format:"- %s" $(git describe --tags --abbrev=0 2>/dev/null || git rev-list --max-parents=0 HEAD)..HEAD 2>/dev/null | head -20 || echo "- Initial release")
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || git rev-list --max-parents=0 HEAD)
+          COMMITS=$(git log --pretty=format:"- %s" "${PREV_TAG}..HEAD" 2>/dev/null | head -20 || echo "- Initial release")
           {
             echo "body<<EOF"
-            if [ -n "$MANUAL_NOTES" ]; then
-              echo "$MANUAL_NOTES"
-              echo ""
-            fi
+            [ -n "$MANUAL_NOTES" ] && echo "$MANUAL_NOTES" && echo ""
             echo "## What's new"
             echo "$COMMITS"
             echo ""
             echo "---"
             echo "**Version:** ${{ steps.version.outputs.name }} (build ${{ steps.version.outputs.code }})"
             echo "**Built:** ${{ steps.version.outputs.build_time }}"
-            echo "**Commit:** \`${{ github.sha }}\`"
             echo "EOF"
           } >> $GITHUB_OUTPUT
 
-      # ---------------------------------------------------------------------------
-      # Create or update GitHub Release
-      # ---------------------------------------------------------------------------
+      # ── Publish ─────────────────────────────────────────────────────────────
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.version.outputs.tag }}
+          tag_name: ${{ github.ref_name }}
           name: "LifePilot ${{ steps.version.outputs.name }}"
           body: ${{ steps.notes.outputs.body }}
           draft: false
           prerelease: false
-          files: ${{ steps.apk.outputs.path }}
           make_latest: true
-
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-apk
-          path: ${{ steps.apk.outputs.path }}
-          retention-days: 30
+          files: |
+            app/build/outputs/apk/demo/release/LifePilot-demo-${{ steps.version.outputs.name }}.apk
+            app/build/outputs/apk/standard/release/LifePilot-standard-${{ steps.version.outputs.name }}.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

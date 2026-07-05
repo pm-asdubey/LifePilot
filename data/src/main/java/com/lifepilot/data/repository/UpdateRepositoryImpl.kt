@@ -36,6 +36,7 @@ class UpdateRepositoryImpl @Inject constructor(
     private val okHttpClient: OkHttpClient,
     @Named("currentVersionName") private val currentVersion: String,
     @Named("githubRepo") private val githubRepo: String,
+    @Named("currentFlavor") private val currentFlavor: String,
 ) : UpdateRepository {
 
     companion object {
@@ -128,12 +129,16 @@ class UpdateRepositoryImpl @Inject constructor(
 
             if (tagName.isBlank() || htmlUrl.isBlank()) return
 
-            // Find the first .apk asset download URL from the release assets array.
+            // Find the APK asset that matches the current flavor (e.g. "-demo-" for the
+            // demo flavor). Falls back to any .apk if no flavor-specific one is found.
             val apkDownloadUrl = runCatching {
                 val assets = obj.optJSONArray("assets")
-                (0 until (assets?.length() ?: 0))
+                val allApks = (0 until (assets?.length() ?: 0))
                     .map { assets!!.getJSONObject(it) }
-                    .firstOrNull { it.optString("name").endsWith(".apk") }
+                    .filter { it.optString("name").endsWith(".apk") }
+                // Prefer an asset whose name contains the current flavor, else take first.
+                (allApks.firstOrNull { it.optString("name").contains("-$currentFlavor-", ignoreCase = true) }
+                    ?: allApks.firstOrNull())
                     ?.optString("browser_download_url")
             }.getOrNull()
 

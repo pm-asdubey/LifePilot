@@ -27,4 +27,12 @@ object AppModule {
     @Provides
     @Named("githubRepo")
     fun provideGithubRepo(): String = BuildConfig.GITHUB_REPO
+
+    /**
+     * Provides the product flavor name so UpdateRepositoryImpl can pick the correct
+     * APK asset from a release ("demo", "standard", "stable").
+     */
+    @Provides
+    @Named("currentFlavor")
+    fun provideCurrentFlavor(): String = BuildConfig.FLAVOR
 }

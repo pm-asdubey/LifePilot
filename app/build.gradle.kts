@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -15,6 +17,12 @@ plugins {
 // ---------------------------------------------------------------------------
 val appVersionCode = 1
 val appVersionName = "1.0.0"
+
+// Load local.properties explicitly — findProperty() does NOT read custom keys from it.
+val localProps = Properties().also { props ->
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { props.load(it) }
+}
 
 // GitHub repository slug for OTA update checking.
 // Override in local.properties: github.repo=yourname/lifepilot
@@ -54,6 +62,12 @@ android {
         }
 
         buildConfigField("String", "GITHUB_REPO", "\"$githubRepo\"")
+
+        // Demo API key — set demo.api.key in local.properties (never commit).
+        // Baked into BuildConfig so the seeder can pre-configure the app for demo builds.
+        val demoApiKey = System.getenv("DEMO_API_KEY")
+            ?: localProps.getProperty("demo.api.key") ?: ""
+        buildConfigField("String", "DEMO_API_KEY", "\"$demoApiKey\"")
     }
 
     signingConfigs {
@@ -81,6 +95,40 @@ android {
                 "proguard-rules.pro"
             )
             signingConfig = signingConfigs.findByName("release")
+        }
+    }
+
+    // Three distributions from the same codebase:
+    //   standard → includes first-run onboarding (paste-prompt / scan)
+    //   stable   → NO onboarding; separate applicationId so both install side by side
+    //   demo     → NO onboarding, pre-seeded data + API key; for recruiter / demo use
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("standard") {
+            dimension = "distribution"
+            buildConfigField("boolean", "ONBOARDING_ENABLED", "true")
+        }
+        create("stable") {
+            dimension = "distribution"
+            applicationIdSuffix = ".stable"
+            versionNameSuffix = "-stable"
+            buildConfigField("boolean", "ONBOARDING_ENABLED", "false")
+        }
+        create("demo") {
+            dimension = "distribution"
+            applicationIdSuffix = ".demo"
+            versionNameSuffix = "-demo"
+            buildConfigField("boolean", "ONBOARDING_ENABLED", "false")
+        }
+    }
+
+    // Name all release APKs with their flavor so the in-app updater can match the
+    // correct asset by flavor name (e.g. "-demo-" for demo, "-standard-" for standard).
+    applicationVariants.configureEach {
+        val variant = this
+        outputs.configureEach {
+            val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            output.outputFileName = "LifePilot-${variant.flavorName}-${variant.versionName}.apk"
         }
     }
 
@@ -132,6 +180,8 @@ dependencies {
     implementation(project(":features:settings"))
     implementation(project(":features:timeline"))
     implementation(project(":features:planner"))
+    // Onboarding "Scan document" path uses the ML Kit document scanner (crop + enhance).
+    implementation(libs.mlkit.document.scanner)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
