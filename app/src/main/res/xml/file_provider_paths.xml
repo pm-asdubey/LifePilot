@@ -16,4 +16,8 @@
     <files-path
         name="exports"
         path="exports/" />
+    <!-- APK downloads for in-app update installation -->
+    <external-files-path
+        name="apk_downloads"
+        path="Downloads/" />
 </paths>

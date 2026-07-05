@@ -95,6 +95,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.lifepilot.designsystem.components.AiThinkingIndicator
 import com.lifepilot.designsystem.components.EmptyState
 import com.lifepilot.designsystem.components.GoalProposalCard
 import com.lifepilot.designsystem.components.HomeBriefSkeleton
@@ -109,6 +110,7 @@ import com.lifepilot.domain.model.Conversation
 import com.lifepilot.domain.model.Goal
 import com.lifepilot.domain.model.ActionPlan
 import com.lifepilot.domain.model.AiProposal
+import com.lifepilot.domain.model.Project
 import com.lifepilot.domain.model.StoredMessage
 import com.lifepilot.features.home.state.AttentionItem
 import com.lifepilot.features.home.state.AttentionUrgency
@@ -125,22 +127,20 @@ fun HomeScreen(
     onNavigateToVerification: (objectId: String, versionId: String) -> Unit = { _, _ -> },
     onNavigateToPlanner: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
+    deepLinkConversationId: String? = null,
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-    var showAttachmentSheet by remember { mutableStateOf(false) }
-    var pendingCameraUri by remember { mutableStateOf<android.net.Uri?>(null) }
 
-    val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicture(),
-    ) { success ->
-        if (success) {
-            pendingCameraUri?.let { viewModel.processAttachment(it) }
+    // Opened from the "answer ready" notification → resume that conversation.
+    LaunchedEffect(deepLinkConversationId) {
+        if (!deepLinkConversationId.isNullOrBlank()) {
+            viewModel.resumeConversation(deepLinkConversationId)
         }
-        pendingCameraUri = null
     }
+    var showAttachmentSheet by remember { mutableStateOf(false) }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
@@ -155,38 +155,75 @@ fun HomeScreen(
         scanResult?.pdf?.uri?.let { viewModel.processAttachment(it) }
     }
 
+    // Normal camera — capture ANY subject. If the photo is a document, OCR reads it and the AI
+    // classifies it; otherwise it's just kept as a photo. (Use "Scan a document" for auto-crop.)
+    var pendingCameraUri by androidx.compose.runtime.saveable.rememberSaveable {
+        mutableStateOf<String?>(null)
+    }
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture(),
+    ) { success ->
+        if (success) pendingCameraUri?.let { viewModel.processAttachment(android.net.Uri.parse(it)) }
+        pendingCameraUri = null
+    }
+    val launchCamera: () -> Unit = {
+        val dir = (context.getExternalFilesDir("camera_captures")
+            ?: context.filesDir.resolve("camera_captures")).also { it.mkdirs() }
+        val file = java.io.File(dir, "capture_${System.currentTimeMillis()}.jpg")
+        val uri = androidx.core.content.FileProvider.getUriForFile(
+            context, "${context.packageName}.fileprovider", file,
+        )
+        pendingCameraUri = uri.toString()
+        cameraLauncher.launch(uri)
+    }
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) {
+            launchCamera()
+        } else {
+            android.widget.Toast.makeText(
+                context,
+                "Camera permission is needed to take a photo. You can still use Scan, Photos or Files.",
+                android.widget.Toast.LENGTH_LONG,
+            ).show()
+        }
+    }
+
+    // "Scan a document" uses the ML Kit document scanner (auto crop/deskew/enhance → clean PDF).
+    val launchScanner: () -> Unit = {
+        val options = GmsDocumentScannerOptions.Builder()
+            .setScannerMode(GmsDocumentScannerOptions.SCANNER_MODE_FULL)
+            .setGalleryImportAllowed(true)
+            .setPageLimit(10)
+            .setResultFormats(GmsDocumentScannerOptions.RESULT_FORMAT_PDF)
+            .build()
+        GmsDocumentScanning.getClient(options)
+            .getStartScanIntent(context as androidx.activity.ComponentActivity)
+            .addOnSuccessListener { intentSender ->
+                scannerLauncher.launch(IntentSenderRequest.Builder(intentSender).build())
+            }
+            .addOnFailureListener { e ->
+                timber.log.Timber.e(e, "Document scanner failed to start")
+            }
+    }
+
     if (showAttachmentSheet) {
         AttachmentOptionSheet(
             onCamera = {
                 showAttachmentSheet = false
-                val captureDir = (context.getExternalFilesDir("camera_captures")
-                    ?: context.filesDir.resolve("camera_captures"))
-                    .also { it.mkdirs() }
-                val captureFile = File(captureDir, "capture_${System.currentTimeMillis()}.jpg")
-                val uri = FileProvider.getUriForFile(
-                    context,
-                    "${context.packageName}.fileprovider",
-                    captureFile,
-                )
-                pendingCameraUri = uri
-                cameraLauncher.launch(uri)
+                if (androidx.core.content.ContextCompat.checkSelfPermission(
+                        context, android.Manifest.permission.CAMERA,
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                ) {
+                    launchCamera()
+                } else {
+                    cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+                }
             },
             onScan = {
                 showAttachmentSheet = false
-                val options = GmsDocumentScannerOptions.Builder()
-                    .setScannerMode(GmsDocumentScannerOptions.SCANNER_MODE_FULL)
-                    .setGalleryImportAllowed(true)
-                    .setPageLimit(10)
-                    .setResultFormats(GmsDocumentScannerOptions.RESULT_FORMAT_PDF)
-                    .build()
-                GmsDocumentScanning.getClient(options)
-                    .getStartScanIntent(context as androidx.activity.ComponentActivity)
-                    .addOnSuccessListener { intentSender ->
-                        scannerLauncher.launch(IntentSenderRequest.Builder(intentSender).build())
-                    }
-                    .addOnFailureListener { e ->
-                        timber.log.Timber.e(e, "Document scanner failed to start")
-                    }
+                launchScanner()
             },
             onPhotos = {
                 filePickerLauncher.launch("image/*")
@@ -255,6 +292,7 @@ fun HomeScreen(
                             item.objectId?.let { onNavigateToObject(it) }
                         },
                         onGoalClick = { onNavigateToPlanner() },
+                        onProjectClick = { onNavigateToPlanner() },
                         onResumeConversation = { viewModel.resumeConversation(it.conversationId) },
                         onViewAllConversations = viewModel::showConversationHistory,
                         modifier = Modifier.fillMaxSize(),
@@ -266,7 +304,7 @@ fun HomeScreen(
                         isConfigured = uiState.isAiConfigured,
                         pendingAction = uiState.pendingAction,
                         pendingContextQuestion = uiState.pendingContextQuestion,
-                        attachedDocumentContext = uiState.attachedDocumentContext,
+                        attachedDocumentByMessageId = uiState.attachedDocumentByMessageId,
                         onApproveAction = viewModel::approveAction,
                         onApproveActionPlan = viewModel::approveActionPlan,
                         onDismissAction = viewModel::dismissAction,
@@ -274,6 +312,55 @@ fun HomeScreen(
                         onNavigateToSettings = onNavigateToSettings,
                         modifier = Modifier.fillMaxSize(),
                     )
+                }
+            }
+
+            // Queued document chip — sits prominently in the chat until the first message is sent.
+            uiState.pendingAttachmentDisplayName?.let { name ->
+                androidx.compose.material3.Surface(
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .padding(horizontal = Spacing.md, vertical = Spacing.xs)
+                        .fillMaxWidth(),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = Spacing.sm, vertical = Spacing.xs),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Description,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(modifier = Modifier.width(Spacing.xs))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = name,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            Text(
+                                text = "Attached — ask a question, then send to save it",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+                            )
+                        }
+                        IconButton(
+                            onClick = viewModel::clearPendingAttachment,
+                            modifier = Modifier.size(28.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Close,
+                                contentDescription = "Remove attachment",
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.size(16.dp),
+                            )
+                        }
+                    }
                 }
             }
 
@@ -374,11 +461,13 @@ private fun DailyBriefContent(
     uiState: com.lifepilot.features.home.state.HomeUiState,
     onItemClick: (AttentionItem) -> Unit,
     onGoalClick: (Goal) -> Unit,
+    onProjectClick: (Project) -> Unit,
     onResumeConversation: (Conversation) -> Unit,
     onViewAllConversations: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val hasContent = uiState.attentionItems.isNotEmpty() ||
+    val hasContent = uiState.activeProjects.isNotEmpty() ||
+        uiState.attentionItems.isNotEmpty() ||
         uiState.activeGoals.isNotEmpty() ||
         uiState.recentConversations.isNotEmpty()
 
@@ -405,6 +494,24 @@ private fun DailyBriefContent(
                         description = "Nothing needs your attention right now.\nAsk LifePilot anything using the bar below.",
                     )
                 }
+            }
+        }
+
+        if (uiState.activeProjects.isNotEmpty()) {
+            item {
+                SectionHeader(
+                    title = "ACTIVE PROJECTS",
+                    actionLabel = "View all",
+                    onAction = { onProjectClick(uiState.activeProjects.first()) },
+                    modifier = Modifier.padding(top = Spacing.md),
+                )
+            }
+            items(uiState.activeProjects, key = { "proj_${it.projectId}" }) { project ->
+                HomeProjectCard(
+                    project = project,
+                    onClick = { onProjectClick(project) },
+                    modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.xs),
+                )
             }
         }
 
@@ -515,6 +622,62 @@ private fun AttentionCard(
 }
 
 @Composable
+private fun HomeProjectCard(
+    project: Project,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
+        shape = MaterialTheme.shapes.large,
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(
+                        MaterialTheme.colorScheme.primaryContainer,
+                        RoundedCornerShape(8.dp),
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = project.emoji,
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = project.title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                project.domain?.takeIf { it.isNotBlank() }?.let { domainLabel ->
+                    Text(
+                        text = domainLabel,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun CompactGoalCard(
     goal: Goal,
     onClick: () -> Unit,
@@ -610,7 +773,7 @@ private fun AiWorkspaceContent(
     isConfigured: Boolean,
     pendingAction: AiProposal?,
     pendingContextQuestion: String?,
-    attachedDocumentContext: AttachedDocumentContext?,
+    attachedDocumentByMessageId: Map<String, AttachedDocumentContext>,
     onApproveAction: () -> Unit,
     onApproveActionPlan: (ActionPlan) -> Unit,
     onDismissAction: () -> Unit,
@@ -620,9 +783,12 @@ private fun AiWorkspaceContent(
 ) {
     val listState = rememberLazyListState()
 
-    LaunchedEffect(messages.size) {
+    // Scroll to the actual last item in the LazyColumn, which includes interleaved attachment
+    // bubbles. Using messages.lastIndex alone is wrong when attachments are present — each
+    // attachment adds an extra item, pushing the true last item further down the list.
+    LaunchedEffect(messages.size, attachedDocumentByMessageId.size) {
         if (messages.isNotEmpty()) {
-            listState.animateScrollToItem(messages.lastIndex)
+            listState.animateScrollToItem(Int.MAX_VALUE)
         }
     }
 
@@ -683,20 +849,26 @@ private fun AiWorkspaceContent(
                 contentPadding = PaddingValues(horizontal = Spacing.md, vertical = Spacing.sm),
                 verticalArrangement = Arrangement.spacedBy(Spacing.sm),
             ) {
-                items(messages, key = { it.messageId }) { msg ->
-                    MessageBubble(
-                        role = msg.role,
-                        content = msg.content,
-                    )
-                }
-                if (attachedDocumentContext != null) {
-                    item(key = "attached_document") {
-                        DocumentAttachmentBubble(context = attachedDocumentContext)
+                messages.forEach { msg ->
+                    item(key = msg.messageId) {
+                        MessageBubble(
+                            role = msg.role,
+                            content = msg.content,
+                        )
+                    }
+                    // Attachment chip stays pinned directly under the message it was sent with.
+                    attachedDocumentByMessageId[msg.messageId]?.let { attached ->
+                        item(key = "attachment_${msg.messageId}") {
+                            DocumentAttachmentBubble(context = attached)
+                        }
                     }
                 }
                 if (isLoading) {
                     item(key = "thinking") {
-                        ThinkingBubble(statusMessage = aiStatusMessage)
+                        AiThinkingIndicator(
+                            statusMessage = aiStatusMessage,
+                            modifier = Modifier.padding(start = Spacing.xs),
+                        )
                     }
                 }
             }
@@ -860,11 +1032,13 @@ private fun MessageBubble(
         verticalAlignment = Alignment.Top,
     ) {
         if (!isUser) {
-            Icon(
-                imageVector = Icons.Outlined.AutoAwesome,
+            // The AI's avatar is the LifePilot compass mark.
+            androidx.compose.foundation.Image(
+                painter = androidx.compose.ui.graphics.vector.rememberVectorPainter(
+                    com.lifepilot.designsystem.icon.LifePilotLogo.imageVector,
+                ),
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(22.dp),
             )
             Spacer(modifier = Modifier.width(Spacing.xs))
         }
@@ -883,8 +1057,15 @@ private fun MessageBubble(
             ),
             modifier = Modifier.fillMaxWidth(0.85f),
         ) {
+            // AI text is rendered through a tiny dependency-free Markdown parser so **bold**,
+            // *italic* and # headers show styled; user text stays plain. Run-on numbered lists were
+            // already split in parseAiResponse.
             Text(
-                text = content,
+                text = if (isUser) {
+                    androidx.compose.ui.text.AnnotatedString(content)
+                } else {
+                    com.lifepilot.designsystem.text.toDisplayAnnotatedString(content)
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (isUser)
                     MaterialTheme.colorScheme.onPrimary
@@ -901,76 +1082,6 @@ private fun MessageBubble(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(20.dp),
             )
-        }
-    }
-}
-
-@Composable
-private fun ThinkingBubble(
-    statusMessage: String?,
-    modifier: Modifier = Modifier,
-) {
-    var isExpanded by remember { mutableStateOf(false) }
-
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = Spacing.xs),
-        horizontalArrangement = Arrangement.Start,
-        verticalAlignment = Alignment.Top,
-    ) {
-        Icon(
-            imageVector = Icons.Outlined.AutoAwesome,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(20.dp),
-        )
-        Spacer(modifier = Modifier.width(Spacing.xs))
-        Card(
-            shape = RoundedCornerShape(
-                topStart = 4.dp,
-                topEnd = 16.dp,
-                bottomStart = 16.dp,
-                bottomEnd = 16.dp,
-            ),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            ),
-            modifier = Modifier.widthIn(min = 120.dp),
-            onClick = { isExpanded = !isExpanded },
-        ) {
-            Column(
-                modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm),
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
-                ) {
-                    Text(
-                        text = "Thinking",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Icon(
-                        imageVector = if (isExpanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
-                        contentDescription = if (isExpanded) "Collapse" else "See what I'm doing",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(16.dp),
-                    )
-                }
-                AnimatedVisibility(
-                    visible = isExpanded,
-                    enter = expandVertically() + fadeIn(),
-                    exit = shrinkVertically() + fadeOut(),
-                ) {
-                    Text(
-                        text = statusMessage ?: "Working on it…",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = Spacing.xs),
-                    )
-                }
-            }
         }
     }
 }

@@ -1,12 +1,19 @@
 package com.lifepilot.features.settings.viewmodel
 
+import android.app.DownloadManager
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.Settings
 import androidx.core.content.FileProvider
+import androidx.core.content.getSystemService
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lifepilot.data.repository.PreferenceManager
 import com.lifepilot.domain.model.Profile
+import com.lifepilot.domain.model.UpdateInfo
 import com.lifepilot.domain.model.UpdateStatus
 import com.lifepilot.domain.repository.ProfileRepository
 import com.lifepilot.domain.repository.UpdateRepository
@@ -48,11 +55,14 @@ data class SettingsUiState(
     val importResult: ImportResult? = null,
     val importError: String? = null,
     val biometricLockEnabled: Boolean = false,
+    val themeMode: String = "system",
     val profileToEdit: Profile? = null,
     val editProfileName: String = "",
     val profileToDelete: Profile? = null,
     val updateStatus: UpdateStatus = UpdateStatus.Unknown,
     val isCheckingUpdate: Boolean = false,
+    val isDownloadingUpdate: Boolean = false,
+    val downloadError: String? = null,
 )
 
 @HiltViewModel
@@ -113,6 +123,22 @@ class SettingsViewModel @Inject constructor(
                     _uiState.update { it.copy(updateStatus = status) }
                 }
         }
+
+        viewModelScope.launch {
+            preferenceManager.themeMode
+                .catch { e -> Timber.w(e, "Error observing theme mode") }
+                .collect { mode ->
+                    _uiState.update { it.copy(themeMode = mode) }
+                }
+        }
+    }
+
+    /** mode: "light", "dark", or "system". */
+    fun setThemeMode(mode: String) {
+        viewModelScope.launch {
+            runCatching { preferenceManager.setThemeMode(mode) }
+                .onFailure { Timber.e(it, "Failed to set theme mode") }
+        }
     }
 
     fun checkForUpdate() {
@@ -122,6 +148,110 @@ class SettingsViewModel @Inject constructor(
             runCatching { updateRepository.checkForUpdate() }
                 .onFailure { Timber.w(it, "Manual update check failed") }
             _uiState.update { it.copy(isCheckingUpdate = false) }
+        }
+    }
+
+    /**
+     * Downloads the APK from [info.apkDownloadUrl] via DownloadManager and opens the
+     * system package installer when complete. Falls back to opening the release page in
+     * a browser if no direct APK URL is available.
+     *
+     * On Android 8+, if "Install unknown apps" has not been granted for this app, opens
+     * the system settings page so the user can grant it — they then need to tap again.
+     */
+    fun downloadAndInstall(info: UpdateInfo) {
+        val apkUrl = info.apkDownloadUrl
+        if (apkUrl == null) {
+            // No direct APK link — open the release page in browser as a fallback.
+            runCatching {
+                context.startActivity(
+                    Intent(Intent.ACTION_VIEW, Uri.parse(info.releaseUrl))
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                )
+            }
+            return
+        }
+
+        // Android 8+: check "Install unknown apps" permission for this package source.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+            !context.packageManager.canRequestPackageInstalls()
+        ) {
+            runCatching {
+                context.startActivity(
+                    Intent(
+                        Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                        Uri.parse("package:${context.packageName}"),
+                    ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                )
+            }
+            _uiState.update {
+                it.copy(downloadError = "Allow 'Install unknown apps' in Settings, then tap again.")
+            }
+            return
+        }
+
+        if (_uiState.value.isDownloadingUpdate) return
+        _uiState.update { it.copy(isDownloadingUpdate = true, downloadError = null) }
+
+        viewModelScope.launch {
+            runCatching {
+                val fileName = "LifePilot-update-${info.latestVersion}.apk"
+                val request = DownloadManager.Request(Uri.parse(apkUrl)).apply {
+                    setTitle("LifePilot ${info.latestVersion}")
+                    setDescription("Downloading update…")
+                    setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                    setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, fileName)
+                    setMimeType("application/vnd.android.package-archive")
+                }
+
+                val dm = context.getSystemService<DownloadManager>()!!
+                val downloadId = dm.enqueue(request)
+
+                // Poll until the download completes or fails.
+                var status: Int
+                var localUri: String? = null
+                while (true) {
+                    val cursor = dm.query(DownloadManager.Query().setFilterById(downloadId))
+                    if (cursor == null || !cursor.moveToFirst()) {
+                        cursor?.close()
+                        break
+                    }
+                    status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
+                    localUri = cursor.getString(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI))
+                    cursor.close()
+
+                    when (status) {
+                        DownloadManager.STATUS_SUCCESSFUL -> break
+                        DownloadManager.STATUS_FAILED -> {
+                            localUri = null
+                            break
+                        }
+                        else -> kotlinx.coroutines.delay(500)
+                    }
+                }
+
+                if (localUri != null) {
+                    val file = java.io.File(Uri.parse(localUri).path!!)
+                    val apkUri = FileProvider.getUriForFile(
+                        context,
+                        "${context.packageName}.fileprovider",
+                        file,
+                    )
+                    context.startActivity(
+                        Intent(Intent.ACTION_VIEW).apply {
+                            setDataAndType(apkUri, "application/vnd.android.package-archive")
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                    )
+                } else {
+                    _uiState.update { it.copy(downloadError = "Download failed. Tap to try again.") }
+                }
+            }.onFailure { e ->
+                Timber.w(e, "downloadAndInstall: failed")
+                _uiState.update { it.copy(downloadError = "Download failed: ${e.message}") }
+            }
+            _uiState.update { it.copy(isDownloadingUpdate = false) }
         }
     }
 

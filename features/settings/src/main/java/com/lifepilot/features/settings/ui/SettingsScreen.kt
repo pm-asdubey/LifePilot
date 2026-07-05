@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -17,6 +18,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Delete
@@ -27,6 +29,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -521,6 +524,66 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(Spacing.lg))
                 HorizontalDivider()
                 Spacer(modifier = Modifier.height(Spacing.md))
+                SectionHeader(title = "APPEARANCE")
+                Spacer(modifier = Modifier.height(Spacing.sm))
+            }
+
+            item {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    ),
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = Spacing.md),
+                ) {
+                    Column(modifier = Modifier.padding(Spacing.md)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.DarkMode,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp),
+                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Theme",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
+                                Text(
+                                    text = "Choose light, dark, or match your device",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(Spacing.sm))
+                        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                            listOf(
+                                "light" to "Light",
+                                "dark" to "Dark",
+                                "system" to "System",
+                            ).forEach { (value, label) ->
+                                FilterChip(
+                                    selected = uiState.themeMode == value,
+                                    onClick = { viewModel.setThemeMode(value) },
+                                    label = { Text(label) },
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(Spacing.lg))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(Spacing.md))
                 SectionHeader(title = "SECURITY")
                 Spacer(modifier = Modifier.height(Spacing.sm))
             }
@@ -578,7 +641,10 @@ fun SettingsScreen(
                 UpdateSection(
                     status = uiState.updateStatus,
                     isChecking = uiState.isCheckingUpdate,
+                    isDownloading = uiState.isDownloadingUpdate,
+                    downloadError = uiState.downloadError,
                     onCheckNow = viewModel::checkForUpdate,
+                    onInstall = { info -> viewModel.downloadAndInstall(info) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = Spacing.md),
@@ -594,10 +660,12 @@ fun SettingsScreen(
 private fun UpdateSection(
     status: UpdateStatus,
     isChecking: Boolean,
+    isDownloading: Boolean = false,
+    downloadError: String? = null,
     onCheckNow: () -> Unit,
+    onInstall: (com.lifepilot.domain.model.UpdateInfo) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
 
     Card(
         colors = CardDefaults.cardColors(
@@ -659,14 +727,30 @@ private fun UpdateSection(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+                if (downloadError != null) {
+                    Spacer(modifier = Modifier.height(Spacing.xs))
+                    Text(
+                        text = downloadError,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
                 Spacer(modifier = Modifier.height(Spacing.sm))
                 FilledTonalButton(
-                    onClick = {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(status.info.releaseUrl))
-                        context.startActivity(intent)
-                    },
+                    onClick = { onInstall(status.info) },
+                    enabled = !isDownloading,
                 ) {
-                    Text("Download Update")
+                    if (isDownloading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                        Spacer(modifier = Modifier.width(Spacing.xs))
+                        Text("Downloading…")
+                    } else {
+                        Text("Install Update")
+                    }
                 }
             } else {
                 Spacer(modifier = Modifier.height(Spacing.sm))

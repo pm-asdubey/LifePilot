@@ -1,5 +1,6 @@
 package com.lifepilot.domain.engine
 
+import com.lifepilot.domain.model.LifeStateSummary
 import com.lifepilot.domain.model.RetrievalContext
 
 /**
@@ -21,8 +22,20 @@ import com.lifepilot.domain.model.RetrievalContext
 interface RetrievalEngine {
 
     /**
-     * Build a [RetrievalContext] for a given user query.
-     * Pass an empty [userQuery] to retrieve general context (e.g. daily brief).
+     * Lightweight structural summary of the life state — no content, just domain names
+     * and object counts. Used by [RetrievalPlanner] to decide what's worth fetching.
      */
-    suspend fun retrieve(profileId: String, userQuery: String): RetrievalContext
+    suspend fun getSummary(profileId: String): LifeStateSummary
+
+    /**
+     * Build a [RetrievalContext] for a given user query.
+     *
+     * @param relevantDomains When provided (from [RetrievalPlanner]), only life states
+     *   for these domains are loaded. Pass null to load all (fallback behaviour).
+     */
+    suspend fun retrieve(
+        profileId: String,
+        userQuery: String,
+        relevantDomains: List<String>? = null,
+    ): RetrievalContext
 }

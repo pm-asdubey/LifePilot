@@ -19,11 +19,13 @@ import com.lifepilot.domain.engine.LifeStateEngine
 import com.lifepilot.domain.engine.PlanningEngine
 import com.lifepilot.domain.engine.PromptBuilder
 import com.lifepilot.domain.engine.RetrievalEngine
+import com.lifepilot.domain.engine.RetrievalPlanner
 import com.lifepilot.domain.engine.SchemaEngine
 import com.lifepilot.domain.ocr.OcrService
 import com.lifepilot.domain.usecase.UploadDocumentUseCase
 import com.lifepilot.domain.model.ActionItem
 import com.lifepilot.domain.model.ActionPlan
+import com.lifepilot.domain.model.ActionPlanNormalizer
 import com.lifepilot.domain.model.ActionPlanType
 import com.lifepilot.domain.model.AiProposal
 import com.lifepilot.domain.model.AttachedDocumentContext
@@ -95,6 +97,9 @@ class HomeViewModel @Inject constructor(
     private val ocrService: OcrService,
     private val uploadDocumentUseCase: UploadDocumentUseCase,
     private val projectRepository: ProjectRepository,
+    private val retrievalPlanner: RetrievalPlanner,
+    private val aiActionParser: AiActionParser,
+    private val aiTaskNotifier: com.lifepilot.data.notification.AiTaskNotifier,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -104,12 +109,24 @@ class HomeViewModel @Inject constructor(
     // RetrievalEngine populates these; HomeViewModel reads them — never writes them.
     private var currentObjectIndex: Map<String, Pair<String, String>> = emptyMap()
     private var currentObjectMetadataIndex: Map<String, List<com.lifepilot.domain.model.MetadataEntry>> = emptyMap()
+
+    // OCR text of the queued (not-yet-sent) attachment, extracted in the background on scan so it's
+    // ready to travel with the user's first message. Cleared once the attachment is resolved.
+    private var pendingAttachmentOcrText: String? = null
+
+    // Classification computed in the background on scan (OCR → AI) but NOT stored — held here so it's
+    // ready to be presented for save when the user sends their first message. Null if not classified.
+    private var pendingClassifiedAction: AiProposal? = null
     // Domains and snapshots active in the last retrieval — used to focus domain life state updates.
     private var currentRetrievalDomains: List<String> = emptyList()
     // objectId → domain lookup, built from all objects in the retrieval context.
     private var currentObjectDomainIndex: Map<String, String> = emptyMap()
 
     private var activeAiJob: Job? = null
+
+    // System prompt from the most recent sendMessage call — reused verbatim by plan-batch
+    // continuations so each batch sees the same life context without rebuilding retrieval.
+    private var lastSystemPrompt: String = ""
 
     init {
         _uiState.update { it.copy(greeting = timeBasedGreeting()) }
@@ -148,8 +165,11 @@ class HomeViewModel @Inject constructor(
                         lifeStateEngine.observeAttentionRequired(profile.profileId)
                             .onStart { emit(emptyList()) }
                             .catch { e -> Timber.e(e, "Error observing attention"); emit(emptyList()) },
-                    ) { goals, conversations, attentionItems ->
-                        BriefData(profile.displayName, profile.profileId, goals, conversations, attentionItems)
+                        projectRepository.observeProjects(profile.profileId)
+                            .onStart { emit(emptyList()) }
+                            .catch { e -> Timber.e(e, "Error observing projects"); emit(emptyList()) },
+                    ) { goals, conversations, attentionItems, projects ->
+                        BriefData(profile.displayName, profile.profileId, goals, conversations, attentionItems, projects)
                     }
                 }
                 .collect { data ->
@@ -172,10 +192,14 @@ class HomeViewModel @Inject constructor(
                             },
                         )
                     }
+                    val activeProjects = data.projects
+                        .filter { it.status == com.lifepilot.domain.model.ProjectStatus.ACTIVE }
+                        .take(4)
                     _uiState.update { state ->
                         state.copy(
                             profileName = data.profileName,
                             isLoadingBrief = false,
+                            activeProjects = activeProjects,
                             activeGoals = data.goals,
                             recentConversations = data.conversations.take(3),
                             allConversations = data.conversations,
@@ -192,6 +216,7 @@ class HomeViewModel @Inject constructor(
         val goals: List<com.lifepilot.domain.model.Goal>,
         val conversations: List<com.lifepilot.domain.model.Conversation>,
         val attentionItems: List<com.lifepilot.domain.engine.AttentionItem>,
+        val projects: List<com.lifepilot.domain.model.Project>,
     )
 
     fun onInputChange(text: String) {
@@ -278,19 +303,82 @@ class HomeViewModel @Inject constructor(
                     _uiState.update { it.copy(conversationTitle = autoTitle) }
                 }
 
-                // Step 1: retrieve life context from local DB.
+                // If a document is queued but the background classify hasn't set its context yet
+                // (fast send / OCR still running), ensure OCR is done and attach a minimal context
+                // so the AI still reads the document alongside this message.
+                val pendingPath = _uiState.value.pendingAttachmentPath
+                if (pendingPath != null && _uiState.value.attachedDocumentContext == null) {
+                    if (pendingAttachmentOcrText == null) {
+                        val ocr = runCatching {
+                            ocrService.extractText(
+                                pendingPath,
+                                _uiState.value.pendingAttachmentMimeType ?: "application/octet-stream",
+                            )
+                        }.getOrNull()
+                        pendingAttachmentOcrText = (ocr as? com.lifepilot.domain.ocr.OcrResult.Success)?.text
+                    }
+                    _uiState.update {
+                        it.copy(
+                            attachedDocumentContext = AttachedDocumentContext(
+                                fileName = _uiState.value.pendingAttachmentDisplayName ?: "attachment",
+                                mimeType = _uiState.value.pendingAttachmentMimeType ?: "application/octet-stream",
+                                ocrText = pendingAttachmentOcrText,
+                                isPendingApproval = true,
+                            ),
+                        )
+                    }
+                }
+
+                // Pin the attachment to THIS message so its chip stays anchored here instead of
+                // floating to the bottom of the conversation as later messages arrive. Its context is
+                // still passed to the AI on this turn (below) and cleared afterwards so it is not
+                // re-injected into every subsequent request.
+                _uiState.value.attachedDocumentContext?.let { attached ->
+                    if (pendingPath != null) {
+                        _uiState.update { s ->
+                            s.copy(
+                                attachedDocumentByMessageId = s.attachedDocumentByMessageId + (userMessageId to attached),
+                                // Clear the input-bar chip immediately on Send — the document is now
+                                // pinned to the message bubble, not floating in the input bar.
+                                pendingAttachmentPath = null,
+                                pendingAttachmentDisplayName = null,
+                                pendingAttachmentMimeType = null,
+                            )
+                        }
+                    }
+                }
+
+                // Step 1: retrieval planning — ask AI which domains are relevant (lightweight).
+                // Read documentType now for the planning call; attachedContext is re-read
+                // AFTER planning so any background OCR/classify that finishes during the
+                // planning round-trip is captured rather than a stale null.
                 _uiState.update { it.copy(aiStatusMessage = "Looking up your records…") }
+                val summary = retrievalEngine.getSummary(profileId)
+                val relevantDomains = runCatching {
+                    retrievalPlanner.planDomains(
+                        userQuery = text,
+                        documentType = _uiState.value.attachedDocumentContext?.objectType,
+                        summary = summary,
+                    )
+                }.getOrElse { emptyList() }.ifEmpty { null } // null = load all (fallback)
+
+                // Step 2: targeted retrieval — read attachedContext fresh so any OCR that
+                // completed during the planning call is included.
                 val attachedContext = _uiState.value.attachedDocumentContext
-                val retrievalContext = retrievalEngine.retrieve(profileId, userQuery = text)
-                    .copy(attachedDocumentContext = attachedContext)
+                val retrievalContext = retrievalEngine.retrieve(
+                    profileId = profileId,
+                    userQuery = text,
+                    relevantDomains = relevantDomains,
+                ).copy(attachedDocumentContext = attachedContext)
                 currentObjectIndex = retrievalContext.allObjectIndex
                 currentObjectDomainIndex = retrievalContext.allObjectDomainIndex
                 currentObjectMetadataIndex = retrievalContext.allObjectMetadata
                 currentRetrievalDomains = retrievalContext.relevantSnapshots.map { it.domain }.distinct()
 
-                // Step 2: build the prompt from retrieved context.
+                // Step 3: build the prompt from targeted context.
                 _uiState.update { it.copy(aiStatusMessage = "Building context…") }
                 val systemPrompt = promptBuilder.build(retrievalContext, userQuery = text)
+                lastSystemPrompt = systemPrompt
 
                 val history = _uiState.value.messages
                     .dropLast(1)
@@ -302,23 +390,52 @@ class HomeViewModel @Inject constructor(
                         )
                     }
 
+                // Keep the process alive (foreground service) so the request survives the user
+                // switching apps; we notify when the answer lands if they're away.
+                aiTaskNotifier.onTurnStarted()
+
                 val provider = aiProviderFactory.getProvider()
-                val result = executeWithRetries(
+                val result = completeWithContinuation(
                     provider = provider,
                     systemPrompt = systemPrompt,
                     userMessage = text,
-                    conversationHistory = history,
+                    history = history,
                 )
 
                 when (result) {
                     is AiCompletionResult.Success -> {
                         Timber.d("AI raw response: ${result.content}")
-                        val (visibleContent, action, question) = parseAiResponse(result.content)
+                        val (visibleContent, rawAction, question) = parseAiResponse(result.content)
+                        // If the AI returned a partial ACTION_PLAN (has_more=true), silently fetch the
+                        // remaining batches and merge them before doing anything else. The user sees
+                        // "Building your plan…" the whole time and gets ONE consolidated plan to review.
+                        val resolvedRawAction = if (rawAction is AiProposal.ActionPlan && rawAction.plan.hasMore) {
+                            resolvePlanBatches(rawAction, provider)
+                        } else {
+                            rawAction
+                        }
+                        // If a document is queued and the AI classified it, attach the file to the
+                        // proposal so approving it saves the PDF against the new record.
+                        val pendingAttachPath = _uiState.value.pendingAttachmentPath
+                        val action = if (pendingAttachPath != null && resolvedRawAction is AiProposal.ObjectCreation) {
+                            resolvedRawAction.copy(
+                                attachedFilePath = pendingAttachPath,
+                                attachedFileName = _uiState.value.pendingAttachmentDisplayName,
+                                attachedMimeType = _uiState.value.pendingAttachmentMimeType,
+                            )
+                        } else {
+                            resolvedRawAction
+                        }
                         Timber.d("AI parsed: action=${action?.javaClass?.simpleName}, question=$question")
                         // When the AI response is entirely an action block with no surrounding text,
                         // visibleContent is blank. Use the action summary so no empty bubble appears.
                         val displayContent = visibleContent.ifBlank {
-                            action?.summary?.takeIf { it.isNotBlank() } ?: return@launch
+                            action?.summary?.takeIf { it.isNotBlank() } ?: run {
+                                // Nothing to show and no action — stop the spinner instead of
+                                // leaving it running forever on an empty AI response (B7).
+                                _uiState.update { it.copy(isAiLoading = false, aiStatusMessage = null) }
+                                return@launch
+                            }
                         }
                         val assistantMsg = StoredMessage(
                             messageId = UUID.randomUUID().toString(),
@@ -328,6 +445,10 @@ class HomeViewModel @Inject constructor(
                             timestamp = Instant.now(),
                         )
                         conversationRepository.saveMessage(assistantMsg)
+
+                        // Answer is committed — stop the keep-alive service and, if the user is away,
+                        // post the "answer ready" notification that deep-links to this conversation.
+                        aiTaskNotifier.onTurnFinished(conversation.conversationId, _uiState.value.conversationTitle)
 
                         val autoProposal = action as? AiProposal.MetadataUpdate
                         val shouldAutoApply = autoProposal != null &&
@@ -360,6 +481,27 @@ class HomeViewModel @Inject constructor(
                             }
                         }
 
+                        // Resolve the queued document now that the AI has read it and answered.
+                        // Prefer a fresh classification from this turn; else the one computed on scan.
+                        if (pendingAttachPath != null) {
+                            val saveProposal = (action as? AiProposal.ObjectCreation)
+                                ?: (pendingClassifiedAction as? AiProposal.ObjectCreation)
+                            if (saveProposal != null) {
+                                // Present the (already-computed) classification for the user to save.
+                                _uiState.update { it.copy(pendingAction = saveProposal) }
+                            } else {
+                                // Couldn't classify — save as a general document so it isn't lost.
+                                val pName = _uiState.value.pendingAttachmentDisplayName ?: "attachment"
+                                val pMime = _uiState.value.pendingAttachmentMimeType ?: "application/octet-stream"
+                                runCatching {
+                                    createPlaceholderObject(profileId, conversation.conversationId, pName, pendingAttachPath, pMime)
+                                }.onFailure { Timber.w(it, "Failed to save queued document") }
+                            }
+                            pendingClassifiedAction = null
+                            clearPendingAttachment()
+                            _uiState.update { it.copy(attachedDocumentContext = null) }
+                        }
+
                         // Fire domain life state update in the background — non-blocking.
                         // Captures the conversation turn that just completed.
                         val domainsSnapshot = currentRetrievalDomains
@@ -377,11 +519,12 @@ class HomeViewModel @Inject constructor(
                         }
                     }
                     is AiCompletionResult.Error -> {
+                        Timber.w("AI error: ${result.message}")
                         val errorMsg = StoredMessage(
                             messageId = UUID.randomUUID().toString(),
                             conversationId = conversation.conversationId,
                             role = "ASSISTANT",
-                            content = "Error: ${result.message}",
+                            content = friendlyAiError(result.message),
                             timestamp = Instant.now(),
                         )
                         conversationRepository.saveMessage(errorMsg)
@@ -417,6 +560,9 @@ class HomeViewModel @Inject constructor(
                 }
             } finally {
                 activeAiJob = null
+                // Safety net: always release the keep-alive service (idempotent; onTurnFinished may
+                // have already stopped it and posted the result notification).
+                aiTaskNotifier.stopThinking()
             }
         }
     }
@@ -424,6 +570,7 @@ class HomeViewModel @Inject constructor(
     fun abortAi() {
         activeAiJob?.cancel()
         activeAiJob = null
+        aiTaskNotifier.stopThinking()
         _uiState.update { it.copy(isAiLoading = false, aiStatusMessage = null) }
         val convId = _uiState.value.currentConversationId ?: return
         val abortMsg = StoredMessage(
@@ -439,102 +586,107 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Queues a scanned/captured/picked document as an attachment chip in the chat. It is NOT
+     * classified or stored here — OCR runs in the background so the text is ready, then the document
+     * travels with the user's first message ([sendMessage]) where the AI reads it, answers, and
+     * (on approval) it is saved. This is the "document sits in chat until you send" flow.
+     */
     fun processAttachment(uri: Uri) {
         viewModelScope.launch {
             val profileId = preferenceManager.getActiveProfileId() ?: return@launch
-            val convId = _uiState.value.currentConversationId ?: return@launch
 
-            _uiState.update { it.copy(isAiLoading = true, aiStatusMessage = "Reading attachment…") }
+            val conversation = conversationRepository.getOrCreateConversation(
+                profileId = profileId,
+                conversationId = _uiState.value.currentConversationId,
+            )
+            val convId = conversation.conversationId
+
+            _uiState.update {
+                it.copy(
+                    currentConversationId = convId,
+                    conversationTitle = conversation.title,
+                    mode = HomeMode.AI_WORKSPACE,
+                    aiStatusMessage = "Reading document…",
+                )
+            }
 
             val fileName = resolveUriFileName(uri) ?: "attachment"
             val mimeType = context.contentResolver.getType(uri) ?: "application/octet-stream"
             val storedFile = fileStorageManager.copyFromUri(uri, "chat_import", fileName)
 
             if (storedFile == null) {
-                _uiState.update { it.copy(isAiLoading = false, aiStatusMessage = null) }
+                _uiState.update { it.copy(aiStatusMessage = null) }
                 postSystemMessage(convId, "Sorry, I couldn't read that attachment.")
                 return@launch
             }
 
-            _uiState.update { it.copy(aiStatusMessage = "Scanning document…") }
-            val ocrResult = ocrService.extractText(storedFile.absolutePath, mimeType)
-            val ocrText = when (ocrResult) {
-                is com.lifepilot.domain.ocr.OcrResult.Success -> ocrResult.text
-                else -> ""
+            // Show the attachment chip immediately; storage waits for the first message.
+            _uiState.update {
+                it.copy(
+                    pendingAttachmentPath = storedFile.absolutePath,
+                    pendingAttachmentDisplayName = fileName,
+                    pendingAttachmentMimeType = mimeType,
+                    aiStatusMessage = "Reading document…",
+                )
             }
 
-            if (ocrText.isBlank()) {
-                _uiState.update { it.copy(isAiLoading = false, aiStatusMessage = null) }
-                postSystemMessage(convId, "I couldn't extract text from that file. You can still find it in Library.")
-                createPlaceholderObject(profileId, convId, fileName, storedFile.absolutePath, mimeType)
-                return@launch
+            // OCR + classify in the background so the document is already understood by the time the
+            // user sends their first message — but nothing is stored yet.
+            val ocr = runCatching { ocrService.extractText(storedFile.absolutePath, mimeType) }.getOrNull()
+            val ocrText = (ocr as? com.lifepilot.domain.ocr.OcrResult.Success)?.text
+            pendingAttachmentOcrText = ocrText
+
+            var classified: AiProposal.ObjectCreation? = null
+            if (!ocrText.isNullOrBlank()) {
+                val prompt = buildAttachmentClassificationPrompt(ocrText, fileName)
+                val provider = runCatching { aiProviderFactory.getProvider() }.getOrNull()
+                val result = provider?.let {
+                    runCatching { it.complete(prompt, "Classify and extract this document.", emptyList()) }.getOrNull()
+                }
+                val content = (result as? AiCompletionResult.Success)?.content
+                val actionJson = content?.let {
+                    Regex("\\[LIFEPILOT_ACTION\\](.*?)\\[/LIFEPILOT_ACTION\\]", RegexOption.DOT_MATCHES_ALL)
+                        .find(it)?.groupValues?.get(1)
+                }
+                classified = actionJson
+                    ?.let { runCatching { aiActionParser.parseAction(it.trim(), currentObjectIndex, currentObjectMetadataIndex) }.getOrNull() }
+                    as? AiProposal.ObjectCreation
             }
 
-            _uiState.update { it.copy(aiStatusMessage = "Understanding document…") }
-            val classificationPrompt = buildAttachmentClassificationPrompt(ocrText, fileName)
-            val provider = aiProviderFactory.getProvider()
-            val result = provider.complete(
-                systemPrompt = classificationPrompt,
-                userMessage = "Classify and extract this document.",
-                conversationHistory = emptyList(),
+            pendingClassifiedAction = classified?.copy(
+                attachedFilePath = storedFile.absolutePath,
+                attachedFileName = fileName,
+                attachedMimeType = mimeType,
             )
 
-            _uiState.update { it.copy(isAiLoading = false, aiStatusMessage = null) }
-
-            when (result) {
-                is AiCompletionResult.Success -> {
-                    val actionMatch = Regex(
-                        "\\[LIFEPILOT_ACTION\\](.*?)\\[/LIFEPILOT_ACTION\\]",
-                        RegexOption.DOT_MATCHES_ALL,
-                    ).find(result.content)
-                    val proposal = actionMatch?.groupValues?.get(1)?.let { parseAction(it.trim()) }
-
-                    if (proposal is AiProposal.ObjectCreation) {
-                        postSystemMessage(convId, "I found a ${proposal.objectType}. Please review before saving.")
-                        val enrichedProposal = proposal.copy(
-                            attachedFilePath = storedFile.absolutePath,
-                            attachedFileName = fileName,
-                            attachedMimeType = mimeType,
-                        )
-                        _uiState.update {
-                            it.copy(
-                                pendingAction = enrichedProposal,
-                                attachedDocumentContext = AttachedDocumentContext(
-                                    fileName = fileName,
-                                    mimeType = mimeType,
-                                    objectType = proposal.objectType,
-                                    domain = proposal.domain,
-                                    title = proposal.title,
-                                    extractedFields = proposal.fields,
-                                    isPendingApproval = true,
-                                ),
-                            )
-                        }
-                    } else if (proposal is AiProposal.MetadataUpdate) {
-                        postSystemMessage(convId, "I found updates for ${proposal.objectTitle}. Please review.")
-                        _uiState.update {
-                            it.copy(
-                                pendingAction = proposal,
-                                attachedDocumentContext = AttachedDocumentContext(
-                                    fileName = fileName,
-                                    mimeType = mimeType,
-                                    objectType = proposal.objectType,
-                                    title = proposal.objectTitle,
-                                    extractedFields = proposal.fields,
-                                    isPendingApproval = true,
-                                ),
-                            )
-                        }
-                    } else {
-                        postSystemMessage(convId, "I read the document but couldn't classify it. You can review it in Library.")
-                        createPlaceholderObject(profileId, convId, fileName, storedFile.absolutePath, mimeType)
-                    }
-                }
-                else -> {
-                    postSystemMessage(convId, "I read the document but AI classification is unavailable. You can review it in Library.")
-                    createPlaceholderObject(profileId, convId, fileName, storedFile.absolutePath, mimeType)
-                }
+            _uiState.update {
+                it.copy(
+                    aiStatusMessage = null,
+                    attachedDocumentContext = AttachedDocumentContext(
+                        fileName = fileName,
+                        mimeType = mimeType,
+                        objectType = classified?.objectType,
+                        domain = classified?.domain,
+                        title = classified?.title,
+                        extractedFields = classified?.fields ?: emptyList(),
+                        ocrText = ocrText,
+                        // If we couldn't classify now, let the first send re-attempt it.
+                        isPendingApproval = classified == null,
+                    ),
+                )
             }
+        }
+    }
+
+    fun clearPendingAttachment() {
+        pendingAttachmentOcrText = null
+        _uiState.update {
+            it.copy(
+                pendingAttachmentPath = null,
+                pendingAttachmentDisplayName = null,
+                pendingAttachmentMimeType = null,
+            )
         }
     }
 
@@ -569,7 +721,9 @@ class HomeViewModel @Inject constructor(
             appendLine("You are classifying a document uploaded to LifePilot.")
             appendLine("Available record types: $schemaTypes")
             appendLine("Return ONE action block using exact tags [LIFEPILOT_ACTION] and [/LIFEPILOT_ACTION].")
-            appendLine("If this is a new document, use OBJECT_CREATION with objectType, domain, title, and fields.")
+            appendLine("The block MUST contain a SINGLE JSON object with an \"actionType\" field — no text before the '{'.")
+            appendLine("Example: [LIFEPILOT_ACTION]{\"actionType\":\"OBJECT_CREATION\",\"objectType\":\"pan_card\",\"domain\":\"Identity\",\"title\":\"PAN Card\",\"summary\":\"Found a PAN card\",\"fields\":[{\"fieldId\":\"pan_number\",\"displayName\":\"PAN\",\"value\":\"ABCDE1234F\"}]}[/LIFEPILOT_ACTION]")
+            appendLine("If this is a new document, use actionType OBJECT_CREATION with objectType, domain, title, and fields.")
             appendLine("If it updates an existing record, use METADATA_UPDATE with objectType, matchField, matchValue, and fields.")
             appendLine("Sensitive values like passport numbers, Aadhaar, PAN, account numbers are allowed in the action block because the user will approve them.")
             appendLine()
@@ -786,14 +940,8 @@ class HomeViewModel @Inject constructor(
         return when (proposal) {
             is AiProposal.MetadataUpdate -> {
                 for (field in proposal.fields) {
-                    val existing = if (field.mode == UpdateMode.APPEND) {
-                        metadataRepository.getMetadataByField(proposal.objectId, field.fieldId)?.value
-                    } else null
-                    val finalValue = if (existing != null && field.mode == UpdateMode.APPEND) {
-                        "$existing\n${field.value}"
-                    } else {
-                        field.value
-                    }
+                    val existing = metadataRepository.getMetadataByField(proposal.objectId, field.fieldId)?.value
+                    val finalValue = com.lifepilot.domain.model.MetadataMerge.merge(field.mode, existing, field.value)
                     metadataRepository.upsertMetadata(
                         objectId = proposal.objectId,
                         fieldId = field.fieldId,
@@ -870,6 +1018,15 @@ class HomeViewModel @Inject constructor(
                         documentType = if (proposal.attachedMimeType?.contains("image") == true) "IMAGE" else "OTHER",
                     )
                 }
+                // Enter the Life State Engine so the AI-created record generates tasks + reminders,
+                // exactly like the manual create path (CreateObjectUseCase) — nothing bypasses it.
+                runCatching {
+                    lifeStateEngine.processObjectEvent(
+                        objectId = createdObject.objectId,
+                        eventType = "OBJECT_CREATED",
+                        payload = "{\"objectType\":\"${proposal.objectType}\"}",
+                    )
+                }.onFailure { Timber.w(it, "Life State Engine event failed for ${createdObject.objectId}") }
                 "\"${proposal.title}\" added to your records."
             }
             is AiProposal.StatusUpdate -> {
@@ -888,8 +1045,9 @@ class HomeViewModel @Inject constructor(
                     title = proposal.title,
                     description = proposal.description,
                     domain = proposal.domain,
-                    emoji = "🎯",
-                    targetDate = null,
+                    emoji = proposal.emoji?.takeIf { it.isNotBlank() }
+                        ?: com.lifepilot.domain.model.DomainEmoji.forDomain(proposal.domain),
+                    targetDate = proposal.targetDate,
                     isAiProposed = true,
                 )
                 // Link any objects the AI identified as belonging to this initiative.
@@ -929,6 +1087,7 @@ class HomeViewModel @Inject constructor(
                 pendingAction = null,
                 pendingContextQuestion = null,
                 attachedDocumentContext = null,
+                attachedDocumentByMessageId = emptyMap(),
                 error = null,
             )
         }
@@ -947,6 +1106,7 @@ class HomeViewModel @Inject constructor(
                 pendingAction = null,
                 pendingContextQuestion = null,
                 attachedDocumentContext = null,
+                attachedDocumentByMessageId = emptyMap(),
                 error = null,
             )
         }
@@ -961,6 +1121,7 @@ class HomeViewModel @Inject constructor(
                 pendingAction = null,
                 pendingContextQuestion = null,
                 attachedDocumentContext = null,
+                attachedDocumentByMessageId = emptyMap(),
                 error = null,
                 // Leaving the AI workspace means the active conversation is done;
                 // the next question from the brief must start fresh (ISSUE-001).
@@ -1025,19 +1186,68 @@ class HomeViewModel @Inject constructor(
         val question: String?,
     )
 
+    /** Maps a raw provider error to a calm, user-facing message. The raw text is logged separately. */
+    private fun friendlyAiError(message: String): String {
+        val m = message.lowercase()
+        return when {
+            m.contains("timeout") || m.contains("etimedout") || m.contains("failed to connect") ||
+                m.contains("unable to resolve host") || m.contains("connection") ->
+                "I couldn't reach the AI service — check your connection and tap Retry."
+            m.contains("401") || m.contains("403") || m.contains("api key") || m.contains("unauthorized") ->
+                "Your AI key was rejected. Check it in Settings → Intelligence."
+            m.contains("429") || m.contains("rate") ->
+                "The AI service is busy right now. Wait a moment and tap Retry."
+            else -> "Something went wrong. Tap Retry to try again."
+        }
+    }
+
     private fun parseAiResponse(raw: String): ParsedResponse {
-        val cleaned = raw.stripMarkdown()
-        var content = cleaned
+        var content = raw
         var action: AiProposal? = null
 
-        val actionMatch = ACTION_PATTERN.find(cleaned)
+        // Extract the action block FIRST, from the raw string, before any text normalisation — so
+        // the block's contents (which contain underscores like LIFEPILOT_ACTION / ACTION_PLAN) can
+        // never be corrupted by downstream processing. Visible Markdown is rendered by MessageBubble.
+        val actionMatch = ACTION_PATTERN.find(raw)
         if (actionMatch != null) {
-            content = content.replace(actionMatch.value, "").trim()
-            action = runCatching { parseAction(actionMatch.groupValues[1].trim()) }.getOrNull()
+            content = content.replace(actionMatch.value, "")
+            // Delegate to the shared, unit-tested AiActionParser (single source of truth). The
+            // retrieval indices let it resolve object references for UPDATE/STATUS actions.
+            action = runCatching {
+                aiActionParser.parseAction(
+                    actionMatch.groupValues[1].trim(),
+                    currentObjectIndex,
+                    currentObjectMetadataIndex,
+                )
+            }.getOrNull()
         }
 
-        // Keep clarifying questions inside the normal AI reply instead of showing a separate UI card.
-        val askMatch = ASK_PATTERN.find(cleaned)
+        // Safety net: a very long plan can exceed the model's output limit and truncate mid-JSON,
+        // leaving an OPENING [LIFEPILOT_ACTION] with no closing tag. ACTION_PATTERN then can't match
+        // and the raw JSON would leak into the chat (with underscores eaten by stripMarkdown). Strip
+        // any dangling opener and surface a friendly retry hint instead of junk.
+        var truncatedAction = false
+        if (action == null) {
+            val openIdx = content.indexOf("[LIFEPILOT_ACTION]")
+            if (openIdx >= 0) {
+                content = content.substring(0, openIdx).trim()
+                truncatedAction = true
+            }
+        }
+
+        // Deterministic formatting: split run-on numbered lists onto their own lines. Markdown
+        // emphasis (**bold**, *italic*, # headers) is intentionally KEPT here — MessageBubble renders
+        // it via toDisplayAnnotatedString. The action block was already removed above, so its
+        // underscores are safe.
+        content = content.normalizeNumberedList().trim()
+
+        if (truncatedAction && content.isBlank()) {
+            content = "That plan was longer than I could finish in one go. Tap Retry (or ask me to " +
+                "keep it shorter) and I'll set it up."
+        }
+
+        // [ASK] tags contain no underscores so they survive stripMarkdown() intact.
+        val askMatch = ASK_PATTERN.find(content)
         if (askMatch != null) {
             val questionText = askMatch.groupValues[1].trim()
             content = content.replace(askMatch.value, questionText).trim()
@@ -1046,371 +1256,71 @@ class HomeViewModel @Inject constructor(
         return ParsedResponse(content.trim(), action, question = null)
     }
 
-    private fun String.stripMarkdown(): String {
-        return this
-            .replace(Regex("\\*\\*(.+?)\\*\\*")) { it.groupValues[1] }
-            .replace(Regex("__(.+?)__")) { it.groupValues[1] }
-            .replace(Regex("\\*(.+?)\\*")) { it.groupValues[1] }
-            .replace(Regex("_(.+?)_")) { it.groupValues[1] }
-    }
-
-    private fun parseAction(json: String): AiProposal? {
-        return try {
-            val obj = JSONObject(json)
-            val actionType = obj.optString("actionType", "METADATA_UPDATE")
-            val summary = obj.optString("summary", "")
-
-            when (actionType.uppercase()) {
-                "GOAL_PROPOSAL" -> {
-                    val tasksArray = obj.optJSONArray("suggestedTasks")
-                    val tasks = buildList {
-                        if (tasksArray != null) for (i in 0 until tasksArray.length()) add(tasksArray.getString(i))
-                    }
-                    val deadlineStr = obj.optString("deadline", "").takeIf { it.isNotBlank() && it != "null" }
-                    AiProposal.GoalProposal(
-                        proposalId = UUID.randomUUID().toString(),
-                        summary = summary,
-                        title = obj.optString("title", "New goal"),
-                        description = obj.optString("description", "").takeIf { it.isNotBlank() && it != "null" },
-                        deadline = deadlineStr?.let { runCatching { java.time.LocalDate.parse(it) }.getOrNull() },
-                        estimatedWeeks = obj.optInt("estimatedWeeks", 0).takeIf { it > 0 },
-                        suggestedTasks = tasks,
-                        linkedObjectId = obj.optString("linkedObjectId", "").takeIf { it.isNotBlank() && it != "null" },
-                    )
-                }
-                "TASK_CREATION" -> {
-                    val dueDateStr = obj.optString("dueDate", "").takeIf { it.isNotBlank() && it != "null" }
-                    AiProposal.TaskCreation(
-                        proposalId = UUID.randomUUID().toString(),
-                        summary = summary,
-                        title = obj.optString("title", "New task"),
-                        description = obj.optString("description", "").takeIf { it.isNotBlank() && it != "null" },
-                        dueDate = dueDateStr?.let { runCatching { java.time.LocalDate.parse(it) }.getOrNull() },
-                        goalId = obj.optString("goalId", "").takeIf { it.isNotBlank() && it != "null" },
-                        objectId = obj.optString("objectId", "").takeIf { it.isNotBlank() && it != "null" },
-                    )
-                }
-                "TASK_COMPLETION" -> {
-                    AiProposal.TaskCompletion(
-                        proposalId = UUID.randomUUID().toString(),
-                        summary = summary,
-                        taskId = obj.optString("taskId", ""),
-                        taskTitle = obj.optString("taskTitle", "task"),
-                        goalId = obj.optString("goalId", "").takeIf { it.isNotBlank() && it != "null" },
-                    )
-                }
-                "OBJECT_CREATION" -> {
-                    val fieldsArray = obj.optJSONArray("fields")
-                    val parsedFields = mutableListOf<ProposedField>()
-                    if (fieldsArray != null) {
-                        for (i in 0 until fieldsArray.length()) {
-                            val fieldObj = fieldsArray.getJSONObject(i)
-                            parsedFields.add(
-                                ProposedField(
-                                    fieldId = fieldObj.optString("fieldId", "notes"),
-                                    displayName = fieldObj.optString("displayName", fieldObj.optString("fieldId", "Field")),
-                                    value = fieldObj.optString("value", ""),
-                                    mode = if (fieldObj.optString("mode") == "append") UpdateMode.APPEND else UpdateMode.SET,
-                                )
-                            )
-                        }
-                    }
-                    AiProposal.ObjectCreation(
-                        proposalId = UUID.randomUUID().toString(),
-                        summary = summary,
-                        objectType = obj.optString("objectType", "Record"),
-                        domain = obj.optString("domain", "General"),
-                        title = obj.optString("title", "New record"),
-                        initialNotes = parsedFields.firstOrNull()?.value?.takeIf { it.isNotBlank() },
-                        fields = parsedFields,
-                    )
-                }
-                "STATUS_UPDATE" -> {
-                    val resolved = resolveObjectForAction(obj) ?: return null
-                    val newStatus = parseStatus(obj.optString("newStatus", "INACTIVE"))
-                    AiProposal.StatusUpdate(
-                        proposalId = UUID.randomUUID().toString(),
-                        summary = summary.ifBlank { "Status updated" },
-                        objectId = resolved.objectId,
-                        objectTitle = resolved.title,
-                        newStatus = newStatus,
-                    )
-                }
-                "PROJECT_CREATION" -> {
-                    val linkedObjectsArray = obj.optJSONArray("linkedObjectIds")
-                    val linkedObjectIds = buildList {
-                        if (linkedObjectsArray != null) for (i in 0 until linkedObjectsArray.length()) add(linkedObjectsArray.getString(i))
-                    }
-                    AiProposal.ProjectCreation(
-                        proposalId = UUID.randomUUID().toString(),
-                        summary = summary,
-                        title = obj.optString("title", "New project"),
-                        description = obj.optString("description", "").takeIf { it.isNotBlank() && it != "null" },
-                        domain = obj.optString("domain", "").takeIf { it.isNotBlank() && it != "null" },
-                        linkedObjectIds = linkedObjectIds,
-                    )
-                }
-                "ACTION_PLAN" -> parseActionPlan(obj, summary)
-                else -> parseMetadataUpdate(obj, summary)
-            }
-        } catch (e: Exception) {
-            Timber.w(e, "Failed to parse LIFEPILOT_ACTION block")
-            null
+    /**
+     * Puts each "N. " item of a run-on numbered list on its own line. Models sometimes emit an entire
+     * plan as one paragraph (observed on long marriage/tax plans). Only reformats when there are 2+
+     * inline markers so ordinary prose (e.g. "by 2027", "version 2.0") is left untouched.
+     */
+    private fun String.normalizeNumberedList(): String {
+        val markers = Regex("(?<=\\s)\\d{1,2}\\.\\s").findAll(this).count()
+        if (markers < 2) return this
+        return this.replace(Regex("(\\S)[ \\t]+(\\d{1,2})\\.\\s+(?=[A-Za-z])")) { m ->
+            "${m.groupValues[1]}\n${m.groupValues[2]}. "
         }
     }
-
-    private fun parseActionPlan(obj: JSONObject, summary: String): AiProposal.ActionPlan? {
-        return try {
-            val planType = runCatching {
-                ActionPlanType.valueOf(obj.optString("planType", "CUSTOM").uppercase())
-            }.getOrDefault(ActionPlanType.CUSTOM)
-
-            val itemsArray = obj.optJSONArray("items") ?: return null
-            val items = buildList {
-                for (i in 0 until itemsArray.length()) {
-                    val itemObj = itemsArray.getJSONObject(i)
-                    parseActionItem(itemObj)?.let { add(it) }
-                }
-            }
-            if (items.isEmpty()) return null
-
-            val questionsArray = obj.optJSONArray("clarifyingQuestions")
-            val questions = buildList {
-                if (questionsArray != null) {
-                    for (i in 0 until questionsArray.length()) {
-                        val qObj = questionsArray.getJSONObject(i)
-                        add(
-                            ClarifyingQuestion(
-                                questionId = qObj.optString("questionId", "q$i"),
-                                text = qObj.optString("text", ""),
-                                affectedItemIds = qObj.optJSONArray("affectedItemIds")?.let { arr ->
-                                    buildList { for (j in 0 until arr.length()) add(arr.getString(j)) }
-                                } ?: emptyList(),
-                            )
-                        )
-                    }
-                }
-            }
-
-            val plan = ActionPlan(
-                planId = UUID.randomUUID().toString(),
-                type = planType,
-                summary = summary.ifBlank { "Action plan" },
-                items = items,
-                clarifyingQuestions = questions,
-            )
-
-            AiProposal.ActionPlan(
-                proposalId = UUID.randomUUID().toString(),
-                summary = summary.ifBlank { "Action plan" },
-                plan = plan,
-            )
-        } catch (e: Exception) {
-            Timber.w(e, "Failed to parse ACTION_PLAN block")
-            null
-        }
-    }
-
-    private fun parseActionItem(obj: JSONObject): ActionItem? {
-        return try {
-            val type = obj.optString("type", "").uppercase()
-            val itemId = obj.optString("itemId", UUID.randomUUID().toString())
-            val itemSummary = obj.optString("summary", "")
-            val dependsOn = obj.optJSONArray("dependsOn")?.let { arr ->
-                buildList { for (i in 0 until arr.length()) add(arr.getString(i)) }
-            } ?: emptyList()
-
-            when (type) {
-                "UPDATE_RECORD" -> {
-                    val resolved = resolveObjectForAction(obj) ?: return null
-                    val fieldsArray = obj.optJSONArray("fields") ?: return null
-                    val fields = buildList {
-                        for (i in 0 until fieldsArray.length()) {
-                            val f = fieldsArray.getJSONObject(i)
-                            add(
-                                ProposedField(
-                                    fieldId = f.optString("fieldId", "notes"),
-                                    displayName = f.optString("displayName", "Field"),
-                                    value = f.optString("value", ""),
-                                    mode = runCatching {
-                                        UpdateMode.valueOf(f.optString("mode", "SET").uppercase())
-                                    }.getOrDefault(UpdateMode.SET),
-                                )
-                            )
-                        }
-                    }
-                    ActionItem.UpdateRecord(
-                        itemId = itemId,
-                        summary = itemSummary,
-                        objectId = resolved.objectId,
-                        objectTitle = resolved.title,
-                        objectType = obj.optString("objectType", ""),
-                        fields = fields,
-                        dependsOn = dependsOn,
-                    )
-                }
-                "CREATE_RECORD" -> ActionItem.CreateRecord(
-                    itemId = itemId,
-                    summary = itemSummary,
-                    objectType = obj.optString("objectType", "Record"),
-                    domain = obj.optString("domain", "General"),
-                    title = obj.optString("title", "New record"),
-                    initialNotes = obj.optString("initialNotes", "").takeIf { it.isNotBlank() && it != "null" },
-                    projectItemId = obj.optString("projectItemId", "").takeIf { it.isNotBlank() && it != "null" },
-                    dependsOn = dependsOn,
-                )
-                "UPDATE_STATUS" -> {
-                    val resolved = resolveObjectForAction(obj) ?: return null
-                    ActionItem.UpdateStatus(
-                        itemId = itemId,
-                        summary = itemSummary,
-                        objectId = resolved.objectId,
-                        objectTitle = resolved.title,
-                        newStatus = parseStatus(obj.optString("newStatus", "INACTIVE")),
-                        dependsOn = dependsOn,
-                    )
-                }
-                "CREATE_PROJECT" -> ActionItem.CreateProject(
-                    itemId = itemId,
-                    summary = itemSummary,
-                    title = obj.optString("title", "New project"),
-                    description = obj.optString("description", "").takeIf { it.isNotBlank() && it != "null" },
-                    emoji = obj.optString("emoji", "🎯").takeIf { it.isNotBlank() && it != "null" } ?: "🎯",
-                    domain = obj.optString("domain", "").takeIf { it.isNotBlank() && it != "null" },
-                    dependsOn = dependsOn,
-                )
-                "CREATE_TASK" -> ActionItem.CreateTask(
-                    itemId = itemId,
-                    summary = itemSummary,
-                    title = obj.optString("title", "New task"),
-                    description = obj.optString("description", "").takeIf { it.isNotBlank() && it != "null" },
-                    dueDate = obj.optString("dueDate", "").takeIf { it.isNotBlank() && it != "null" }
-                        ?.let { runCatching { java.time.LocalDate.parse(it) }.getOrNull() },
-                    priority = runCatching {
-                        TaskPriority.valueOf(obj.optString("priority", "MEDIUM").uppercase())
-                    }.getOrDefault(TaskPriority.MEDIUM),
-                    goalId = obj.optString("goalId", "").takeIf { it.isNotBlank() && it != "null" },
-                    objectId = obj.optString("objectId", "").takeIf { it.isNotBlank() && it != "null" },
-                    projectItemId = obj.optString("projectItemId", "").takeIf { it.isNotBlank() && it != "null" },
-                    dependsOn = dependsOn,
-                )
-                "UPDATE_DOMAIN_UNDERSTANDING" -> ActionItem.UpdateDomainUnderstanding(
-                    itemId = itemId,
-                    summary = itemSummary,
-                    domain = obj.optString("domain", "General"),
-                    dependsOn = dependsOn,
-                )
-                else -> {
-                    Timber.w("Unknown ActionItem type: $type")
-                    null
-                }
-            }
-        } catch (e: Exception) {
-            Timber.w(e, "Failed to parse ActionItem")
-            null
-        }
-    }
-
-    private data class ResolvedObject(
-        val objectId: String,
-        val title: String,
-    )
 
     /**
-     * Maps free-form status strings returned by the AI to the canonical
-     * [ObjectStatus] enum. Handles common synonyms so cancellations, endings,
-     * and closures are not silently defaulted to INACTIVE (ISSUE-022).
+     * Silently fetches subsequent plan batches when the AI set has_more=true on the first batch.
+     *
+     * Each batch is ≤8 items so it reliably fits in one AI response. We loop up to [MAX_PLAN_BATCHES]
+     * times, then merge all items and apply [ActionPlanNormalizer.ensureProject] exactly once on the
+     * combined list. The caller gets a single, complete [AiProposal.ActionPlan] — the user sees
+     * "Building your plan…" throughout and one consolidated plan card at the end.
      */
-    private fun parseStatus(statusString: String): ObjectStatus {
-        val normalized = statusString.uppercase().replace("[^A-Z0-9_]".toRegex(), "_")
-        return runCatching {
-            ObjectStatus.valueOf(normalized)
-        }.getOrElse {
-            when {
-                statusString.contains("cancel", ignoreCase = true) -> ObjectStatus.INACTIVE
-                statusString.contains("end", ignoreCase = true) -> ObjectStatus.INACTIVE
-                statusString.contains("close", ignoreCase = true) -> ObjectStatus.INACTIVE
-                statusString.contains("expire", ignoreCase = true) -> ObjectStatus.EXPIRED
-                statusString.contains("renew", ignoreCase = true) -> ObjectStatus.RENEWAL_DUE
-                statusString.contains("archive", ignoreCase = true) -> ObjectStatus.ARCHIVED
-                statusString.contains("draft", ignoreCase = true) -> ObjectStatus.DRAFT
-                else -> {
-                    Timber.w("Unknown status in STATUS_UPDATE: $statusString; defaulting to INACTIVE")
-                    ObjectStatus.INACTIVE
-                }
-            }
-        }
-    }
+    private suspend fun resolvePlanBatches(
+        firstBatch: AiProposal.ActionPlan,
+        provider: AiProvider,
+    ): AiProposal.ActionPlan {
+        // Collect items from each batch, stripping any per-batch CreateProject (ensureProject was
+        // skipped for has_more batches in the parser; we apply it once at the end on the merged list).
+        val allItems = mutableListOf<ActionItem>()
+        allItems.addAll(firstBatch.plan.items.filterNot { it is ActionItem.CreateProject })
 
-    private fun resolveObjectForAction(obj: JSONObject): ResolvedObject? {
-        val objectType = obj.optString("objectType", "")
-        val matchField = obj.optString("matchField", "")
-        val matchValue = obj.optString("matchValue", "")
+        var current = firstBatch
+        var batchCount = 1
 
-        val candidateIds = currentObjectIndex.entries
-            .filter { (_, v) -> v.second.equals(objectType, ignoreCase = true) }
-            .map { it.key }
+        while (current.plan.hasMore && batchCount < MAX_PLAN_BATCHES) {
+            val context = current.plan.continuationContext ?: break
+            _uiState.update { it.copy(aiStatusMessage = "Building your plan… (part ${batchCount + 1})") }
 
-        val resolvedObjectId = when {
-            candidateIds.isEmpty() -> return null
-            candidateIds.size == 1 -> candidateIds.first()
-            matchField.isNotBlank() && matchValue.isNotBlank() -> {
-                candidateIds.firstOrNull { id ->
-                    val title = currentObjectIndex[id]?.first ?: ""
-                    title.contains(matchValue, ignoreCase = true) ||
-                        currentObjectMetadataIndex[id]?.any { entry ->
-                            entry.fieldId.equals(matchField, ignoreCase = true) &&
-                                entry.value.contains(matchValue, ignoreCase = true)
-                        } == true
-                } ?: candidateIds.first()
-            }
-            else -> candidateIds.first()
-        }
+            val continuationMsg = "Continue the action plan. Emit ONLY the next batch of tasks covering: $context. " +
+                "Use the same ACTION_PLAN JSON format. Max 8 items. Set has_more: true if still more remain after this batch."
 
-        val resolvedTitle = currentObjectIndex[resolvedObjectId]?.first ?: objectType
-        return ResolvedObject(resolvedObjectId, resolvedTitle)
-    }
-
-    private fun parseMetadataUpdate(obj: JSONObject, summary: String): AiProposal.MetadataUpdate? {
-        val resolved = resolveObjectForAction(obj) ?: return null
-        val objectType = obj.optString("objectType", "")
-        val fieldsArray = obj.optJSONArray("fields") ?: return null
-        val fields = mutableListOf<ProposedField>()
-        for (i in 0 until fieldsArray.length()) {
-            val fieldObj = fieldsArray.getJSONObject(i)
-            fields.add(
-                ProposedField(
-                    fieldId = fieldObj.getString("fieldId"),
-                    displayName = fieldObj.optString("displayName", fieldObj.getString("fieldId")),
-                    value = fieldObj.getString("value"),
-                    mode = if (fieldObj.optString("mode") == "append") UpdateMode.APPEND else UpdateMode.SET,
-                )
+            val batchResult = executeWithRetries(
+                provider = provider,
+                systemPrompt = lastSystemPrompt,
+                userMessage = continuationMsg,
+                conversationHistory = emptyList(),
             )
-        }
-        val sensitivity = computeMetadataSensitivity(objectType, fields)
-        return AiProposal.MetadataUpdate(
-            proposalId = UUID.randomUUID().toString(),
-            objectId = resolved.objectId,
-            objectTitle = resolved.title,
-            objectType = objectType,
-            summary = summary.ifBlank { "Update suggested" },
-            fields = fields,
-            proposalSensitivity = sensitivity,
-        )
-    }
 
-    private fun computeMetadataSensitivity(
-        objectType: String,
-        fields: List<ProposedField>,
-    ): FieldSensitivity {
-        val schema = schemaEngine.getSchema(objectType)
-        val maxSensitivity = fields.map { field ->
-            val fieldDef = schema?.fields?.find { it.fieldId.equals(field.fieldId, ignoreCase = true) }
-            runCatching {
-                FieldSensitivity.valueOf(fieldDef?.sensitivityLevel?.uppercase() ?: "STANDARD")
-            }.getOrDefault(FieldSensitivity.STANDARD)
-        }.maxByOrNull { it.ordinal } ?: FieldSensitivity.STANDARD
-        return maxSensitivity
+            if (batchResult !is AiCompletionResult.Success) break
+
+            val (_, batchAction, _) = parseAiResponse(batchResult.content)
+            val nextBatch = batchAction as? AiProposal.ActionPlan ?: break
+
+            allItems.addAll(nextBatch.plan.items.filterNot { it is ActionItem.CreateProject })
+            current = nextBatch
+            batchCount++
+        }
+
+        val mergedPlan = ActionPlanNormalizer.ensureProject(
+            firstBatch.plan.copy(
+                items = allItems,
+                hasMore = false,
+                continuationContext = null,
+            )
+        )
+        return firstBatch.copy(plan = mergedPlan)
     }
 
     /**
@@ -1418,6 +1328,49 @@ class HomeViewModel @Inject constructor(
      * Updates [HomeUiState.aiStatusMessage] so the UI can show retry progress.
      * Never retries permanent failures (4xx client errors except 429).
      */
+    /**
+     * Runs the AI request and, if the model truncated its output (hit max_tokens), transparently asks
+     * it to continue and stitches the parts together. The user sees ONE complete answer assembled from
+     * up to [MAX_CONTINUATIONS] + 1 chunks — not a cut-off response with raw JSON. Bounded so a
+     * pathological model can't loop forever; if still incomplete after the cap, the caller's
+     * parse-time safety net strips any dangling action block and offers a retry.
+     */
+    private suspend fun completeWithContinuation(
+        provider: AiProvider,
+        systemPrompt: String,
+        userMessage: String,
+        history: List<AiMessage>,
+    ): AiCompletionResult {
+        val first = executeWithRetries(provider, systemPrompt, userMessage, history)
+        if (first !is AiCompletionResult.Success || !first.truncated) return first
+
+        var assembled = first.content
+        var model = first.model
+        var continuations = 0
+        while (continuations < MAX_CONTINUATIONS) {
+            _uiState.update { it.copy(aiStatusMessage = "Writing the rest…") }
+            val contHistory = history +
+                AiMessage(role = AiMessageRole.USER, content = userMessage) +
+                AiMessage(role = AiMessageRole.ASSISTANT, content = assembled)
+            val next = executeWithRetries(
+                provider = provider,
+                systemPrompt = systemPrompt,
+                userMessage = "Continue your previous message from exactly where it stopped. Do not repeat " +
+                    "any text you already sent — output only the remaining part, and finish it completely.",
+                conversationHistory = contHistory,
+            )
+            if (next !is AiCompletionResult.Success) {
+                // Keep what we have; still-truncated flag lets the safety net handle it gracefully.
+                return AiCompletionResult.Success(assembled, model, truncated = true)
+            }
+            assembled += next.content
+            model = next.model
+            continuations++
+            if (!next.truncated) return AiCompletionResult.Success(assembled, model, truncated = false)
+        }
+        return AiCompletionResult.Success(assembled, model, truncated = true)
+    }
+
     private suspend fun executeWithRetries(
         provider: AiProvider,
         systemPrompt: String,
@@ -1524,6 +1477,14 @@ class HomeViewModel @Inject constructor(
         // Four hours. If a user returns to the AI workspace after this idle
         // period, the next message starts a new conversation.
         private const val CONVERSATION_IDLE_THRESHOLD_MS = 4 * 60 * 60 * 1000L
+
+        // Max automatic "continue" round-trips when the model truncates a long response
+        // (so a big plan is assembled from up to 3 chunks total before parsing/display).
+        private const val MAX_CONTINUATIONS = 2
+
+        // Safety cap on the number of has_more plan batches to fetch before giving up.
+        // 5 batches × 8 tasks = 40 tasks maximum — far more than any realistic life event plan.
+        private const val MAX_PLAN_BATCHES = 5
 
         private val ACTION_PATTERN = Regex(
             "\\[LIFEPILOT_ACTION\\](.*?)\\[/LIFEPILOT_ACTION\\]",

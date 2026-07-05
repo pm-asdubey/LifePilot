@@ -4,12 +4,14 @@ import com.lifepilot.domain.model.AiProposal
 import com.lifepilot.domain.model.AttachedDocumentContext
 import com.lifepilot.domain.model.Conversation
 import com.lifepilot.domain.model.Goal
+import com.lifepilot.domain.model.Project
 import com.lifepilot.domain.model.StoredMessage
 
 data class HomeUiState(
     val mode: HomeMode = HomeMode.DAILY_BRIEF,
     val profileName: String = "",
     val greeting: String = "",
+    val activeProjects: List<Project> = emptyList(),
     val attentionItems: List<AttentionItem> = emptyList(),
     val activeGoals: List<Goal> = emptyList(),
     val recentConversations: List<Conversation> = emptyList(),
@@ -26,6 +28,9 @@ data class HomeUiState(
     val pendingAction: AiProposal? = null,
     val pendingContextQuestion: String? = null,
     val attachedDocumentContext: AttachedDocumentContext? = null,
+    // Attachments pinned to the specific message they were sent with, so the chip stays anchored
+    // to its message instead of floating to the bottom of the conversation as new messages arrive.
+    val attachedDocumentByMessageId: Map<String, AttachedDocumentContext> = emptyMap(),
     val showConversationHistory: Boolean = false,
     val allConversations: List<Conversation> = emptyList(),
     // Pending attachment: queued after scanning, processed on first Send

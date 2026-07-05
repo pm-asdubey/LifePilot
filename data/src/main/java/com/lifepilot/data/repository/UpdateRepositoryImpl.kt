@@ -41,6 +41,7 @@ class UpdateRepositoryImpl @Inject constructor(
     companion object {
         private val KEY_LATEST_VERSION = stringPreferencesKey("latest_version")
         private val KEY_RELEASE_URL = stringPreferencesKey("release_url")
+        private val KEY_APK_DOWNLOAD_URL = stringPreferencesKey("apk_download_url")
         private val KEY_PUBLISHED_AT = stringPreferencesKey("published_at")
         private val KEY_RELEASE_NOTES = stringPreferencesKey("release_notes")
         private val KEY_LAST_CHECKED_AT = longPreferencesKey("last_checked_at")
@@ -59,6 +60,7 @@ class UpdateRepositoryImpl @Inject constructor(
                 val releaseUrl = prefs[KEY_RELEASE_URL] ?: return@map UpdateStatus.Unknown
                 val publishedAt = prefs[KEY_PUBLISHED_AT] ?: ""
                 val releaseNotes = prefs[KEY_RELEASE_NOTES] ?: ""
+                val apkDownloadUrl = prefs[KEY_APK_DOWNLOAD_URL]
 
                 if (isNewerVersion(latestVersion, currentVersion)) {
                     UpdateStatus.UpdateAvailable(
@@ -67,6 +69,7 @@ class UpdateRepositoryImpl @Inject constructor(
                             releaseUrl = releaseUrl,
                             publishedAt = publishedAt,
                             releaseNotes = releaseNotes,
+                            apkDownloadUrl = apkDownloadUrl,
                         )
                     )
                 } else {
@@ -125,12 +128,26 @@ class UpdateRepositoryImpl @Inject constructor(
 
             if (tagName.isBlank() || htmlUrl.isBlank()) return
 
+            // Find the first .apk asset download URL from the release assets array.
+            val apkDownloadUrl = runCatching {
+                val assets = obj.optJSONArray("assets")
+                (0 until (assets?.length() ?: 0))
+                    .map { assets!!.getJSONObject(it) }
+                    .firstOrNull { it.optString("name").endsWith(".apk") }
+                    ?.optString("browser_download_url")
+            }.getOrNull()
+
             context.updateDataStore.edit { prefs ->
                 prefs[KEY_LATEST_VERSION] = tagName
                 prefs[KEY_RELEASE_URL] = htmlUrl
                 prefs[KEY_PUBLISHED_AT] = publishedAt
                 prefs[KEY_RELEASE_NOTES] = releaseNotes
                 prefs[KEY_LAST_CHECKED_AT] = Instant.now().toEpochMilli()
+                if (apkDownloadUrl != null) {
+                    prefs[KEY_APK_DOWNLOAD_URL] = apkDownloadUrl
+                } else {
+                    prefs.remove(KEY_APK_DOWNLOAD_URL)
+                }
             }
         }.onFailure { e ->
             Timber.w(e, "UpdateRepository: failed to parse release JSON")

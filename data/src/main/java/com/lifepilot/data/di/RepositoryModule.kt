@@ -21,6 +21,7 @@ import com.lifepilot.data.engine.ObjectReasonerImpl
 import com.lifepilot.data.engine.PlanningEngineImpl
 import com.lifepilot.data.engine.PromptBuilderImpl
 import com.lifepilot.data.engine.RetrievalEngineImpl
+import com.lifepilot.data.engine.RetrievalPlannerImpl
 import com.lifepilot.data.engine.RuleEngineImpl
 import com.lifepilot.data.ocr.MlKitOcrService
 import com.lifepilot.data.schema.SchemaEngineImpl
@@ -31,6 +32,7 @@ import com.lifepilot.domain.engine.ObjectReasoner
 import com.lifepilot.domain.engine.PlanningEngine
 import com.lifepilot.domain.engine.PromptBuilder
 import com.lifepilot.domain.engine.RetrievalEngine
+import com.lifepilot.domain.engine.RetrievalPlanner
 import com.lifepilot.domain.engine.RuleEngine
 import com.lifepilot.domain.engine.SchemaEngine
 import com.lifepilot.domain.ocr.OcrService
@@ -135,6 +137,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindRetrievalEngine(impl: RetrievalEngineImpl): RetrievalEngine
+
+    @Binds
+    @Singleton
+    abstract fun bindRetrievalPlanner(impl: RetrievalPlannerImpl): RetrievalPlanner
 
     @Binds
     @Singleton

@@ -4,12 +4,14 @@ import com.lifepilot.domain.engine.ObjectReasoner
 import com.lifepilot.domain.engine.RetrievalEngine
 import com.lifepilot.domain.model.DomainLifeState
 import com.lifepilot.domain.model.LifeObject
+import com.lifepilot.domain.model.LifeStateSummary
 import com.lifepilot.domain.model.MetadataEntry
 import com.lifepilot.domain.model.RetrievalContext
 import com.lifepilot.domain.repository.DomainRepository
 import com.lifepilot.domain.repository.MetadataRepository
 import com.lifepilot.domain.repository.ObjectRepository
 import com.lifepilot.domain.repository.ProfileRepository
+import com.lifepilot.domain.repository.ProjectRepository
 import com.lifepilot.domain.repository.ReminderRepository
 import com.lifepilot.domain.repository.TaskRepository
 import kotlinx.coroutines.async
@@ -32,6 +34,7 @@ class RetrievalEngineImpl @Inject constructor(
     private val reminderRepository: ReminderRepository,
     private val objectReasoner: ObjectReasoner,
     private val domainRepository: DomainRepository,
+    private val projectRepository: ProjectRepository,
 ) : RetrievalEngine {
 
     companion object {
@@ -39,7 +42,26 @@ class RetrievalEngineImpl @Inject constructor(
         private const val REMINDER_HORIZON_DAYS = 30L
     }
 
-    override suspend fun retrieve(profileId: String, userQuery: String): RetrievalContext {
+    override suspend fun getSummary(profileId: String): LifeStateSummary {
+        val resolvedProfileId = profileRepository.observeActiveProfile()
+            .catch { }
+            .firstOrNull()?.profileId ?: profileId
+
+        val allObjects = runCatching {
+            objectRepository.observeObjectsByProfile(resolvedProfileId)
+                .catch { }
+                .firstOrNull() ?: emptyList()
+        }.getOrElse { emptyList() }
+
+        val counts = allObjects.groupingBy { it.domain }.eachCount()
+        return LifeStateSummary(domainObjectCounts = counts, totalObjects = allObjects.size)
+    }
+
+    override suspend fun retrieve(
+        profileId: String,
+        userQuery: String,
+        relevantDomains: List<String>?,
+    ): RetrievalContext {
         val profile = profileRepository.observeActiveProfile()
             .catch { Timber.e(it, "RetrievalEngine: error observing profile") }
             .firstOrNull()
@@ -61,13 +83,19 @@ class RetrievalEngineImpl @Inject constructor(
         val allObjectIndex = allObjects.associate { it.objectId to (it.title to it.objectType) }
         val allObjectDomainIndex = allObjects.associate { it.objectId to it.domain }
 
-        // Load domain life states — highest priority context for prompt construction.
+        // Load domain life states — filtered to planned domains when available,
+        // falling back to all domains if no plan was produced.
+        val relevantDomainSet = relevantDomains?.map { it.lowercase() }?.toSet()
         val domainLifeStates: Map<String, DomainLifeState> = runCatching {
             domainRepository.observeAllDomainLifeStates(resolvedProfileId)
                 .catch { }
                 .firstOrNull() ?: emptyList()
         }.getOrElse { emptyList() }
             .filter { it.currentSituation.isNotBlank() }
+            .filter { state ->
+                relevantDomainSet == null ||
+                    state.domain.lowercase() in relevantDomainSet
+            }
             .associateBy { it.domain }
 
         // Score once — keep (objectId, score) pairs so we don't re-score below.
@@ -100,6 +128,10 @@ class RetrievalEngineImpl @Inject constructor(
             ).catch { }.firstOrNull() ?: emptyList()
         }.getOrElse { emptyList() }
 
+        val activeProjects = runCatching {
+            projectRepository.getActiveProjects(resolvedProfileId)
+        }.getOrElse { emptyList() }
+
         return RetrievalContext(
             profileId = resolvedProfileId,
             profileName = profile?.displayName,
@@ -111,6 +143,7 @@ class RetrievalEngineImpl @Inject constructor(
             allObjectMetadata = allMetadata,
             pendingTasks = pendingTasks,
             upcomingReminders = upcomingReminders,
+            activeProjects = activeProjects,
         )
     }
 
