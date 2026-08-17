@@ -50,44 +50,46 @@ class EvalAiClient(
         systemPrompt: String,
         userMessage: String,
         history: List<AiMessage>,
-    ): AiCompletionResult = try {
-        val messages = JSONArray()
-        for (msg in history) {
+    ): AiCompletionResult {
+        return try {
+            val messages = JSONArray()
+            for (msg in history) {
+                messages.put(JSONObject().apply {
+                    put("role", msg.role.name.lowercase())
+                    put("content", msg.content)
+                })
+            }
             messages.put(JSONObject().apply {
-                put("role", msg.role.name.lowercase())
-                put("content", msg.content)
+                put("role", "user")
+                put("content", userMessage)
             })
+
+            val body = JSONObject().apply {
+                put("model", modelId)
+                put("max_tokens", 4096)
+                put("system", systemPrompt)
+                put("messages", messages)
+            }
+
+            val request = Request.Builder()
+                .url("$baseUrl/v1/messages")
+                .addHeader("x-api-key", apiKey)
+                .addHeader("anthropic-version", "2023-06-01")
+                .addHeader("content-type", "application/json")
+                .post(body.toString().toRequestBody("application/json".toMediaType()))
+                .build()
+
+            val response = client.newCall(request).execute()
+            val responseBody = response.body?.string()
+            if (!response.isSuccessful) return AiCompletionResult.Error(responseBody ?: "HTTP ${response.code}", response.code)
+
+            val json = JSONObject(responseBody ?: return AiCompletionResult.Error("Empty response"))
+            val content = json.getJSONArray("content").getJSONObject(0).getString("text")
+            val truncated = json.optString("stop_reason") == "max_tokens"
+            AiCompletionResult.Success(content = content, model = modelId, truncated = truncated)
+        } catch (e: Exception) {
+            AiCompletionResult.Error(e.message ?: "Unknown error")
         }
-        messages.put(JSONObject().apply {
-            put("role", "user")
-            put("content", userMessage)
-        })
-
-        val body = JSONObject().apply {
-            put("model", modelId)
-            put("max_tokens", 4096)
-            put("system", systemPrompt)
-            put("messages", messages)
-        }
-
-        val request = Request.Builder()
-            .url("$baseUrl/v1/messages")
-            .addHeader("x-api-key", apiKey)
-            .addHeader("anthropic-version", "2023-06-01")
-            .addHeader("content-type", "application/json")
-            .post(body.toString().toRequestBody("application/json".toMediaType()))
-            .build()
-
-        val response = client.newCall(request).execute()
-        val responseBody = response.body?.string()
-        if (!response.isSuccessful) return AiCompletionResult.Error(responseBody ?: "HTTP ${response.code}", response.code)
-
-        val json = JSONObject(responseBody ?: return AiCompletionResult.Error("Empty response"))
-        val content = json.getJSONArray("content").getJSONObject(0).getString("text")
-        val truncated = json.optString("stop_reason") == "max_tokens"
-        AiCompletionResult.Success(content = content, model = modelId, truncated = truncated)
-    } catch (e: Exception) {
-        AiCompletionResult.Error(e.message ?: "Unknown error")
     }
 
     private fun completeOpenAi(
@@ -95,45 +97,47 @@ class EvalAiClient(
         systemPrompt: String,
         userMessage: String,
         history: List<AiMessage>,
-    ): AiCompletionResult = try {
-        val messages = JSONArray()
-        messages.put(JSONObject().apply {
-            put("role", "system")
-            put("content", systemPrompt)
-        })
-        for (msg in history) {
+    ): AiCompletionResult {
+        return try {
+            val messages = JSONArray()
             messages.put(JSONObject().apply {
-                put("role", msg.role.name.lowercase())
-                put("content", msg.content)
+                put("role", "system")
+                put("content", systemPrompt)
             })
+            for (msg in history) {
+                messages.put(JSONObject().apply {
+                    put("role", msg.role.name.lowercase())
+                    put("content", msg.content)
+                })
+            }
+            messages.put(JSONObject().apply {
+                put("role", "user")
+                put("content", userMessage)
+            })
+
+            val body = JSONObject().apply {
+                put("model", modelId)
+                put("max_tokens", 4096)
+                put("messages", messages)
+            }
+
+            val request = Request.Builder()
+                .url("$baseUrl/v1/chat/completions")
+                .addHeader("Authorization", "Bearer $apiKey")
+                .addHeader("content-type", "application/json")
+                .post(body.toString().toRequestBody("application/json".toMediaType()))
+                .build()
+
+            val response = client.newCall(request).execute()
+            val responseBody = response.body?.string()
+            if (!response.isSuccessful) return AiCompletionResult.Error(responseBody ?: "HTTP ${response.code}", response.code)
+
+            val json = JSONObject(responseBody ?: return AiCompletionResult.Error("Empty response"))
+            val content = json.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content")
+            val truncated = json.getJSONArray("choices").getJSONObject(0).optString("finish_reason") == "length"
+            AiCompletionResult.Success(content = content, model = modelId, truncated = truncated)
+        } catch (e: Exception) {
+            AiCompletionResult.Error(e.message ?: "Unknown error")
         }
-        messages.put(JSONObject().apply {
-            put("role", "user")
-            put("content", userMessage)
-        })
-
-        val body = JSONObject().apply {
-            put("model", modelId)
-            put("max_tokens", 4096)
-            put("messages", messages)
-        }
-
-        val request = Request.Builder()
-            .url("$baseUrl/v1/chat/completions")
-            .addHeader("Authorization", "Bearer $apiKey")
-            .addHeader("content-type", "application/json")
-            .post(body.toString().toRequestBody("application/json".toMediaType()))
-            .build()
-
-        val response = client.newCall(request).execute()
-        val responseBody = response.body?.string()
-        if (!response.isSuccessful) return AiCompletionResult.Error(responseBody ?: "HTTP ${response.code}", response.code)
-
-        val json = JSONObject(responseBody ?: return AiCompletionResult.Error("Empty response"))
-        val content = json.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content")
-        val truncated = json.getJSONArray("choices").getJSONObject(0).optString("finish_reason") == "length"
-        AiCompletionResult.Success(content = content, model = modelId, truncated = truncated)
-    } catch (e: Exception) {
-        AiCompletionResult.Error(e.message ?: "Unknown error")
     }
 }
