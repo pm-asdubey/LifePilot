@@ -306,6 +306,7 @@ fun HomeScreen(
                         pendingContextQuestion = uiState.pendingContextQuestion,
                         attachedDocumentByMessageId = uiState.attachedDocumentByMessageId,
                         onApproveAction = viewModel::approveAction,
+                        onApproveEditedAction = viewModel::approveEditedAction,
                         onApproveActionPlan = viewModel::approveActionPlan,
                         onDismissAction = viewModel::dismissAction,
                         onDismissContextQuestion = viewModel::dismissContextQuestion,
@@ -775,6 +776,7 @@ private fun AiWorkspaceContent(
     pendingContextQuestion: String?,
     attachedDocumentByMessageId: Map<String, AttachedDocumentContext>,
     onApproveAction: () -> Unit,
+    onApproveEditedAction: (AiProposal) -> Unit,
     onApproveActionPlan: (ActionPlan) -> Unit,
     onDismissAction: () -> Unit,
     onDismissContextQuestion: () -> Unit,
@@ -904,9 +906,11 @@ private fun AiWorkspaceContent(
             is AiProposal.TaskCreation -> TaskCreationCard(
                 taskTitle = pendingAction.title,
                 description = pendingAction.description,
-                dueDate = pendingAction.dueDate?.toString(),
+                dueDate = pendingAction.dueDate,
                 summary = pendingAction.summary,
-                onApprove = onApproveAction,
+                onApprove = { editedTitle, editedDueDate ->
+                    onApproveEditedAction(pendingAction.copy(title = editedTitle, dueDate = editedDueDate))
+                },
                 onDismiss = onDismissAction,
                 modifier = cardModifier,
             )
@@ -915,7 +919,9 @@ private fun AiWorkspaceContent(
                 domain = pendingAction.domain,
                 title = pendingAction.title,
                 summary = pendingAction.summary,
-                onApprove = onApproveAction,
+                onApprove = { editedTitle ->
+                    onApproveEditedAction(pendingAction.copy(title = editedTitle))
+                },
                 onDismiss = onDismissAction,
                 modifier = cardModifier,
             )
@@ -941,7 +947,9 @@ private fun AiWorkspaceContent(
                 domain = pendingAction.domain ?: "General",
                 title = pendingAction.title,
                 summary = pendingAction.summary,
-                onApprove = onApproveAction,
+                onApprove = { editedTitle ->
+                    onApproveEditedAction(pendingAction.copy(title = editedTitle))
+                },
                 onDismiss = onDismissAction,
                 modifier = cardModifier,
             )

@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="splash_background">#0F0F13</color>
+    <!-- Brand teal so the white compass mark reads on the splash and matches the light app theme. -->
+    <color name="splash_background">#0EA5A4</color>
 </resources>

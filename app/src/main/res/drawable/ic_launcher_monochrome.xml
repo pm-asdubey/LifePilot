@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Themed-icon (Android 13+) monochrome silhouette of the compass mark. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Ring -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#000000"
+        android:strokeWidth="2.5"
+        android:pathData="M22,54 a32,32 0 1,0 64,0 a32,32 0 1,0 -64,0" />
+    <!-- Cardinal ticks -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#000000"
+        android:strokeWidth="2.2"
+        android:strokeLineCap="round"
+        android:pathData="M54,26 L54,31 M82,54 L77,54 M54,82 L54,77 M26,54 L31,54" />
+    <!-- Needle silhouette — longer north point, shorter south tail: clearly points up -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M54,28 L49,54 L54,73 L59,54 Z" />
+    <!-- Center hub -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M49.6,54 a4.4,4.4 0 1,0 8.8,0 a4.4,4.4 0 1,0 -8.8,0" />
+</vector>

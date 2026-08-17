@@ -118,7 +118,7 @@ fun ActionPlanCard(
             )
 
             ActionPlanSection(
-                title = "Objects to create",
+                title = "Records to create",
                 items = plan.items.filter { it.isObjectCreation() },
                 checkedIds = checkedIds,
                 onCheckedChange = { itemId, checked ->
@@ -230,7 +230,7 @@ private fun ActionItem.typeLabel(): String = when (this) {
     is ActionItem.CreateRecord -> "New record"
     is ActionItem.UpdateStatus -> "Status update"
     is ActionItem.CreateTask -> "Task"
-    is ActionItem.UpdateDomainUnderstanding -> "Domain update"
+    is ActionItem.UpdateDomainUnderstanding -> "Life area update"
 }
 
 @Composable

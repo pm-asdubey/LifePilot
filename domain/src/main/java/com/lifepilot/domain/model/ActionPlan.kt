@@ -15,6 +15,10 @@ data class ActionPlan(
     val summary: String,
     val items: List<ActionItem>,
     val clarifyingQuestions: List<ClarifyingQuestion> = emptyList(),
+    // Set by the AI when it has more tasks to emit than fit in one response.
+    // The ViewModel loops silently and accumulates batches before presenting.
+    val hasMore: Boolean = false,
+    val continuationContext: String? = null,
 )
 
 enum class ActionPlanType {
@@ -91,6 +95,8 @@ sealed class ActionItem {
         val description: String? = null,
         val emoji: String = "🎯",
         val domain: String? = null,
+        /** Optional target/completion date proposed for the project. */
+        val targetDate: LocalDate? = null,
         override val dependsOn: List<String> = emptyList(),
         override val isEnabled: Boolean = true,
         override val isChecked: Boolean = true,

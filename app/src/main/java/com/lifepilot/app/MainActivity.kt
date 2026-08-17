@@ -12,6 +12,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,11 +52,13 @@ class MainActivity : FragmentActivity() {
         requestNotificationPermissionIfNeeded()
 
         val deepLinkObjectId = intent?.getStringExtra("objectId")
+        val deepLinkConversationId = intent?.getStringExtra("conversationId")
 
         setContent {
             LifePilotApp(
                 biometricAuthManager = biometricAuthManager,
                 deepLinkObjectId = deepLinkObjectId,
+                deepLinkConversationId = deepLinkConversationId,
             )
         }
     }
@@ -88,8 +91,16 @@ class MainActivity : FragmentActivity() {
 private fun LifePilotApp(
     biometricAuthManager: BiometricAuthManager,
     deepLinkObjectId: String? = null,
+    deepLinkConversationId: String? = null,
 ) {
-    LifePilotTheme {
+    val themeViewModel: ThemeViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+    val themeMode by themeViewModel.themeMode.collectAsState()
+    val darkTheme = when (themeMode) {
+        "dark" -> true
+        "light" -> false
+        else -> androidx.compose.foundation.isSystemInDarkTheme()
+    }
+    LifePilotTheme(darkTheme = darkTheme) {
         Surface(modifier = Modifier.fillMaxSize()) {
             val lockEnabled = biometricAuthManager.isBiometricLockEnabled()
             var isAuthenticated by remember { mutableStateOf(!lockEnabled) }
@@ -99,8 +110,22 @@ private fun LifePilotApp(
                     biometricAuthManager = biometricAuthManager,
                     onAuthenticated = { isAuthenticated = true },
                 )
+            } else if (!BuildConfig.ONBOARDING_ENABLED) {
+                // "stable" flavor: no onboarding, straight to the app.
+                LifePilotNavHost(
+                    deepLinkObjectId = deepLinkObjectId,
+                    deepLinkConversationId = deepLinkConversationId,
+                )
             } else {
-                LifePilotNavHost(deepLinkObjectId = deepLinkObjectId)
+                val onboardingViewModel: com.lifepilot.app.onboarding.OnboardingViewModel =
+                    androidx.hilt.navigation.compose.hiltViewModel()
+                val onboardingDone by onboardingViewModel.completed.collectAsState()
+                when (onboardingDone) {
+                    // null = flag still loading; render nothing briefly to avoid a flash.
+                    null -> Unit
+                    false -> com.lifepilot.app.onboarding.OnboardingScreen(viewModel = onboardingViewModel)
+                    else -> LifePilotNavHost(deepLinkObjectId = deepLinkObjectId)
+                }
             }
         }
     }

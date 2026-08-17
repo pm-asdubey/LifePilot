@@ -4,11 +4,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountBalance
 import androidx.compose.material.icons.outlined.Badge
 import androidx.compose.material.icons.outlined.Bolt
+import androidx.compose.material.icons.outlined.Celebration
 import androidx.compose.material.icons.outlined.DriveEta
 import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.Flight
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Gavel
+import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.LocalHospital
 import androidx.compose.material.icons.outlined.Payments
@@ -23,7 +25,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 
 fun domainIcon(domain: String): ImageVector = when (domain.lowercase()) {
     "identity" -> Icons.Outlined.Badge
-    "career" -> Icons.Outlined.Work
+    "career", "employment" -> Icons.Outlined.Work
     "property", "home" -> Icons.Outlined.Home
     "vehicle", "transport" -> Icons.Outlined.DriveEta
     "finance" -> Icons.Outlined.AccountBalance
@@ -32,6 +34,8 @@ fun domainIcon(domain: String): ImageVector = when (domain.lowercase()) {
     "legal" -> Icons.Outlined.Gavel
     "travel" -> Icons.Outlined.Flight
     "insurance" -> Icons.Outlined.Shield
+    "major life events" -> Icons.Outlined.Celebration
+    "people" -> Icons.Outlined.Group
     else -> Icons.Outlined.FolderOpen
 }
 

@@ -4,6 +4,133 @@ All notable changes to LifePilot are documented here.
 
 ---
 
+## [Unreleased] — Continuation, Deterministic Formatting & Prompt Slimming (2026-07-04)
+
+Driven by on-device marriage-flow testing. Same-day continuation of the pass below.
+
+### Fixed
+- **Raw action JSON leaked into the chat on long plans (RCA).** A 14-task ACTION_PLAN exceeded the
+  provider `max_tokens` (1024) and truncated mid-JSON, so there was no closing `[/LIFEPILOT_ACTION]`
+  tag, `ACTION_PATTERN` didn't match, and the raw block (underscores eaten) was shown with no approval
+  card. Fixed by (a) raising `max_tokens` to 4096, (b) **auto-continuation** (below), and (c) a
+  parse-time safety net that strips any dangling unclosed block and shows a retry hint.
+- **Library "Current Understanding" card had a delete/cross button.** It was a session-only dismiss
+  that read as delete on AI-managed understanding. Removed the affordance (and its state/params).
+
+### Added
+- **AI response continuation.** `AiCompletionResult.Success` now carries a `truncated` flag from the
+  provider's `finish_reason`/`stop_reason` (NVIDIA + Anthropic). `HomeViewModel.completeWithContinuation`
+  transparently asks the model to continue (up to `MAX_CONTINUATIONS` = 2), assembles the chunks, and
+  only then parses/displays — so big plans arrive whole, as one message with the approval card.
+- **Styled Markdown rendering, dependency-free.** `MarkdownInline` (`designsystem/text/`, unit-tested)
+  parses `**bold**`, `*italic*` and `#` headers into a Compose `AnnotatedString`; `MessageBubble`
+  renders AI text through it. Plus `normalizeNumberedList` splits run-on numbered lists onto their own
+  lines. We roll our own because the maintained Compose-Markdown libraries need Kotlin 2.2 / JitPack and
+  the project is on Kotlin 2.0.
+- **Thoroughness & credibility prompt block.** Instructs the AI to be exhaustive by default, think
+  across ALL affected life domains, be specific per named record, and cite the records it reviewed.
+- **Background AI work + "answer ready" notification.** A lightweight foreground service
+  (`AiThinkingService`, declared in app, class in `data`) keeps the process alive while the existing
+  `viewModelScope` AI call runs, so switching apps no longer freezes the request. `AiTaskNotifier`
+  starts it on turn start and, on completion, posts an "Your answer is ready" notification **only if the
+  app is backgrounded** (checked via `ForegroundStateProvider`/`ProcessLifecycleOwner`), deep-linking to
+  the conversation (`conversationId` extra → `MainActivity` → `HomeScreen.resumeConversation`). New perms:
+  `FOREGROUND_SERVICE` + `FOREGROUND_SERVICE_DATA_SYNC`. Gating logic unit-tested (`AiTaskNotifierTest`).
+
+### Changed
+- **Friendly AI errors.** Raw provider errors (e.g. `ETIMEDOUT`) are mapped to calm messages
+  (connection / key / rate-limit variants); the raw text goes to logcat only.
+- **Slimmer system prompt (enforcement moved into code).** The 30-item trigger list is now one line;
+  the ACTION_PLAN schema no longer instructs a `CREATE_PROJECT` item or `projectItemId` because
+  `ActionPlanNormalizer` injects the project and links tasks/records deterministically. Removed the
+  formatting instructions (handled deterministically). The TURN 1/2/3 structure and few-shot examples
+  were left intact (they work well).
+
+### Not done (tracked)
+- Persisting an attachment reference on the chat message bubble.
+
+---
+
+## [Unreleased] — Attachment Flow, Parser & Projects Pass (2026-07-04)
+
+On-device testing of the `stable` (no-onboarding) build drove this pass. Build/verify loop via USB ADB.
+
+### Changed
+- **Document → chat flow reworked so nothing is stored on scan.** `HomeViewModel.processAttachment` now
+  *queues* the document (chip in chat) and runs OCR + AI classification in the background without storing.
+  The document travels with the user's first message (`sendMessage`), the AI answers grounded in it, then
+  the classification is presented for save (approval → PDF record + Life State Engine event), or a general
+  document is saved if classification failed. Previously it OCR'd + classified + **stored on scan** before
+  any message — the cause of "blanked out then saved instantly without a message."
+- **Camera ≠ Scan.** Camera is a normal camera again (`TakePicture`); only "Scan a document" opens the ML
+  Kit scanner. A photographed document is still OCR'd/classified; a plain photo is just kept.
+- **AI thinking state always cycles.** The indicator previously froze whenever the VM set a status; it now
+  always rotates the relevant words, with the compass avatar + WhatsApp-style animated dots. The AI message
+  avatar is the compass too.
+- **In-app logo is a real compass.** `LifePilotLogo` rewritten from the 4-point star (read as a shuriken)
+  to a ring + N/E/S/W ticks + an elongated needle that points up — consistent with the launcher icon.
+
+### Fixed
+- **Scanned documents failing to classify (RCA).** `AiActionParser.parseAction` threw
+  `JSONException: Value OBJECT_CREATION … cannot be converted to JSONObject` because the model emitted a
+  bare action-type token before the JSON. The parser now isolates the outermost `{…}` and recovers the
+  action type from a stray prefix / markdown fences. Classification prompt also strengthened with a JSON
+  example.
+- **Tasks showed two circles.** `SwipeToCompleteTask`/`SwipeToReopenTask` rendered a check/reopen icon at
+  the card's left edge that showed through the transparent card at rest. Removed both swipe wrappers — each
+  task now has a single tap-to-complete/reopen circle.
+
+### Added
+- **Projects are mandatory for grouped work.** A prompt MULTIPLE-TASK RULE plus a deterministic safety net:
+  `ActionPlanNormalizer.ensureProject` injects a synthetic Project (and links tasks/records) whenever a plan
+  has 2+ tasks and none — regardless of model compliance. Applied at parse time so it shows in the proposal.
+- **Tests:** `ActionPlanNormalizerTest` (6), `ThinkingMessagesTest` (3), AiActionParser stray-prefix +
+  markdown-fence cases (2). New `:designsystem` unit-test source set. JVM suite remains green.
+
+### Distribution
+- `stable` flavor (`com.lifepilot.app.stable.debug`, no onboarding) is the primary build installed on
+  device. Onboarding remains behind the `standard` flavor. Artifact: `artifacts/LifePilot-stable-no-onboarding-debug.apk`.
+
+---
+
+## [Unreleased] — Stability & Maintainability Pass (2026-07-03)
+
+### Added
+- **Library: all 12 canonical domains are always-visible containers.** Every life domain shows as an
+  expandable section even at zero records, each with a domain-scoped "+" to file a record/document into
+  it; first-run onboarding banner; per-domain "Current Understanding" life-history cards. Regression
+  test guards that all canonical domains are always present.
+- **`DomainEmoji`** deterministic domain→emoji map (ADR-002) so AI-proposed projects get a
+  domain-appropriate emoji instead of a generic marker. Unit-tested.
+- **New compass/pilot logo** — adaptive launcher icon (foreground/background/monochrome) + reusable
+  `LifePilotLogo` brand mark in `designsystem`.
+- **Documentation:** `Stability-And-Maintainability.md`, `Architectural-Review-2026-07.md`,
+  `Onboarding-Flow-Analysis.md` + interactive HTML mockup, `Manual-QA-Checklist.md`; refreshed
+  `TESTING.md` (246 tests across 7 modules).
+
+### Fixed
+- **AI-proposed projects now carry emoji + target date** end-to-end (parsers, `AiProposal.ProjectCreation`,
+  `ActionItem.CreateProject`, `HomeViewModel`, `ActionPlanExecutorImpl`). Previously every AI project got
+  `🎯` and no date, so "days left" never rendered and the "Behind" heuristic could never fire.
+- **`DomainLifeStateEngineImpl` markdown-fenced JSON parsing** — model responses wrapped in ```json fences
+  were silently dropped (no life-state update). Now extracts the outermost `{…}` robustly.
+- **Camera flow (AI chat):** runtime CAMERA permission is now requested before capture (was a
+  SecurityException/crash risk on some OEMs); the capture URI survives process death
+  (`rememberSaveable`); an empty AI response no longer leaves the "thinking" spinner spinning forever.
+
+### Removed
+- **Orphaned `features:ai` module** (918 lines, incl. a third divergent copy of the AI action parser) —
+  not wired into the app; deleted along with its `settings.gradle` include.
+- **Orphaned Library `ProjectDetail` screen/viewmodel/state + duplicate `project/{projectId}` route** —
+  it collided with and shadowed Planner's Project Workspace (ADR-002: Library is Records-only).
+
+### Testing / Infra
+- Recovered and unified the test suite after a prior multi-agent session left divergent worktrees.
+  **246 JVM unit tests, 0 failures.** Added `org.json` test dependency to `:data` (fixes silent
+  parse-failure in JVM unit tests). CI gate (`./gradlew test`) verified.
+
+---
+
 ## [Unreleased] — P0 Bug Fixes
 
 ### Fixed

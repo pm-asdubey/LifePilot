@@ -319,23 +319,21 @@ private fun ProjectCard(
     val daysUntil = project.targetDate?.let { ChronoUnit.DAYS.between(today, it) }
     val openTasks = taskCounts.first
     val totalTasks = taskCounts.second
-    val progress = if (totalTasks > 0) {
-        (totalTasks - openTasks).toFloat() / totalTasks
-    } else 0f
+    val progress = com.lifepilot.domain.model.ProjectHealth.progress(openTasks, totalTasks)
     val progressPct = (progress * 100).toInt()
 
     val statusLabel: String
     val statusColor: androidx.compose.ui.graphics.Color
-    when {
-        project.isAiProposed -> {
+    when (com.lifepilot.domain.model.ProjectHealth.of(project.isAiProposed, progress, daysUntil)) {
+        com.lifepilot.domain.model.ProjectHealth.AI_PROPOSED -> {
             statusLabel = "AI proposed"
             statusColor = MaterialTheme.colorScheme.tertiary
         }
-        daysUntil != null && daysUntil <= 14 && progress < 0.5f -> {
+        com.lifepilot.domain.model.ProjectHealth.BEHIND -> {
             statusLabel = "Behind"
             statusColor = Warning
         }
-        else -> {
+        com.lifepilot.domain.model.ProjectHealth.ON_TRACK -> {
             statusLabel = "On track"
             statusColor = MaterialTheme.colorScheme.primary
         }
@@ -687,51 +685,48 @@ private fun TasksTab(
                         TaskPriority.MEDIUM -> MaterialTheme.colorScheme.primary
                         TaskPriority.LOW -> MaterialTheme.colorScheme.onSurfaceVariant
                     }
+                    // One clear affordance: tap the circle to complete (or un-complete). The old
+                    // swipe wrappers rendered a second check/reopen icon that showed through the
+                    // transparent card at rest, so each task appeared to have two circles.
                     if (isCompleted) {
-                        SwipeToReopenTask(onReopen = { onReopenTask(task.taskId) }) {
-                            TaskCard(
-                                title = task.title,
-                                dueDateLabel = task.dueDate?.format(DateTimeFormatter.ofPattern("MMM d")),
-                                priorityLabel = task.priority.name.lowercase()
-                                    .replaceFirstChar { it.uppercase() },
-                                priorityColor = priorityColor,
-                                isCompleted = true,
-                                onComplete = {},
-                                onClick = {},
-                                modifier = Modifier.padding(horizontal = Spacing.xs),
-                            )
-                        }
+                        TaskCard(
+                            title = task.title,
+                            dueDateLabel = task.dueDate?.format(DateTimeFormatter.ofPattern("MMM d")),
+                            priorityLabel = task.priority.name.lowercase()
+                                .replaceFirstChar { it.uppercase() },
+                            priorityColor = priorityColor,
+                            isCompleted = true,
+                            // Tapping the check-circle on a completed task un-completes it.
+                            onComplete = { onReopenTask(task.taskId) },
+                            onClick = {},
+                            modifier = Modifier.padding(horizontal = Spacing.xs),
+                        )
                     } else {
-                        SwipeToCompleteTask(
+                        TaskCard(
+                            title = task.title,
+                            dueDateLabel = task.dueDate?.format(DateTimeFormatter.ofPattern("MMM d")),
+                            priorityLabel = task.priority.name.lowercase()
+                                .replaceFirstChar { it.uppercase() },
+                            priorityColor = priorityColor,
+                            isCompleted = false,
                             onComplete = { onCompleteTask(task.taskId) },
-                            enabled = true,
-                        ) {
-                            TaskCard(
-                                title = task.title,
-                                dueDateLabel = task.dueDate?.format(DateTimeFormatter.ofPattern("MMM d")),
-                                priorityLabel = task.priority.name.lowercase()
-                                    .replaceFirstChar { it.uppercase() },
-                                priorityColor = priorityColor,
-                                isCompleted = false,
-                                onComplete = { onCompleteTask(task.taskId) },
-                                onClick = { onEditTask(task) },
-                                modifier = Modifier
-                                    .padding(horizontal = Spacing.xs)
-                                    .then(
-                                        if (isHighlighted) {
-                                            Modifier
-                                                .padding(Spacing.xs)
-                                                .border(
-                                                    width = 2.dp,
-                                                    color = MaterialTheme.colorScheme.primary,
-                                                    shape = RoundedCornerShape(12.dp),
-                                                )
-                                        } else {
-                                            Modifier
-                                        }
-                                    ),
-                            )
-                        }
+                            onClick = { onEditTask(task) },
+                            modifier = Modifier
+                                .padding(horizontal = Spacing.xs)
+                                .then(
+                                    if (isHighlighted) {
+                                        Modifier
+                                            .padding(Spacing.xs)
+                                            .border(
+                                                width = 2.dp,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                shape = RoundedCornerShape(12.dp),
+                                            )
+                                    } else {
+                                        Modifier
+                                    },
+                                ),
+                        )
                     }
                 }
             }

@@ -23,7 +23,12 @@ enum class AiMessageRole {
 }
 
 sealed class AiCompletionResult {
-    data class Success(val content: String, val model: String) : AiCompletionResult()
+    /**
+     * @param truncated true when the model stopped because it hit the output token limit
+     * (finish_reason "length" / stop_reason "max_tokens") rather than finishing naturally. The caller
+     * can then request a continuation and stitch the parts together before parsing.
+     */
+    data class Success(val content: String, val model: String, val truncated: Boolean = false) : AiCompletionResult()
     data class Error(val message: String, val code: Int? = null) : AiCompletionResult()
     data object Unavailable : AiCompletionResult()
 }

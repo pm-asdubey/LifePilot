@@ -880,3 +880,173 @@ Before moving to the next task:
 ✓ The feature is production-quality.
 
 Only after completing these checks should work continue to the next task.
+
+# Testing Requirements
+
+Every bug fixed must have a corresponding regression test.
+Every new feature must have unit tests covering the happy path and at least one failure case.
+
+## Test Locations
+
+| Layer | Location |
+|---|---|
+| Pure business logic | `domain/src/test/` |
+| Data layer (repositories, DAOs, engines) | `data/src/test/` (unit) and `data/src/androidTest/` (Room in-memory) |
+| ViewModel logic extracted into standalone classes | `features/<name>/src/test/` |
+| Room migrations | `data/src/androidTest/database/DatabaseMigrationTest.kt` |
+
+## Test Stack
+
+- JUnit 4 + Google Truth assertions
+- MockK (`mockk<T>(relaxed = true)`) for dependency mocking
+- kotlinx-coroutines-test (`runTest`) for suspend functions
+- Room in-memory DB (`Room.inMemoryDatabaseBuilder`) for DAO tests
+
+## Critical Invariants — Never Remove These Tests
+
+- `ConversationDaoTest.updateTitle_doesNotDeleteExistingMessages` — guards against the CASCADE DELETE bug where INSERT OR REPLACE on conversations wiped all chat messages
+- `ConversationDaoTest.upsertConversation_afterMessagesExist_deletesAllMessages` — documents that upsertConversation IS destructive; if this ever fails it means the FK strategy changed
+- `AiActionParserTest.parse plain string OBJECT_CREATION returns null` — guards against AI returning bare strings instead of JSON in action blocks
+
+## Before Marking Any Task Done
+
+1. `./gradlew test` must pass — **246 JVM unit tests** across `:domain`, `:data`, and the
+   `:features:*` modules (home, library, search, settings, timeline). All green as of 2026-07-03.
+2. `./gradlew :data:connectedAndroidTest` should pass when device available
+3. Build: `./gradlew :app:assembleDebug --no-daemon`
+
+See `docs/06-development/Stability-And-Maintainability.md` for the architecture map, guardrails, and the
+prioritized non-breaking backlog — read it before large changes so you don't re-derive the codebase.
+
+## JVM Unit Test Gotcha
+
+`org.json.JSONObject` is Android SDK — NOT available in plain JVM unit tests. On Android modules the
+stub *throws at runtime*, so a JSON-parsing test fails silently (the parser's `runCatching` swallows it)
+rather than at compile time. Add `testImplementation("org.json:json:20240303")` to any module that tests
+JSON parsing. `:data` and `:features:home` already have it.
+
+---
+
+# Known Dangerous Patterns
+
+## Room CASCADE DELETE via INSERT OR REPLACE
+
+`ConversationDao.upsertConversation()` uses `OnConflictStrategy.REPLACE`.
+SQLite's INSERT OR REPLACE *deletes* the old row then inserts a new one.
+Because `chat_messages` has `onDelete = CASCADE` on the conversation FK,
+this silently deletes ALL messages for a conversation.
+
+**Never call `upsertConversation` after messages have been saved for a conversation.**
+Use `touchConversation` or `updateTitle` (targeted UPDATE queries) instead.
+This was the root cause of the "first message always disappears" bug — confirmed by
+pulling the SQLite DB from the device and inspecting with sqlite3.
+
+## AI Action Block Parsing
+
+The AI must return action blocks as valid JSON objects, not bare strings.
+The `[LIFEPILOT_ACTION]` block is parsed by `AiActionParser.parseAction()` which
+wraps parsing in a try/catch and returns null on failure.
+
+If the prompt format changes, verify that `AiActionParserTest` still passes — specifically
+the `parse plain string OBJECT_CREATION returns null` test which guards against the
+crash that occurred when the AI returned a bare type string instead of JSON.
+
+**2026-07-04 hardening:** `parseAction()` now isolates the outermost `{…}` before calling
+`JSONObject(...)` and recovers a stray action-type token the model sometimes writes *before* the
+JSON (e.g. `OBJECT_CREATION {…}`) or `\`\`\`json` fences. This was the confirmed RCA of scanned
+documents failing to classify — logcat showed `JSONException: Value OBJECT_CREATION … cannot be
+converted to JSONObject`. A truly bare string with no `{}` still returns null (invariant preserved).
+Covered by `parse OBJECT_CREATION with stray action-type prefix` + `… wrapped in markdown fences`.
+
+## Text normalisation Must Run AFTER Action Block Extraction
+
+`stripMarkdown()` was removed 2026-07-04 (see "Message formatting is deterministic" above); visible
+text is now cleaned by `normalizeNumberedList()` + `cleanMarkdownForDisplay()`. The ordering rule still
+holds and is why the old `stripMarkdown` corrupted action blocks: any regex that touches underscores
+(e.g. `_(.+?)_`) will eat the underscores in `[LIFEPILOT_ACTION]` / `ACTION_PLAN` when the AI returns
+compact single-line JSON, corrupting `[LIFEPILOT_ACTION]` → `[LIFEPILOTACTION]` so `ACTION_PATTERN`
+never matches and raw JSON leaks into the chat.
+
+**Rule:** Always run `ACTION_PATTERN.find(raw)` on the UNMODIFIED raw string and remove the action block
+from `content` BEFORE any text normalisation. `parseAiResponse()` enforces this order — do not revert it.
+
+## NavDestination Route Matching with Query Parameters
+
+Routes registered as `"planner?taskId={taskId}"` do NOT match `"planner"` with
+`==` comparison. Always use `substringBefore('?')` when checking
+`NavDestination.hierarchy` to strip query parameters before comparison.
+
+## AI Action Parser — now unified (single source of truth)
+
+As of 2026-07-03 there is ONE parser: `AiActionParser` (`features/home/.../viewmodel/AiActionParser.kt`,
+guarded by `AiActionParserTest`). `HomeViewModel.parseAiResponse()` and the attachment-classification path
+both delegate to it via `aiActionParser.parseAction(json, currentObjectIndex, currentObjectMetadataIndex)`.
+The former inline `HomeViewModel.parseAction()` duplicate (~360 lines) and a third copy in the old
+`features:ai` module were both deleted. **Add new action types / fields only in `AiActionParser`, and cover
+them in `AiActionParserTest`** — the tests now guard the exact code production runs.
+
+## Attachment → chat flow (reworked 2026-07-04)
+
+`HomeViewModel.processAttachment(uri)` NO LONGER classifies-and-stores on scan. It now **queues** the
+document: copies the file, sets `pendingAttachment{Path,DisplayName,MimeType}` (shows a chip in chat),
+and runs OCR + AI classification **in the background** — holding the result in `pendingClassifiedAction`
+(and `attachedDocumentContext`) WITHOUT storing anything. Storage happens in `sendMessage()`: the queued
+document travels with the user's first message (the AI answers grounded in it), then the classification is
+presented for save (approval card → PDF record + `processObjectEvent`), or a general document is saved if
+classification failed. Rule: **nothing is persisted until the user sends/approves.** `clearPendingAttachment()`
+resets the queue. Camera (`ActivityResultContracts.TakePicture`) is a normal camera again; only "Scan a
+document" uses the ML Kit scanner.
+
+## AI response continuation on truncation (2026-07-04)
+
+Providers report truncation: `AiCompletionResult.Success.truncated` is set from `finish_reason == "length"`
+(NVIDIA) / `stop_reason == "max_tokens"` (Anthropic). `HomeViewModel.completeWithContinuation` wraps
+`executeWithRetries`: if the result is truncated it appends the partial reply to history, asks the model
+to "continue from exactly where it stopped", and concatenates — up to `MAX_CONTINUATIONS` (2). Only the
+ASSEMBLED text is parsed/displayed. This fixed long ACTION_PLANs (e.g. a 14-task wedding plan) truncating
+mid-JSON and leaking a raw, unclosed `[LIFEPILOT_ACTION]` block into the chat. `max_tokens` was also
+raised 1024 → 4096. `parseAiResponse` has a safety net: if an opener has no closing tag it strips the
+dangling block and shows a retry hint rather than raw JSON.
+
+## Message formatting is deterministic — do NOT re-add markdown stripping via the AI (2026-07-04)
+
+The AI is barely told how to format (only "you may use **bold** for key terms"). `parseAiResponse`
+runs `normalizeNumberedList()` (splits run-on "1. … 2. …" onto separate lines) and KEEPS Markdown
+symbols. `MessageBubble` renders AI text through `toDisplayAnnotatedString()` — a tiny dependency-free
+parser (`designsystem/text/MarkdownInline.kt`, unit-tested by `MarkdownInlineTest`) that turns
+`**bold**`, `*italic*` and `#` headers into a styled Compose `AnnotatedString`. The old `stripMarkdown()`
+/ `cleanMarkdownForDisplay()` were removed. A Markdown-renderer *dependency* was intentionally NOT added:
+`dev.jeziellago:compose-markdown` (JitPack) and `com.mikepenz:multiplatform-markdown-renderer` (needs
+Kotlin 2.2) are incompatible with this project's Kotlin 2.0 — we roll our own instead.
+
+## Slim prompt — enforcement lives in code, not instructions (2026-07-04)
+
+`PromptBuilderImpl` was slimmed because deterministic code now enforces what the prompt used to beg for:
+project grouping + task linking (`ActionPlanNormalizer`), formatting (above), and JSON robustness
+(`AiActionParser`). The ACTION_PLAN schema no longer includes a `CREATE_PROJECT` item or `projectItemId`
+— the normalizer injects/links them. **When adding prompt rules, first ask whether a deterministic
+post-processor can enforce it instead** (less context = less long-context drift). The TURN 1/2/3 life-event
+structure and its few-shot examples are load-bearing and work well — do not remove them.
+
+## Background AI work + "answer ready" notification (2026-07-04)
+
+The AI turn still runs in `HomeViewModel`'s `viewModelScope` (no duplicated orchestration). To stop
+aggressive OEMs freezing the process when the user switches apps, `AiTaskNotifier.onTurnStarted()` starts
+a minimal foreground service (`AiThinkingService`, class lives in `:data`, declared in the app manifest
+with `foregroundServiceType="dataSync"`). `onTurnFinished(convId, title)` stops it and — ONLY if the app
+is backgrounded (`ForegroundStateProvider` → `ProcessLifecycleOwner`) — posts an "answer ready"
+notification via `NotificationHelper`, deep-linking with a `conversationId` extra. `MainActivity` reads it
+→ `LifePilotNavHost` → `HomeScreen(deepLinkConversationId)` → `resumeConversation`. `stopThinking()` is the
+error/cancel/`finally` cleanup. Perms: `FOREGROUND_SERVICE` + `FOREGROUND_SERVICE_DATA_SYNC`. The
+notify-only-when-backgrounded decision is unit-tested in `AiTaskNotifierTest` (the foreground check is
+injected so it's mockable). If you touch the send loop, keep `onTurnStarted`/`onTurnFinished`/`stopThinking`
+balanced or the service leaks.
+
+## Projects are mandatory for grouped work (2026-07-04)
+
+Two layers keep Projects central: (1) a prompt MULTIPLE-TASK RULE in `PromptBuilderImpl`, and (2) a
+deterministic safety net — `ActionPlanNormalizer.ensureProject(plan)` (pure domain, `domain/model/`) runs
+in `AiActionParser.parseActionPlan`. If a plan has 2+ `CreateTask` items and no `CreateProject`, it injects
+a synthetic project (title/domain/emoji derived from plan type or summary) and links all unlinked
+tasks/records to it. So grouped work becomes a Project regardless of model compliance. Guarded by
+`ActionPlanNormalizerTest`.

@@ -13,7 +13,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -30,21 +32,32 @@ class CreateObjectViewModel @Inject constructor(
     val state: StateFlow<CreateObjectState> = _state.asStateFlow()
 
     init {
-        loadObjectTypes()
+        // Observe schema changes reactively so types populate correctly even if schemas load after ViewModel creation.
+        viewModelScope.launch {
+            schemaEngine.registeredSchemas
+                .map { schemas ->
+                    schemas.values.map { schema ->
+                        ObjectTypeItem(
+                            objectType = schema.objectType,
+                            displayName = schema.displayName,
+                            domain = schema.domain,
+                            icon = schema.icon,
+                            description = schema.description,
+                        )
+                    }.sortedBy { it.domain }
+                }
+                .distinctUntilChanged()
+                .collect { types -> _state.update { it.copy(availableTypes = types) } }
+        }
     }
 
-    private fun loadObjectTypes() {
-        val types = schemaEngine.getAllObjectTypes().mapNotNull { type ->
-            val schema = schemaEngine.getSchema(type) ?: return@mapNotNull null
-            ObjectTypeItem(
-                objectType = schema.objectType,
-                displayName = schema.displayName,
-                domain = schema.domain,
-                icon = schema.icon,
-                description = schema.description,
-            )
-        }.sortedBy { it.domain }
-        _state.update { it.copy(availableTypes = types) }
+    /**
+     * Scope the type picker to a single life domain. Called when the sheet is opened from a
+     * Library domain section so "add to <domain>" only offers that domain's record types.
+     * Passing null (or a domain with no registered types) shows every type.
+     */
+    fun setDomainFilter(domain: String?) {
+        _state.update { it.copy(domainFilter = domain?.takeIf { d -> d.isNotBlank() }) }
     }
 
     fun selectType(objectType: String) {

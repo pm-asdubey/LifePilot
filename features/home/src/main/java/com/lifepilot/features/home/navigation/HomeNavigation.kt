@@ -8,9 +8,11 @@ import com.lifepilot.features.home.ui.HomeScreen
 
 fun NavGraphBuilder.homeScreen(
     navController: NavController,
+    deepLinkConversationId: String? = null,
 ) {
     composable(route = "home") {
         HomeScreen(
+            deepLinkConversationId = deepLinkConversationId,
             onNavigateToObject = { objectId ->
                 navController.navigate("object/$objectId")
             },

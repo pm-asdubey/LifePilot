@@ -199,8 +199,14 @@ class PlanningEngineImpl @Inject constructor(
     }
 
     private suspend fun recalculateGoalProgress(goalId: String) {
-        // Lightweight: count completed vs total tasks for this goal.
-        // Full implementation requires a TaskDao query by goalId — deferred to next iteration.
-        Timber.d("PlanningEngine: recalculating progress for goal $goalId")
+        val tasks = taskRepository.getTasksByGoal(goalId)
+        if (tasks.isEmpty()) {
+            goalRepository.updateProgress(goalId, 0)
+            return
+        }
+        val completed = tasks.count { it.status == TaskStatus.COMPLETED }
+        val progress = (completed * 100) / tasks.size
+        goalRepository.updateProgress(goalId, progress)
+        Timber.d("PlanningEngine: goal $goalId progress = $progress% ($completed/${tasks.size})")
     }
 }

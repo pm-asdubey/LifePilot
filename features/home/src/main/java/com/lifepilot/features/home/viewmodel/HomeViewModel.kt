@@ -306,7 +306,11 @@ class HomeViewModel @Inject constructor(
                 // If a document is queued but the background classify hasn't set its context yet
                 // (fast send / OCR still running), ensure OCR is done and attach a minimal context
                 // so the AI still reads the document alongside this message.
+                // Capture all three attachment fields NOW — state is cleared when the chip is pinned
+                // to the message bubble (below), so reading from state after that returns null.
                 val pendingPath = _uiState.value.pendingAttachmentPath
+                val pendingDisplayName = _uiState.value.pendingAttachmentDisplayName
+                val pendingMimeType = _uiState.value.pendingAttachmentMimeType
                 if (pendingPath != null && _uiState.value.attachedDocumentContext == null) {
                     if (pendingAttachmentOcrText == null) {
                         val ocr = runCatching {
@@ -416,12 +420,13 @@ class HomeViewModel @Inject constructor(
                         }
                         // If a document is queued and the AI classified it, attach the file to the
                         // proposal so approving it saves the PDF against the new record.
-                        val pendingAttachPath = _uiState.value.pendingAttachmentPath
-                        val action = if (pendingAttachPath != null && resolvedRawAction is AiProposal.ObjectCreation) {
+                        // Use the pre-captured values — pendingAttachmentPath/DisplayName/MimeType were
+                        // cleared from state when the chip was pinned to the message bubble above.
+                        val action = if (pendingPath != null && resolvedRawAction is AiProposal.ObjectCreation) {
                             resolvedRawAction.copy(
-                                attachedFilePath = pendingAttachPath,
-                                attachedFileName = _uiState.value.pendingAttachmentDisplayName,
-                                attachedMimeType = _uiState.value.pendingAttachmentMimeType,
+                                attachedFilePath = pendingPath,
+                                attachedFileName = pendingDisplayName,
+                                attachedMimeType = pendingMimeType,
                             )
                         } else {
                             resolvedRawAction
@@ -483,18 +488,28 @@ class HomeViewModel @Inject constructor(
 
                         // Resolve the queued document now that the AI has read it and answered.
                         // Prefer a fresh classification from this turn; else the one computed on scan.
-                        if (pendingAttachPath != null) {
+                        // Use pendingPath (captured before state was cleared) — reading from state here
+                        // returns null because the chip-pin update already cleared it.
+                        if (pendingPath != null) {
                             val saveProposal = (action as? AiProposal.ObjectCreation)
                                 ?: (pendingClassifiedAction as? AiProposal.ObjectCreation)
                             if (saveProposal != null) {
-                                // Present the (already-computed) classification for the user to save.
-                                _uiState.update { it.copy(pendingAction = saveProposal) }
+                                // Present the classification for the user to approve and save.
+                                // Ensure file path is set regardless of which proposal we use.
+                                val proposalWithFile = if (saveProposal.attachedFilePath.isNullOrBlank()) {
+                                    saveProposal.copy(
+                                        attachedFilePath = pendingPath,
+                                        attachedFileName = pendingDisplayName ?: saveProposal.attachedFileName,
+                                        attachedMimeType = pendingMimeType ?: saveProposal.attachedMimeType,
+                                    )
+                                } else saveProposal
+                                _uiState.update { it.copy(pendingAction = proposalWithFile) }
                             } else {
                                 // Couldn't classify — save as a general document so it isn't lost.
-                                val pName = _uiState.value.pendingAttachmentDisplayName ?: "attachment"
-                                val pMime = _uiState.value.pendingAttachmentMimeType ?: "application/octet-stream"
+                                val pName = pendingDisplayName ?: "attachment"
+                                val pMime = pendingMimeType ?: "application/octet-stream"
                                 runCatching {
-                                    createPlaceholderObject(profileId, conversation.conversationId, pName, pendingAttachPath, pMime)
+                                    createPlaceholderObject(profileId, conversation.conversationId, pName, pendingPath, pMime)
                                 }.onFailure { Timber.w(it, "Failed to save queued document") }
                             }
                             pendingClassifiedAction = null
@@ -725,6 +740,9 @@ class HomeViewModel @Inject constructor(
             appendLine("Example: [LIFEPILOT_ACTION]{\"actionType\":\"OBJECT_CREATION\",\"objectType\":\"pan_card\",\"domain\":\"Identity\",\"title\":\"PAN Card\",\"summary\":\"Found a PAN card\",\"fields\":[{\"fieldId\":\"pan_number\",\"displayName\":\"PAN\",\"value\":\"ABCDE1234F\"}]}[/LIFEPILOT_ACTION]")
             appendLine("If this is a new document, use actionType OBJECT_CREATION with objectType, domain, title, and fields.")
             appendLine("If it updates an existing record, use METADATA_UPDATE with objectType, matchField, matchValue, and fields.")
+            appendLine("IMPORTANT: You MUST use one of the exact objectType strings from the available record types list above.")
+            appendLine("If the document does not match any known type, use objectType 'Certificate' and describe the document type in the initialNotes field so the user understands what was saved.")
+            appendLine("NEVER invent a new objectType that is not in the available record types list.")
             appendLine("Sensitive values like passport numbers, Aadhaar, PAN, account numbers are allowed in the action block because the user will approve them.")
             appendLine()
             appendLine("OCR text from '$fileName':")
@@ -772,6 +790,23 @@ class HomeViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to execute AI proposal")
+            }
+        }
+    }
+
+    fun approveEditedAction(editedProposal: AiProposal) {
+        _uiState.update { it.copy(pendingAction = null, attachedDocumentContext = null) }
+        viewModelScope.launch {
+            try {
+                val profileId = preferenceManager.getActiveProfileId() ?: return@launch
+                val convId = _uiState.value.currentConversationId ?: return@launch
+
+                when (editedProposal) {
+                    is AiProposal.ActionPlan -> executeActionPlan(editedProposal.plan, convId, profileId)
+                    else -> executeSingleProposal(editedProposal, convId, profileId)
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to execute edited AI proposal")
             }
         }
     }
@@ -973,8 +1008,10 @@ class HomeViewModel @Inject constructor(
                     objectId = proposal.objectId,
                     source = TaskSource.AI_PROPOSED,
                     priority = TaskPriority.MEDIUM,
+                    projectId = proposal.projectId,
                 ).getOrThrow()
-                "Task \"${proposal.title}\" added to your Planner."
+                val projectSuffix = if (proposal.projectId != null) " (added to project)" else ""
+                "Task \"${proposal.title}\" added to your Planner.$projectSuffix"
             }
             is AiProposal.TaskCompletion -> {
                 planningEngine.completeTask(proposal.taskId).getOrThrow()

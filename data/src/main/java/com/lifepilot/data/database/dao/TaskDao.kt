@@ -34,6 +34,9 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE task_id = :taskId")
     suspend fun getTaskById(taskId: String): TaskEntity?
 
+    @Query("SELECT * FROM tasks WHERE goal_id = :goalId")
+    suspend fun getTasksByGoal(goalId: String): List<TaskEntity>
+
     @Query("SELECT title FROM tasks WHERE object_id = :objectId")
     suspend fun getTaskTitlesByObject(objectId: String): List<String>
 

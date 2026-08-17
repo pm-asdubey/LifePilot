@@ -43,4 +43,6 @@ dependencies {
     ksp(libs.hilt.compiler)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.timber)
+
+    testImplementation(libs.bundles.testing.unit)
 }

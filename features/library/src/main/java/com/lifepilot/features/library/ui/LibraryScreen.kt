@@ -85,6 +85,7 @@ fun LibraryScreen(
     onAddObject: () -> Unit,
     onNavigateToSearch: () -> Unit = {},
     onNavigateToProject: (String) -> Unit = {},
+    onAddObjectToDomain: (String) -> Unit = { onAddObject() },
     modifier: Modifier = Modifier,
     viewModel: LibraryViewModel = hiltViewModel(),
 ) {
@@ -92,7 +93,6 @@ fun LibraryScreen(
     var showSortMenu by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var expandedDomains by remember { mutableStateOf(emptySet<String>()) }
-    var dismissedUnderstandingCards by remember { mutableStateOf(emptySet<String>()) }
 
     if (showDeleteDialog) {
         AlertDialog(
@@ -269,46 +269,18 @@ fun LibraryScreen(
                 .padding(innerPadding),
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-                if (uiState.domains.isNotEmpty()) {
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = Spacing.md),
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        item {
-                            FilterChip(
-                                selected = uiState.selectedDomain == null,
-                                onClick = { viewModel.selectDomain(null) },
-                                label = { Text("All") },
-                            )
-                        }
-                        items(uiState.domains) { domain ->
-                            FilterChip(
-                                selected = uiState.selectedDomain == domain.domain,
-                                onClick = { viewModel.selectDomain(domain.domain) },
-                                label = { Text("${domain.displayName} (${domain.objectCount})") },
-                            )
-                        }
-                    }
-                }
+                // Domain filter chips removed — every domain is an always-visible collapsed section
+                // below, so a separate top filter row was redundant.
 
-                if (uiState.objects.isEmpty()) {
-                    EmptyState(
-                        icon = Icons.Outlined.FolderOpen,
-                        title = "Your library is empty",
-                        description = "Add your first record — a passport, job, property or insurance policy — and LifePilot will keep everything in order.",
-                        actionLabel = "Add a record",
-                        onAction = onAddObject,
-                        modifier = Modifier.weight(1f),
-                    )
-                } else {
+                run {
                     val selectedDomainFilter = uiState.selectedDomain
                     val domainLifeStateMap = uiState.domains.associate { it.domain to it.lifeState }
+                    val objectsByDomain = uiState.objects.groupBy { it.domain }
+                    // Every canonical domain is a container, shown even with zero records so that
+                    // documents and life history can be filed into any of them.
                     val domainGroups: List<Pair<String, List<com.lifepilot.domain.model.LifeObject>>> =
                         if (selectedDomainFilter == null) {
-                            uiState.objects.groupBy { it.domain }.entries
-                                .sortedBy { it.key }
-                                .map { it.key to it.value }
+                            uiState.domains.map { it.domain to (objectsByDomain[it.domain] ?: emptyList()) }
                         } else {
                             listOf(selectedDomainFilter to uiState.objects)
                         }
@@ -321,18 +293,36 @@ fun LibraryScreen(
                         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                         modifier = Modifier.weight(1f),
                     ) {
+                        if (uiState.objects.isEmpty() && selectedDomainFilter == null) {
+                            item(key = "onboarding") {
+                                Card(
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+                                    ),
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    Column(modifier = Modifier.padding(Spacing.md)) {
+                                        Text(
+                                            text = "Your life, organized by domain",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "Every domain below is ready. Tap + on any of them to add your first record — a passport, job, property or policy — and LifePilot keeps it in order.",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
                         if (selectedDomainFilter != null) {
                             val filteredLifeState = domainLifeStateMap[selectedDomainFilter]
-                            if (filteredLifeState != null && filteredLifeState.currentSituation.isNotBlank() &&
-                                selectedDomainFilter !in dismissedUnderstandingCards) {
+                            if (filteredLifeState != null && filteredLifeState.currentSituation.isNotBlank()) {
                                 item(key = "understanding_filtered") {
-                                    DomainUnderstandingCard(
-                                        lifeState = filteredLifeState,
-                                        onDismiss = {
-                                            dismissedUnderstandingCards =
-                                                dismissedUnderstandingCards + selectedDomainFilter
-                                        },
-                                    )
+                                    DomainUnderstandingCard(lifeState = filteredLifeState)
                                 }
                             }
                         }
@@ -343,7 +333,7 @@ fun LibraryScreen(
                                 stickyHeader(key = "header_$domain") {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
-                                        modifier = androidx.compose.ui.Modifier
+                                        modifier = Modifier
                                             .fillMaxWidth()
                                             .background(MaterialTheme.colorScheme.background)
                                             .clickable {
@@ -359,39 +349,46 @@ fun LibraryScreen(
                                             imageVector = domainIcon(domain),
                                             contentDescription = null,
                                             tint = MaterialTheme.colorScheme.primary,
-                                            modifier = androidx.compose.ui.Modifier.size(20.dp),
+                                            modifier = Modifier.size(20.dp),
                                         )
-                                        Spacer(modifier = androidx.compose.ui.Modifier.width(Spacing.xs))
+                                        Spacer(modifier = Modifier.width(Spacing.xs))
                                         Text(
                                             text = domain,
                                             style = MaterialTheme.typography.titleSmall,
                                             color = MaterialTheme.colorScheme.onSurface,
-                                            modifier = androidx.compose.ui.Modifier.weight(1f),
+                                            modifier = Modifier.weight(1f),
                                         )
                                         Text(
                                             text = "${objects.size}",
                                             style = MaterialTheme.typography.labelSmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                         )
-                                        Spacer(modifier = androidx.compose.ui.Modifier.width(Spacing.xs))
+                                        Spacer(modifier = Modifier.width(Spacing.xs))
                                         Icon(
                                             imageVector = if (isExpanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
                                             contentDescription = if (isExpanded) "Collapse" else "Expand",
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = androidx.compose.ui.Modifier.size(18.dp),
+                                            modifier = Modifier.size(18.dp),
                                         )
                                     }
                                 }
                                 val lifeState = domainLifeStateMap[domain]
-                                if (isExpanded && lifeState != null && lifeState.currentSituation.isNotBlank() &&
-                                    domain !in dismissedUnderstandingCards) {
+                                if (isExpanded && lifeState != null && lifeState.currentSituation.isNotBlank()) {
                                     item(key = "understanding_$domain") {
-                                        DomainUnderstandingCard(
-                                            lifeState = lifeState,
-                                            onDismiss = {
-                                                dismissedUnderstandingCards =
-                                                    dismissedUnderstandingCards + domain
-                                            },
+                                        DomainUnderstandingCard(lifeState = lifeState)
+                                    }
+                                }
+                                if (isExpanded && objects.isEmpty()) {
+                                    item(key = "empty_$domain") {
+                                        Text(
+                                            text = "No records yet.",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.padding(
+                                                start = Spacing.lg,
+                                                top = 2.dp,
+                                                bottom = Spacing.xs,
+                                            ),
                                         )
                                     }
                                 }
@@ -450,7 +447,6 @@ fun LibraryScreen(
 @Composable
 private fun DomainUnderstandingCard(
     lifeState: DomainLifeState,
-    onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Card(
@@ -460,25 +456,13 @@ private fun DomainUnderstandingCard(
         modifier = modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(Spacing.md)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(
-                    text = "Current Understanding",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.weight(1f),
-                )
-                Icon(
-                    imageVector = Icons.Outlined.Close,
-                    contentDescription = "Dismiss",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier
-                        .size(16.dp)
-                        .clickable(onClick = onDismiss),
-                )
-            }
+            // The domain understanding is AI-managed and regenerated as life state changes, so it is
+            // shown, not dismissible/deletable — no close affordance here by design.
+            Text(
+                text = "Current Understanding",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = lifeState.currentSituation,

@@ -85,7 +85,9 @@ class NvidiaAiProvider @Inject constructor(
             val body = JSONObject().apply {
                 put("model", model)
                 put("messages", messages)
-                put("max_tokens", 1024)
+                // Plans are now emitted in batches of ≤8 items, so each individual response is small.
+                // Raised from 4096 to give non-plan responses more headroom and reduce truncation.
+                put("max_tokens", 8192)
                 put("temperature", 0.7)
                 put("stream", false)
             }
@@ -111,13 +113,16 @@ class NvidiaAiProvider @Inject constructor(
             }
 
             val json = JSONObject(responseBody ?: return AiCompletionResult.Error("Empty response"))
-            val content = json
+            val choice = json
                 .getJSONArray("choices")
                 .getJSONObject(0)
+            val content = choice
                 .getJSONObject("message")
                 .getString("content")
+            // "length" means the model hit max_tokens and the output is truncated.
+            val truncated = choice.optString("finish_reason") == "length"
 
-            AiCompletionResult.Success(content = content.trim(), model = model)
+            AiCompletionResult.Success(content = content.trim(), model = model, truncated = truncated)
         } catch (e: Exception) {
             Timber.e(e, "NVIDIA NIM API call failed")
             AiCompletionResult.Error(message = e.message ?: "Unknown error")

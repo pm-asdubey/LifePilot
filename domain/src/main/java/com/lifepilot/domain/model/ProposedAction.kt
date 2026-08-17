@@ -54,6 +54,7 @@ sealed class AiProposal {
         val dueDate: LocalDate?,
         val goalId: String?,
         val objectId: String?,
+        val projectId: String? = null,
     ) : AiProposal()
 
     /** Create a new tracked Object (record) when the user mentions a new life entity. */
@@ -93,6 +94,10 @@ sealed class AiProposal {
         val title: String,
         val description: String?,
         val domain: String?,
+        /** Emoji chosen by the AI; when blank, callers derive one from [domain] via DomainEmoji. */
+        val emoji: String? = null,
+        /** Optional target/completion date the AI proposed for the project. */
+        val targetDate: java.time.LocalDate? = null,
         val linkedObjectIds: List<String> = emptyList(),
     ) : AiProposal()
 }

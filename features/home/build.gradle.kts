@@ -52,4 +52,8 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.timber)
     implementation(libs.mlkit.document.scanner)
+
+    testImplementation(libs.bundles.testing.unit)
+    // org.json is part of Android SDK but not available in JVM unit tests
+    testImplementation("org.json:json:20240303")
 }

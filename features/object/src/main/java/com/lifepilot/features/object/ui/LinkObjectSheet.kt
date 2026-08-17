@@ -62,7 +62,7 @@ fun LinkObjectSheet(
     ) {
         Column(modifier = Modifier.padding(horizontal = Spacing.md)) {
             Text(
-                text = "Link Object",
+                text = "Link a record",
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(bottom = Spacing.md),
             )
@@ -70,7 +70,7 @@ fun LinkObjectSheet(
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
-                label = { Text("Search objects") },
+                label = { Text("Search records") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )

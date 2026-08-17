@@ -6,6 +6,8 @@ import com.lifepilot.domain.engine.PlanningEngine
 import com.lifepilot.domain.model.ActionItem
 import com.lifepilot.domain.model.ActionPlan
 import com.lifepilot.domain.model.AiProposal
+import com.lifepilot.domain.model.DomainEmoji
+import com.lifepilot.domain.model.MetadataMerge
 import com.lifepilot.domain.model.MetadataSource
 import com.lifepilot.domain.model.ObjectStatus
 import com.lifepilot.domain.model.ProposedField
@@ -31,6 +33,7 @@ class ActionPlanExecutorImpl @Inject constructor(
     private val projectRepository: ProjectRepository,
     private val updateObjectStatusUseCase: UpdateObjectStatusUseCase,
     private val domainLifeStateEngine: DomainLifeStateEngine,
+    private val lifeStateEngine: com.lifepilot.domain.engine.LifeStateEngine,
 ) : ActionPlanExecutor {
 
     override suspend fun execute(
@@ -89,13 +92,16 @@ class ActionPlanExecutorImpl @Inject constructor(
     ) {
         when (item) {
             is ActionItem.CreateProject -> {
+                // If the AI left the emoji as the generic default, derive one from the domain.
+                val emoji = item.emoji.takeIf { it.isNotBlank() && it != DomainEmoji.DEFAULT }
+                    ?: DomainEmoji.forDomain(item.domain)
                 val project = projectRepository.createProject(
                     profileId = profileId,
                     title = item.title,
                     description = item.description,
                     domain = item.domain,
-                    emoji = item.emoji,
-                    targetDate = null,
+                    emoji = emoji,
+                    targetDate = item.targetDate,
                     isAiProposed = true,
                 )
                 createdProjectIds[item.itemId] = project.projectId
@@ -103,12 +109,8 @@ class ActionPlanExecutorImpl @Inject constructor(
             }
             is ActionItem.UpdateRecord -> {
                 for (field in item.fields) {
-                    val finalValue = if (field.mode == UpdateMode.APPEND) {
-                        val existing = metadataRepository.getMetadataByField(item.objectId, field.fieldId)?.value
-                        if (existing.isNullOrBlank()) field.value else "$existing\n${field.value}"
-                    } else {
-                        field.value
-                    }
+                    val existing = metadataRepository.getMetadataByField(item.objectId, field.fieldId)?.value
+                    val finalValue = MetadataMerge.merge(field.mode, existing, field.value)
                     metadataRepository.upsertMetadata(
                         objectId = item.objectId,
                         fieldId = field.fieldId,
@@ -128,6 +130,15 @@ class ActionPlanExecutorImpl @Inject constructor(
                     description = item.initialNotes,
                 )
                 affectedDomains.add(item.domain)
+                // Enter the Life State Engine (tasks + reminders) so plan-created records aren't
+                // second-class to manually created ones.
+                runCatching {
+                    lifeStateEngine.processObjectEvent(
+                        objectId = obj.objectId,
+                        eventType = "OBJECT_CREATED",
+                        payload = "{\"objectType\":\"${item.objectType}\"}",
+                    )
+                }.onFailure { Timber.w(it, "Life State Engine event failed for ${obj.objectId}") }
                 // Link to project so it surfaces in Project Workspace Documents tab.
                 // The record still lives in Library as the source of truth.
                 item.projectItemId?.let { projItemId ->

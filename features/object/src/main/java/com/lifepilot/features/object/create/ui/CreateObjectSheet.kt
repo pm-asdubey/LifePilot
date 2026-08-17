@@ -45,16 +45,28 @@ import com.lifepilot.features.objectdetail.create.viewmodel.CreateObjectViewMode
 fun CreateObjectSheet(
     onDismiss: () -> Unit,
     onObjectCreated: (String) -> Unit,
+    initialDomain: String? = null,
     viewModel: CreateObjectViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    LaunchedEffect(initialDomain) {
+        viewModel.setDomainFilter(initialDomain)
+    }
 
     LaunchedEffect(state.created) {
         if (state.created && state.createdObjectId != null) {
             onObjectCreated(state.createdObjectId!!)
         }
     }
+
+    // Scope the offered types to the chosen domain when one was requested. If that domain has no
+    // registered record types yet, fall back to the full list so the domain can still receive a record.
+    val typesForDomain = state.domainFilter
+        ?.let { d -> state.availableTypes.filter { it.domain.equals(d, ignoreCase = true) } }
+        ?.takeIf { it.isNotEmpty() }
+        ?: state.availableTypes
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -68,7 +80,8 @@ fun CreateObjectSheet(
             when (state.step) {
                 CreateObjectStep.SELECT_TYPE -> {
                     Text(
-                        text = "What would you like to track?",
+                        text = state.domainFilter?.let { "Add to $it" }
+                            ?: "What would you like to track?",
                         style = MaterialTheme.typography.titleLarge,
                         modifier = Modifier.padding(bottom = Spacing.md),
                     )
@@ -76,7 +89,7 @@ fun CreateObjectSheet(
                         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        items(state.availableTypes, key = { it.objectType }) { typeItem ->
+                        items(typesForDomain, key = { it.objectType }) { typeItem ->
                             Card(
                                 colors = CardDefaults.cardColors(
                                     containerColor = MaterialTheme.colorScheme.surfaceContainerLow,

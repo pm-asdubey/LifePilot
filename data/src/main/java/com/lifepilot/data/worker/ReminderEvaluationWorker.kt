@@ -8,13 +8,17 @@ import com.lifepilot.data.notification.NotificationHelper
 import com.lifepilot.data.repository.PreferenceManager
 import com.lifepilot.domain.engine.RuleEngine
 import com.lifepilot.domain.model.ReminderStatus
+import com.lifepilot.domain.model.TaskStatus
 import com.lifepilot.domain.repository.ObjectRepository
 import com.lifepilot.domain.repository.ReminderRepository
+import com.lifepilot.domain.repository.TaskRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.firstOrNull
 import timber.log.Timber
 import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
 @HiltWorker
@@ -23,6 +27,7 @@ class ReminderEvaluationWorker @AssistedInject constructor(
     @Assisted workerParams: WorkerParameters,
     private val objectRepository: ObjectRepository,
     private val reminderRepository: ReminderRepository,
+    private val taskRepository: TaskRepository,
     private val preferenceManager: PreferenceManager,
     private val ruleEngine: RuleEngine,
     private val notificationHelper: NotificationHelper,
@@ -42,6 +47,7 @@ class ReminderEvaluationWorker @AssistedInject constructor(
             }
 
             fireTriggeredNotifications()
+            fireTaskDueNotifications(profileId)
 
             Timber.d("Reminder evaluation complete for ${objects.size} objects")
             Result.success()
@@ -68,6 +74,23 @@ class ReminderEvaluationWorker @AssistedInject constructor(
                 objectId = reminder.objectId,
             )
             reminderRepository.updateReminderStatus(reminder.reminderId, ReminderStatus.TRIGGERED)
+        }
+    }
+
+    private suspend fun fireTaskDueNotifications(profileId: String) {
+        val today = LocalDate.now()
+        val tasks = taskRepository.observeTasksByProfile(profileId).firstOrNull() ?: return
+        for (task in tasks) {
+            if (task.status != TaskStatus.PENDING) continue
+            val due = task.dueDate ?: continue
+            if (!due.isEqual(today)) continue
+            notificationHelper.showReminderNotification(
+                reminderId = "task_due_${task.taskId}",
+                title = task.title,
+                message = "Due today",
+                objectId = task.objectId,
+                priority = com.lifepilot.domain.model.ReminderPriority.HIGH,
+            )
         }
     }
 

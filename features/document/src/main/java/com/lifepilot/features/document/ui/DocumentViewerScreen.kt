@@ -21,6 +21,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material3.Card
@@ -64,6 +65,7 @@ fun DocumentViewerScreen(
     viewModel: DocumentViewerViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     Scaffold(
         topBar = {
@@ -85,6 +87,33 @@ fun DocumentViewerScreen(
                     }
                 },
                 actions = {
+                    // Download / share the stored document (a normalised PDF) via the system chooser.
+                    state.currentVersion?.let { ver ->
+                        IconButton(onClick = {
+                            runCatching {
+                                val file = java.io.File(ver.filePath)
+                                val uri = androidx.core.content.FileProvider.getUriForFile(
+                                    context,
+                                    "${context.packageName}.fileprovider",
+                                    file,
+                                )
+                                val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                    type = ver.mimeType.ifBlank { "application/pdf" }
+                                    putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                context.startActivity(
+                                    android.content.Intent.createChooser(send, "Share or save document"),
+                                )
+                            }.onFailure { timber.log.Timber.e(it, "Failed to share document") }
+                        }) {
+                            Icon(
+                                imageVector = Icons.Filled.Share,
+                                contentDescription = "Download or share",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                     if (state.ocrText != null) {
                         if (onExtractMetadata != null) {
                             val doc = state.document
@@ -360,7 +389,7 @@ private fun DocumentMetadataSection(
             )
         }
         MetadataRow(
-            label = "OCR",
+            label = "Scanned text",
             value = if (version.ocrText != null) "Extracted" else "Pending",
         )
     }

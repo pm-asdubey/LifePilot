@@ -5,7 +5,21 @@
 >
 > **IMPORTANT: Do not begin implementing any issue unless the user explicitly asks for it by issue number or description. This log is for planning and reference only.**
 
-**Last updated:** 2026-07-03 | **Total open:** 49 | **Resolved:** 27 (marked ✓ below) | **Partially resolved:** 1
+**Last updated:** 2026-07-16 | **Total open:** 45 | **Resolved:** 33 (marked ✓ below) | **Partially resolved:** 0
+
+> **2026-07-04 Attachment/Parser/Projects pass** (see `CHANGELOG.md` + `docs/07-adr/ADR-009-...`): reworked the
+> attachment flow to **queue on scan, persist on send/approval** (nothing stored pre-verification); fixed the
+> confirmed classification RCA (`AiActionParser` recovers a bare `OBJECT_CREATION {…}` token / fences); made
+> Camera a normal camera again (Scan stays the ML Kit scanner); rewrote `LifePilotLogo` to a real compass; made
+> the thinking indicator always cycle; removed the task double-circle (swipe-background bleed-through); and added
+> a **deterministic Projects fallback** (`ActionPlanNormalizer` auto-groups 2+ tasks into a Project). New tests:
+> `ActionPlanNormalizerTest`, `ThinkingMessagesTest`, AiActionParser prefix/fence cases; `:designsystem` test set added.
+
+> **2026-07-03 Stability & Maintainability pass** (see `docs/06-development/Stability-And-Maintainability.md`):
+> shipped Library all-domains-as-containers, AI-project emoji/target-date, camera permission + process-death
+> fixes; removed the orphaned `features:ai` module and Library ProjectDetail; recovered the test suite to
+> 246 green JVM tests. ISSUE-035 marked resolved (stale). For non-breaking "improve existing feature"
+> pickups (006, 008, 012/044, 083, 015, 002, 070) see the triage in the stability guide's backlog.
 
 ---
 
@@ -22,10 +36,42 @@
 
 ---
 
+## ISSUE-50: ACTION_PLAN raw JSON shown in chat instead of ActionPlanCard — stripMarkdown corrupts LIFEPILOT_ACTION tags
+
+**Priority:** P1  
+**Status: RESOLVED ✓** — Fixed 2026-07-03.
+
+**Observed behaviour:**  
+When the AI returns an `ACTION_PLAN` response (e.g., wedding/job-change plan), the raw `[LIFEPILOT_ACTION]{...}[/LIFEPILOT_ACTION]` JSON block was displayed as plain text in the chat bubble instead of being parsed and shown as an `ActionPlanCard`.
+
+**Root cause (verified):**  
+`HomeViewModel.parseAiResponse()` called `raw.stripMarkdown()` BEFORE searching for the action block with `ACTION_PATTERN.find(cleaned)`. The `_(.+?)_` italic rule in `stripMarkdown()` is non-dotall and matches on a single line. When the AI returns a compact single-line JSON block like `[LIFEPILOT_ACTION]{"actionType":"ACTION_PLAN",...}[/LIFEPILOT_ACTION]`, the regex finds:
+- First `_` at position 10 in `LIFEPILOT_ACTION`
+- Second `_` at the `_` in `ACTION_PLAN` (same line)
+- Lazy match eats the content between them: `_ACTION]{"actionType":"ACTION_`
+- Replacement strips both underscores → `[LIFEPILOACTION]`
+
+The corrupted tag no longer matches `ACTION_PATTERN`, so the block is never extracted, content is never stripped, and the raw JSON appears in the chat.
+
+**Fix:**  
+In `parseAiResponse()`, search for `ACTION_PATTERN` in `raw` (before `stripMarkdown()`) and remove the block from `content` before markdown is applied. ASK blocks similarly extracted before stripping.
+
+**Files fixed:**
+- `features/home/src/main/java/com/lifepilot/features/home/viewmodel/HomeViewModel.kt` — reorder: extract action block first, then stripMarkdown on remaining visible content
+
+**Also fixed in this session:**
+- `AiActionParser.parseActionItem()` was missing `CREATE_PROJECT` handling — added
+- `AiActionParser.parseActionItem()` was missing `projectItemId` for `CREATE_RECORD` and `CREATE_TASK` — added
+
+**Regression tests added:**  
+7 new tests in `AiActionParserTest`: full `ACTION_PLAN` parse, `CREATE_PROJECT` item correctness, `CREATE_TASK` projectItemId linking, empty items → null, unknown planType → CUSTOM, inline single-line JSON guard.
+
+---
+
 ## ISSUE-47: Projects tab still visible in Library — ADR-002 not fully applied
 
 **Priority:** P1  
-**Status:** Open — root cause confirmed, not yet fixed
+**Status: RESOLVED ✓** — Fixed 2026-07-03. `LibraryTab` enum deleted, `projects: List<Project>` removed from `LibraryUiState`, `LibraryViewModel` no longer observes `ProjectRepository`, `LibraryScreen` rewritten to show Records directly with no TabRow. Regression test added (`SchemaEngineCanonicalDomainsTest`).
 
 **Observed behaviour:**  
 The Library screen still shows a "Projects" tab alongside "Records". Per ADR-002, Library must be Records-only. Projects belong in Planner.
@@ -51,7 +97,7 @@ The agent edited the wrong file or the copy step brought back the old version fr
 ## ISSUE-48: Life domains missing from Library and AI context — SchemaEngine only returns domains from loaded schemas, not the full canonical list
 
 **Priority:** P1  
-**Status:** Open — root cause confirmed, not yet fixed
+**Status: RESOLVED ✓** — Fixed 2026-07-03. `SchemaEngineImpl` now unions a hardcoded canonical list with schema-derived domains. `Interview.json` domain changed from `Employment` to `Career`. 6 regression tests added in `SchemaEngineCanonicalDomainsTest`.
 
 **Observed behaviour:**  
 Not all expected life domains are visible in the Library domain filter chips. The full canonical set (Career, Finance, Health, Property, Identity, Travel, Education, Transport, Legal, Home, People, Major Life Events) should always be visible, even with zero objects.
@@ -84,7 +130,7 @@ Career, Education, Finance, Health, Home, Identity, Legal, Major Life Events, Pe
 ## ISSUE-49: Library, Planner, and AI conversation do not occupy full screen — extra top padding from root Scaffold
 
 **Priority:** P1  
-**Status:** Open — root cause confirmed, not yet fixed
+**Status: RESOLVED ✓** — Fixed 2026-07-03. `LifePilotNavHost.kt` changed to only apply `bottom = innerPadding.calculateBottomPadding()` so each screen manages its own top inset via its own Scaffold/TopAppBar.
 
 **Observed behaviour:**  
 Library, Planner, and the AI conversation screen all have a gap at the top — they do not extend to the status bar. The screens feel clipped and do not use full screen height.
@@ -398,6 +444,7 @@ After `planningEngine.completeTask()` succeeds, call `domainLifeStateEngine.eval
 
 ## ISSUE-021 — AI timeout with no retry and no user feedback
 **Reported:** 2026-06-29 | **Priority:** P1
+**Status: RESOLVED ✓** — `executeWithRetries()` in `HomeViewModel` implements a 3-attempt retry loop with escalating status messages ("Thinking…", "Taking longer than usual, retrying…", "Still working on it…") wired to `HomeUiState.aiStatusMessage`. Confirmed in code.
 
 **Observed behaviour:**
 Slow or timed-out AI calls spin for 60s with no message, then show a generic error. No retry.
@@ -533,6 +580,7 @@ All proposal card composables (`ObjectCreationCard`, `TaskCreationCard`, `GoalPr
 
 ## ISSUE-050 — Understanding stored per-Object instead of per-Domain; wrong canonical level
 **Reported:** 2026-06-29 | **Priority:** P1
+**Status: RESOLVED ✓** — `DomainLifeStateEngineImpl` exists and implements `evaluateAndUpdate()`. `HomeViewModel` calls it after every AI turn, after proposal approval, and after auto-apply. `DomainLifeState` is the canonical domain understanding record; object snapshots are evidence only. `PromptBuilderImpl` includes domain life states as primary context.
 
 **Observed behaviour:**
 AI-derived understanding is currently stored on individual objects — `passport.context`, `resume.context`, `hdfc_account.context`. When a user asks a domain-level question ("How is my career going?", "Am I financially prepared for this trip?"), the AI assembles a fragmented picture by concatenating object-level snippets rather than consulting a single authoritative domain understanding. There is also no way for the system to reason about the domain as a whole — gaps, risks, momentum, open questions — because no such structure exists.
@@ -569,6 +617,7 @@ Each `DomainLifeState` becomes the single canonical understanding for that domai
 
 ## ISSUE-051 — Domain Life State maintenance pipeline not wired; life events don't update domain understanding
 **Reported:** 2026-06-29 | **Priority:** P1
+**Status: RESOLVED ✓** — `DomainLifeStateEngineImpl.evaluateAndUpdate()` is triggered from: `HomeViewModel.sendMessage()` (every AI conversation turn), `executeSingleProposal()` (after every approved proposal), `autoApplyProposal()` (after auto-applied metadata updates). All meaningful life events that flow through the AI chat path trigger a domain re-evaluation.
 
 **Observed behaviour:**
 When a task is completed, a document scanned, a conversation concluded, an object status updated, or a goal achieved, the domain life state for the affected domain does not change. The current understanding of "Career" does not update when a job interview task is completed. "Health" does not update when a symptom conversation ends. The life state goes stale as soon as the user starts actually using the app.
@@ -1197,6 +1246,11 @@ Documents stored in LifePilot — whether uploaded by the user or scanned via AI
 
 ## ISSUE-053 — App uses technical language throughout; non-technical users will not understand it
 **Reported:** 2026-06-29 | **Priority:** P2
+**Status: RESOLVED ✓** — 2026-07-03. Audited user-facing strings across all `features/*/ui`; the
+technical leaks found were translated per the mapping (Object→Record, Domain→Life area, OCR→Scanned,
+Verified→Confirmed / unverified→unconfirmed / Rejected→Dismissed) in `ActionPlanCard`, `LinkObjectSheet`,
+`DocumentViewerScreen`, `ObjectDetailScreen`. Created `CONTENT_GUIDELINES.md` (root) with the terminology
+table + rules so all future copy stays plain-language. Code identifiers intentionally unchanged.
 
 **Observed behaviour:**
 The app uses the word "Object" to refer to a passport, a job, or an insurance policy — a term that means nothing to a non-technical user. "Domain" is used where "Life Area" or "Category" belongs. "Metadata" appears in UI labels. "Verification Status" is exposed raw. "Life State" is technical jargon. A person who is not a software engineer should be able to use LifePilot without ever learning its internal vocabulary.
@@ -1612,6 +1666,9 @@ Before writing schema definitions, interview 5–10 people in the target demogra
 
 ## ISSUE-035 — Morning Brief WorkManager job silently fails when offline or API key is missing
 **Reported:** 2026-06-29 | **Priority:** P3
+**Status: RESOLVED ✓ (stale)** — Verified 2026-07-03. The premise is false: `MorningBriefWorker`
+injects no AI provider (constructor takes none), builds the brief deterministically from Room, and
+short-circuits on empty data. It is already fully offline-safe — no code change needed.
 
 **Observed behaviour:**
 `WorkManagerScheduler.scheduleMorningBrief()` is called at app initialisation. If the user has no API key configured or is offline, the worker either throws an uncaught exception or produces an empty/stale brief with no user-facing explanation. The user sees a notification with no content, or no notification at all.
@@ -2110,6 +2167,44 @@ The `EmbeddedModelInterface` + `InferenceBackendInterface` abstraction ensures e
 
 ---
 
+### Semantic Search Eliminates the RetrievalPlanner AI Call
+
+**Current hot path (V1):**
+```
+User query
+    ↓
+RetrievalPlanner (AI call #1) — determines which domains/objects to fetch
+    ↓
+RetrievalEngine (keyword scoring) — fetches top 5 objects
+    ↓
+PromptBuilder + AI call #2 — generates answer
+```
+
+**Hot path after semantic search (ISSUE-024 + embedding RAG):**
+```
+User query
+    ↓
+Embed query (~50ms, local, no API call)
+    ↓
+Cosine similarity over stored object vectors → top 10 candidates
+    ↓
+Re-rank with keyword scorer → top 3–5 objects
+    ↓
+PromptBuilder + AI call #1 — generates answer
+```
+
+The `RetrievalPlanner` call is eliminated entirely. The embedding model does locally — in ~50ms — what the planner AI call was doing over the network in ~3–5s.
+
+**Concrete wins:**
+- **Cost** — ~50% reduction in API calls per user question
+- **Latency** — 3–5s removed from every query (one fewer cloud round-trip)
+- **Quality** — semantic retrieval surfaces more relevant objects than keyword scoring alone, so the remaining AI call receives a tighter, higher-quality context
+- **Offline** — retrieval now works fully offline; only the final answer generation requires connectivity
+
+**Implementation note:** `RetrievalPlannerImpl` can be retired once `EmbeddingModel` + vector store are live. The `RetrievalEngine` interface stays — its scoring logic becomes the re-ranking step after the semantic pre-filter. No orchestration or prompt changes required.
+
+---
+
 ### Files to Create / Modify
 
 ```
@@ -2137,6 +2232,52 @@ Modify:
 ```
 
 ---
+
+### On-Device RAG + Semantic Retrieval Layer (planned addition)
+
+**Problem:** The current retrieval engine uses keyword + field-type scoring (title +3.0, objectType +2.0, domain +1.5, etc.). This misses semantically related objects that don't share exact keywords with the query. As the user's life graph grows (50+ objects across 10+ domains), passing irrelevant objects to the LLM wastes context tokens and increases hallucination risk — especially on small on-device models where context limits are tighter.
+
+**Planned approach: embedding-backed retrieval as a pre-filter**
+
+1. **Embedding model** — at index time, when any object/document is saved or updated, generate a vector embedding of its summary (title + objectType + domain + top 5 field values concatenated). Store the vector in Room alongside the object. Recommended: `all-MiniLM-L6-v2` ONNX quantised (~22 MB). Runs in <100ms on CPU — cheap enough to run synchronously on object save.
+
+2. **Query-time flow:**
+   ```
+   User query
+       ↓
+   Embed query (same model, ~50ms)
+       ↓
+   Cosine similarity over stored vectors → top 10 candidates
+       ↓
+   Re-rank top 10 with existing keyword scorer
+       ↓
+   Pass top 3–5 to LLM (same as today, but more relevant)
+   ```
+   The embedding step replaces a full table scan with a vector scan. On a 200-object life graph this is fast; for larger graphs, consider ANN (approximate nearest neighbour) via a small FAISS port or SQLite-vec extension.
+
+3. **Hybrid scoring formula (final rank):**
+   `hybrid_score = 0.6 × semantic_similarity + 0.4 × keyword_score`
+   Weights tunable via configuration. Semantic similarity dominates but keyword score prevents completely off-topic semantic matches from winning.
+
+4. **Result:** LLM receives a smaller, more relevant context regardless of how the user phrases the query. Critical for on-device models where prompt size directly impacts latency.
+
+**Device tiers and model assignment** (complements ISSUE-084):
+
+| Tier | Typical device | Year / India price | Chip | On-device model | Embedding |
+|---|---|---|---|---|---|
+| Flagship | Poco F7 Pro, Pixel 9, Galaxy S25 | 2023-2025 / ₹40,000+ | SD 8 Gen 2+, Tensor G3+ | Gemma 4 4B via AICore | MiniLM on NPU |
+| Mid-range | Pixel 7a, Galaxy A55, Poco X6 | 2022-2024 / ₹20,000–40,000 | SD 7 Gen 1+, Dimensity 8200 | Gemma 4 E2B via AICore | MiniLM on CPU |
+| Entry-mid | Redmi Note 13, POCO M6 Pro | 2021-2023 / ₹10,000–20,000 | SD 6 Gen 1, Dimensity 6020 | Gemma 2B Q4 via MediaPipe | MiniLM on CPU (may skip if RAM <4 GB) |
+| Budget / Old | Redmi 12, Samsung A15, 4+ yr old devices | Pre-2021 / <₹10,000 | SD 4 Gen 1 or earlier, no NPU | Cloud-only | Keyword-only fallback |
+
+**"Older device" definition for India:** a device from before 2021 OR any current device sold under ₹10,000. These typically have ≤4 GB RAM, no dedicated NPU, and Snapdragon 600-series or earlier — on-device inference on these runs at <3 tokens/second on CPU, making it unusable for real responses. Cloud-only mode with keyword retrieval is the right fallback. The embedding model itself still fits (22 MB) but the inference latency makes it impractical for real-time use; skip embeddings and use keyword-only on this tier.
+
+**Files to add (planned, not yet implemented):**
+- `domain/.../engine/EmbeddingModel.kt` — interface: `embed(text: String): FloatArray`
+- `data/.../ai/embedded/MiniLmEmbeddingModel.kt` — ONNX runtime implementation
+- `data/.../database/entity/ObjectEmbeddingEntity.kt` — stores `(objectId, vector: ByteArray, generatedAt)`
+- `data/.../engine/RetrievalEngineImpl.kt` — hybrid scorer (semantic + keyword)
+- `data/.../di/EmbeddingModule.kt` — wire via Hilt, no-op on budget tier
 
 ### Related work / why this matters now
 - ISSUE-057 (Life Event Action Plan) now surfaces multi-step plans to the user. Many plan items depend on live external rules: visa requirements, tax deadlines, PF transfer procedure, insurance portability, etc. Without Layer 3 internet intelligence and Layer 4 reasoning, the action plan cannot include accurate, current procedural guidance.
@@ -2812,3 +2953,144 @@ ISSUE-024 defines the `EmbeddedModelInterface` abstraction and specifies Gemma 4
 - `data/src/main/java/com/lifepilot/data/ai/AiProviderFactory.kt`
 - `features/settings/src/main/java/com/lifepilot/features/settings/ui/SettingsScreen.kt` — model override UI
 - `features/onboarding/` — model detection and download step
+
+---
+
+## ISSUE-085 — Document scanned in AI chat: file not reliably saved and metadata not extracted
+**Reported:** 2026-07-10 | **Priority:** P1
+
+**Observed behaviour:**
+When a user scans or attaches a document during an AI conversation, the Object record is created but:
+1. The actual document file is silently not saved — `attachedFilePath` is null on the ObjectCreation proposal because the path is cleared from UI state before it is read.
+2. `ExtractMetadataUseCase` is never called, so schema-driven field extraction does not run — all fields stay empty regardless of what the scanned document contains.
+3. `setPendingVerification` is never triggered for chat-created objects, so the metadata verification screen never appears — the user has no way to review extracted metadata.
+4. For non-standard document types (offer letters, rent agreements, etc.) `buildAttachmentClassificationPrompt` only lists known schema types; if the AI invents an objectType with no schema backing, object creation silently produces a record with no field structure and no file saved.
+
+**Root cause (verified):**
+In `HomeViewModel.sendMessage()`:
+- Around line 340, `pendingAttachmentPath` is CLEARED from `_uiState` when the chip is pinned to the message (`pendingAttachmentPath = null`).
+- Around line 419, `val pendingAttachPath = _uiState.value.pendingAttachmentPath` reads the now-null value.
+- Lines 420–425: because `pendingAttachPath` is null, the `copy(attachedFilePath = pendingAttachPath)` branch is skipped; the AI's `ObjectCreation` proposal is emitted with `attachedFilePath = null`.
+- In `executeProposal(ObjectCreation)`: `uploadDocumentUseCase` is only called when `proposal.attachedFilePath != null` — so the file is never uploaded.
+- `ExtractMetadataUseCase` is not called anywhere in the AI chat creation path; it is only invoked by `DocumentOcrWorker` in the upload-from-gallery flow.
+- `setPendingVerification` / `MetadataVerificationScreen` is only triggered by `DocumentOcrWorker`, which is not invoked for AI-chat objects.
+- `buildAttachmentClassificationPrompt` lists only schema types known to `SchemaEngine`; there is no instruction to propose a new objectType or suggest a new schema when no known type fits.
+
+**Planned fix approach:**
+1. **Fix the null path bug**: capture `pendingAttachmentPath` into a local before clearing UI state, and thread it through so the AI's `ObjectCreation` proposal always carries the correct `attachedFilePath`.
+2. **Upload file in executeProposal**: ensure `uploadDocumentUseCase` is called whenever an `attachedFilePath` is present on the approved proposal.
+3. **Run metadata extraction**: after object creation in `executeProposal(ObjectCreation)`, call `ExtractMetadataUseCase` with the object's schema. Store the extracted fields via `MetadataRepository`.
+4. **Trigger verification screen**: after extraction, call `preferenceManager.setPendingVerification(objectId, versionId)` so the user can review and correct AI-extracted metadata — consistent with the upload-from-gallery workflow.
+5. **Novel document type handling**: update `buildAttachmentClassificationPrompt` to instruct the AI that if no known schema fits, it should return `OBJECT_CREATION` with `objectType = "Document"` and include a natural-language description of the document in `initialNotes`, so at minimum the file is saved and the content is recorded even when no schema exists. A follow-on schema proposal feature (dynamic schema addition) can be tracked separately.
+
+**Files involved:**
+- `features/home/src/main/java/com/lifepilot/features/home/viewmodel/HomeViewModel.kt` — fix path capture, call `ExtractMetadataUseCase`, call `setPendingVerification`
+- `domain/src/main/java/com/lifepilot/domain/usecase/ExtractMetadataUseCase.kt` — already exists, needs to be wired into chat flow
+- `data/src/main/java/com/lifepilot/data/manager/PreferenceManager.kt` — `setPendingVerification`
+
+---
+
+## ISSUE-086 — Adding tasks to an existing project from AI chat does not work
+**Reported:** 2026-07-10 | **Priority:** P1
+
+**Observed behaviour:**
+When a user asks the AI to "add a task to my [project name] project", the AI correctly identifies the project and generates a `TASK_CREATION` action, but the created task is never linked to any project. It appears as a standalone unlinked task in Planner.
+
+**Root cause (verified):**
+Four separate gaps in the data flow:
+
+1. **`AiProposal.TaskCreation` missing `projectId`** — `domain/model/ProposedAction.kt` line 49: the data class has `goalId: String?` and `objectId: String?` but no `projectId: String?`. There is nowhere to carry the project reference through approval.
+
+2. **`AiActionParser` does not parse `projectId`** — `AiActionParser.kt` TASK_CREATION case (around line 97): parses `goalId` and `objectId` but never reads a `projectId` field from the action JSON, so even if the AI includes it, it is silently dropped.
+
+3. **`executeProposal(TaskCreation)` does not pass `projectId`** — `HomeViewModel.kt` executeProposal for `TaskCreation`: calls `planningEngine.createTask(profileId, title, description, dueDate, goalId, objectId, source, priority)` with no `projectId` argument. `PlanningEngine.createTask()` already has `projectId: String? = null` in its signature (`PlanningEngine.kt` line 51) and `PlanningEngineImpl` already uses it — the call site just never passes it.
+
+4. **Prompt does not instruct AI to include `projectId` in `TASK_CREATION`** — `PromptBuilderImpl.kt` action #5 (TASK_CREATION) has no `projectId` field definition. The active-projects list is emitted with `[projectId=...]` tags, but the TASK_CREATION action schema does not tell the AI to populate `projectId` — so the model never includes it in the emitted JSON.
+
+**Planned fix approach:**
+1. Add `projectId: String? = null` to `AiProposal.TaskCreation` in `ProposedAction.kt`.
+2. In `AiActionParser.kt` TASK_CREATION case, parse `optString("projectId")?.takeIf { it.isNotBlank() }`.
+3. In `HomeViewModel.executeProposal(TaskCreation)`, pass `proposal.projectId` to `planningEngine.createTask(...)`.
+4. In `PromptBuilderImpl.kt`, extend the TASK_CREATION action schema to include `"projectId": "<projectId from active projects list> | omit if standalone"` with an instruction that when the user's request targets a named project, the matching `projectId` must be included.
+
+**Files involved:**
+- `domain/src/main/java/com/lifepilot/domain/model/ProposedAction.kt` — add `projectId` field
+- `features/home/src/main/java/com/lifepilot/features/home/viewmodel/AiActionParser.kt` — parse `projectId`
+- `features/home/src/main/java/com/lifepilot/features/home/viewmodel/HomeViewModel.kt` — pass `projectId` in executeProposal
+- `data/src/main/java/com/lifepilot/data/engine/PromptBuilderImpl.kt` — add `projectId` to TASK_CREATION action definition
+
+---
+
+## ISSUE-087 — Unknown document types (offer letters, contracts, etc.) lose all structured data; no schema proposal flow
+**Reported:** 2026-07-10 | **Priority:** P1
+
+**Observed behaviour:**
+When a user scans a document that does not match any known schema type — offer letters, employment contracts, bank statements, appointment letters, NOCs, salary slips, etc. — the application falls back to saving it as a generic `Certificate` record with no structured fields. All extractable information (company name, CTC, joining date, role, variable pay, benefits) is discarded. The user ends up with a titled record containing no queryable metadata, and the AI cannot answer questions about the document because there is nothing structured to retrieve.
+
+**Root cause (verified):**
+`SchemaEngine` only loads schemas from `assets/schemas/*.json` at startup. There is no mechanism to define a new schema at runtime. `buildAttachmentClassificationPrompt` was updated (ISSUE-085 fix) to always use a known objectType, so the AI correctly falls back to `Certificate` — but that means unknown document types permanently lose their structured data with no recovery path.
+
+The missing capability is a two-stage flow:
+1. When the AI detects a document that doesn't fit a known schema well, it should propose the fields it *can* extract as a structured set, and ask the user to confirm saving them.
+2. Optionally, for document types the app sees repeatedly (offer letters, salary slips), the user should be able to promote a one-off extraction into a reusable schema so future documents of the same type are handled automatically.
+
+**Planned fix approach:**
+
+**Stage 1 — Ad-hoc field extraction for unknown types (unblocks offer letters immediately):**
+1. Add `AiProposal.SchemaProposal` sealed subclass: `proposedObjectType: String`, `proposedDomain: String`, `proposedDisplayName: String`, `extractedFields: List<ProposedField>`, `saveAsSchema: Boolean = false`. This carries the AI's best attempt at structured extraction even when no schema exists.
+2. Update `buildAttachmentClassificationPrompt`: if the document doesn't match a known type, the AI returns `SCHEMA_PROPOSAL` action type instead of falling back to `Certificate`. The action includes the inferred document category and all fields it could extract from the OCR text.
+3. `AiActionParser` parses `SCHEMA_PROPOSAL` → `AiProposal.SchemaProposal`.
+4. `SchemaProposalCard` composable: shows the proposed document type name, lists extracted fields (editable), and offers "Save record" (one-off) vs "Save record + remember this type" (promotes to reusable schema). This uses the same editable card pattern as `TaskCreationCard` (ISSUE-044 fix).
+5. `HomeViewModel.executeProposal(SchemaProposal)`: creates the object using the proposed type string, saves all confirmed fields as metadata with `MetadataSource.AI_EXTRACTED`, uploads the file, and triggers `setPendingVerification` so the user can review.
+
+**Stage 2 — Reusable schema persistence (for repeated document types):**
+6. When the user taps "Save record + remember this type", serialize the confirmed fields into a `CustomSchemaEntity` (new Room table: `custom_schemas`). DB version bump to 7.
+7. `SchemaEngineImpl` loads custom schemas from the DB in addition to asset JSON, exposing them via `getAllObjectTypes()` — so future documents of the same type are classified automatically without another proposal.
+8. Settings screen: list and delete user-created custom schemas.
+
+**Files involved:**
+- `domain/src/main/java/com/lifepilot/domain/model/ProposedAction.kt` — add `AiProposal.SchemaProposal`
+- `features/home/src/main/java/com/lifepilot/features/home/viewmodel/AiActionParser.kt` — parse `SCHEMA_PROPOSAL`
+- `features/home/src/main/java/com/lifepilot/features/home/viewmodel/HomeViewModel.kt` — `buildAttachmentClassificationPrompt`, `executeProposal(SchemaProposal)`
+- `designsystem/src/main/java/com/lifepilot/designsystem/components/AiProposalCards.kt` — `SchemaProposalCard`
+- `features/home/src/main/java/com/lifepilot/features/home/ui/HomeScreen.kt` — wire `SchemaProposalCard`
+- New: `data/src/main/java/com/lifepilot/data/database/entity/CustomSchemaEntity.kt`
+- New: `data/src/main/java/com/lifepilot/data/database/dao/CustomSchemaDao.kt`
+- `data/src/main/java/com/lifepilot/data/database/LifePilotDatabase.kt` — version 7, add `CustomSchemaDao`
+- `data/src/main/java/com/lifepilot/data/schema/SchemaEngineImpl.kt` — load custom schemas from DB
+- `domain/src/main/java/com/lifepilot/domain/engine/SchemaEngine.kt` — expose custom schema management
+- `features/settings/` — list and delete custom schemas
+
+---
+
+## ISSUE-088 — Goals are a duplicate of Projects and must be removed entirely
+**Reported:** 2026-07-16 | **Priority:** P2
+
+**Observed behaviour:**
+Goals and Projects serve the same product purpose — grouping related tasks and records under a named initiative — and are presented to the user as two separate concepts with no meaningful distinction. This creates confusion about which to use and doubles the surface area of the data model, the prompt, and the UI without adding value.
+
+**Root cause:**
+Goals were introduced before Projects existed. Projects were added as a more capable replacement (they group Objects, Tasks, and Documents; they have domains, emojis, and target dates; they surface in Library and Planner). Goals were never removed when Projects superseded them.
+
+**Decision:**
+Goals must be completely removed. Every capability Goals provided is covered by Projects. The `GOAL_PROPOSAL` AI action type, the `PlanningEngine` goal methods, `GoalRepository`, `GoalEntity`, `GoalDao`, and all Goal UI in `HomeScreen` and `PlannerViewModel` are to be deleted. Tasks that previously linked to Goals via `goalId` should link to Projects via `projectId` instead.
+
+**Do not implement until explicitly requested.**
+
+**Files to remove or modify when implementing:**
+- `domain/src/main/java/com/lifepilot/domain/model/Goal.kt` — delete
+- `domain/src/main/java/com/lifepilot/domain/repository/GoalRepository.kt` — delete
+- `domain/src/main/java/com/lifepilot/domain/engine/PlanningEngine.kt` — remove all goal methods
+- `data/src/main/java/com/lifepilot/data/database/entity/GoalEntity.kt` — delete
+- `data/src/main/java/com/lifepilot/data/database/dao/GoalDao.kt` — delete
+- `data/src/main/java/com/lifepilot/data/repository/GoalRepositoryImpl.kt` — delete
+- `data/src/main/java/com/lifepilot/data/engine/PlanningEngineImpl.kt` — remove goal methods
+- `data/src/main/java/com/lifepilot/data/engine/ActionPlanExecutorImpl.kt` — remove goal references
+- `data/src/main/java/com/lifepilot/data/database/LifePilotDatabase.kt` — remove GoalEntity, GoalDao; DB migration to drop goals table, remove goalId FK from tasks
+- `features/home/src/main/java/com/lifepilot/features/home/viewmodel/AiActionParser.kt` — remove GOAL_PROPOSAL parsing
+- `features/home/src/main/java/com/lifepilot/features/home/viewmodel/HomeViewModel.kt` — remove GoalProposal handling
+- `features/home/src/main/java/com/lifepilot/features/home/ui/HomeScreen.kt` — remove GoalProposal card rendering
+- `features/planner/src/main/java/com/lifepilot/features/planner/viewmodel/PlannerViewModel.kt` — remove goal references
+- `data/src/main/java/com/lifepilot/data/engine/PromptBuilderImpl.kt` — remove GOAL_PROPOSAL action type from prompt
+- `domain/src/main/java/com/lifepilot/domain/model/AiProposal.kt` — remove GoalProposal sealed subclass
+- All tests referencing GoalProposal or GoalRepository — update or delete

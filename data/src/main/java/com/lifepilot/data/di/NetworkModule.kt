@@ -23,10 +23,11 @@ object NetworkModule {
         return OkHttpClient.Builder()
             .addInterceptor(logging)
             .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(60, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
+            // Base read timeout — individual AI requests override this via OkHttpClient.newBuilder().
+            // Set high so the per-request override (120–360s) is never capped by the base.
+            .readTimeout(400, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
             // Prevents TCP connection-reset errors caused by server-side idle connection close.
-            // 30s keepAlive ensures connections are not reused after the server reclaims them.
             .connectionPool(ConnectionPool(maxIdleConnections = 5, keepAliveDuration = 30L, TimeUnit.SECONDS))
             .retryOnConnectionFailure(true)
             .build()

@@ -1,40 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  LifePilot logo — a minimalist compass pointing toward a north star.
-  Concept: LifePilot quietly guides users toward what deserves their attention.
-  Thin circle outline, needle, and a small four-pointed star at true north.
--->
+<!-- LifePilot brand mark: a compass — outer ring, cardinal ticks, and a two-tone N–S needle.
+     The elongated, two-colour needle (not a symmetric star) is what makes it read as a compass. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Outer thin circle -->
+    <!-- Outer guide ring -->
     <path
-        android:strokeColor="#6B8FD4"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeAlpha="0.34"
         android:strokeWidth="2.5"
-        android:fillColor="@android:color/transparent"
-        android:pathData="M54,18 A36,36 0 1,1 53.99,18 Z" />
+        android:pathData="M22,54 a32,32 0 1,0 64,0 a32,32 0 1,0 -64,0" />
 
-    <!-- Compass needle — north half (pointing to star), bright blue -->
+    <!-- Cardinal ticks (N, E, S, W) just inside the ring -->
     <path
-        android:fillColor="#6B8FD4"
-        android:pathData="M54,23 L57.5,50 L54,52.5 L50.5,50 Z" />
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeAlpha="0.6"
+        android:strokeWidth="2.2"
+        android:strokeLineCap="round"
+        android:pathData="M54,26 L54,31 M82,54 L77,54 M54,82 L54,77 M26,54 L31,54" />
 
-    <!-- Compass needle — south half, muted -->
+    <!-- Needle — north half: tall, bright, clearly points UP -->
     <path
-        android:fillColor="#2A3E60"
-        android:pathData="M54,82 L57.5,56 L54,52.5 L50.5,56 Z" />
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,28 L49,54 L59,54 Z" />
 
-    <!-- Small pivot dot at centre -->
+    <!-- Needle — south half: shorter, narrower, muted (a counterweight, so north dominates) -->
     <path
-        android:fillColor="#6B8FD4"
-        android:pathData="M54,50 m-3,0 a3,3 0 1,1 6,0 a3,3 0 1,1 -6,0" />
+        android:fillColor="#8B98D6"
+        android:pathData="M54,73 L50.5,54 L57.5,54 Z" />
 
-    <!-- North star — four-pointed, at top of circle -->
+    <!-- Center hub (teal accent) -->
     <path
-        android:fillColor="#B8CFFF"
-        android:pathData="M54,13 L55.4,16.5 L59,17 L55.9,19.8 L56.8,23.5 L54,21.5 L51.2,23.5 L52.1,19.8 L49,17 L52.6,16.5 Z" />
-
+        android:fillColor="#5EC4B6"
+        android:pathData="M49.6,54 a4.4,4.4 0 1,0 8.8,0 a4.4,4.4 0 1,0 -8.8,0" />
 </vector>

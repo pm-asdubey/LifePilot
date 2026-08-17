@@ -6,6 +6,8 @@ import com.lifepilot.data.database.entity.DocumentEntity
 import com.lifepilot.data.database.entity.DocumentVersionEntity
 import com.lifepilot.data.mapper.toDomain
 import com.lifepilot.data.storage.FileStorageManager
+import com.lifepilot.data.storage.PdfNormalizer
+import java.io.File
 import com.lifepilot.data.worker.WorkManagerScheduler
 import com.lifepilot.domain.model.Document
 import com.lifepilot.domain.model.DocumentVersion
@@ -20,6 +22,7 @@ import javax.inject.Inject
 class DocumentRepositoryImpl @Inject constructor(
     private val documentDao: DocumentDao,
     private val fileStorageManager: FileStorageManager,
+    private val pdfNormalizer: PdfNormalizer,
     private val workManagerScheduler: WorkManagerScheduler,
 ) : DocumentRepository {
 
@@ -77,16 +80,9 @@ class DocumentRepositoryImpl @Inject constructor(
             Triple(filePath, computeLocalChecksum(filePath), java.io.File(filePath).length())
         }
 
-        val versionEntity = DocumentVersionEntity(
-            versionId = versionId,
-            documentId = documentId,
-            filePath = storedPath,
-            originalName = originalName,
-            mimeType = mimeType,
-            checksum = checksum,
-            sizeBytes = sizeBytes,
-            uploadedAt = now.toEpochMilli(),
-            ocrText = null,
+        // Normalise every stored document to PDF so each record holds one downloadable format.
+        val versionEntity = buildPdfNormalizedVersion(
+            versionId, documentId, storedPath, originalName, mimeType, checksum, sizeBytes, now.toEpochMilli(),
         )
 
         val documentEntity = DocumentEntity(
@@ -132,16 +128,9 @@ class DocumentRepositoryImpl @Inject constructor(
             Triple(filePath, computeLocalChecksum(filePath), java.io.File(filePath).length())
         }
 
-        val versionEntity = DocumentVersionEntity(
-            versionId = versionId,
-            documentId = documentId,
-            filePath = storedPath,
-            originalName = originalName,
-            mimeType = mimeType,
-            checksum = checksum,
-            sizeBytes = sizeBytes,
-            uploadedAt = now.toEpochMilli(),
-            ocrText = null,
+        // Normalise every stored document to PDF so each record holds one downloadable format.
+        val versionEntity = buildPdfNormalizedVersion(
+            versionId, documentId, storedPath, originalName, mimeType, checksum, sizeBytes, now.toEpochMilli(),
         )
 
         documentDao.insertDocumentVersion(versionEntity)
@@ -164,6 +153,37 @@ class DocumentRepositoryImpl @Inject constructor(
 
     override suspend fun getDocumentVersionById(versionId: String): DocumentVersion? =
         documentDao.getVersionById(versionId)?.toDomain()
+
+    /**
+     * Builds a [DocumentVersionEntity], first normalising the stored file to PDF (via [PdfNormalizer])
+     * so every record holds a single downloadable PDF regardless of how it was captured. Already-PDF
+     * and non-image files pass through unchanged; the redundant source image is deleted after wrapping.
+     */
+    private fun buildPdfNormalizedVersion(
+        versionId: String,
+        documentId: String,
+        storedPath: String,
+        originalName: String,
+        mimeType: String,
+        checksum: String,
+        sizeBytes: Long,
+        uploadedAtMs: Long,
+    ): DocumentVersionEntity {
+        val pdf = runCatching { pdfNormalizer.toPdf(File(storedPath), mimeType) }.getOrNull()
+        val finalPath = pdf?.absolutePath ?: storedPath
+        if (pdf != null && storedPath != finalPath) fileStorageManager.deleteFile(storedPath)
+        return DocumentVersionEntity(
+            versionId = versionId,
+            documentId = documentId,
+            filePath = finalPath,
+            originalName = if (pdf != null) "${originalName.substringBeforeLast('.', originalName)}.pdf" else originalName,
+            mimeType = if (pdf != null) "application/pdf" else mimeType,
+            checksum = pdf?.let { computeLocalChecksum(it.absolutePath) } ?: checksum,
+            sizeBytes = pdf?.length() ?: sizeBytes,
+            uploadedAt = uploadedAtMs,
+            ocrText = null,
+        )
+    }
 
     private fun computeLocalChecksum(filePath: String): String {
         return try {

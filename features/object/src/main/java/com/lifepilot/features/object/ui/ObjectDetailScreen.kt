@@ -681,12 +681,12 @@ private fun TasksTab(
 @Composable
 private fun ProvenanceBadge(entry: MetadataEntry) {
     val (label, color) = when (entry.verificationStatus) {
-        VerificationStatus.VERIFIED -> "Verified" to MaterialTheme.colorScheme.tertiary
-        VerificationStatus.REJECTED -> "Rejected" to MaterialTheme.colorScheme.error
+        VerificationStatus.VERIFIED -> "Confirmed" to MaterialTheme.colorScheme.tertiary
+        VerificationStatus.REJECTED -> "Dismissed" to MaterialTheme.colorScheme.error
         VerificationStatus.UNVERIFIED -> when (entry.source) {
             MetadataSource.USER -> return // user-entered values need no badge
-            MetadataSource.OCR -> "OCR · unverified" to MaterialTheme.colorScheme.onSurfaceVariant
-            MetadataSource.AI_EXTRACTED -> "AI · unverified" to MaterialTheme.colorScheme.onSurfaceVariant
+            MetadataSource.OCR -> "Scanned · unconfirmed" to MaterialTheme.colorScheme.onSurfaceVariant
+            MetadataSource.AI_EXTRACTED -> "AI · unconfirmed" to MaterialTheme.colorScheme.onSurfaceVariant
             MetadataSource.SYSTEM -> return
         }
     }
@@ -811,11 +811,12 @@ private fun temporalContextLabel(objectType: String, metadata: List<MetadataEntr
         "visa" -> {
             val expiry = metaDate("expiry_date", "expiryDate")
             val issue = metaDate("issue_date", "issueDate")
-            when {
-                expiry != null && expiry < today -> "Expired ${expiry.format(DateTimeFormatter.ofPattern("d MMM yyyy"))}"
-                expiry != null && daysUntil(expiry) <= 60 -> "Expiring ${expiry.format(DateTimeFormatter.ofPattern("d MMM yyyy"))} · ${daysUntil(expiry)} days left"
-                issue != null -> "Valid since ${issue.format(DateTimeFormatter.ofPattern("d MMM yyyy"))}"
-                else -> null
+            val fmt = DateTimeFormatter.ofPattern("d MMM yyyy")
+            when (val status = com.lifepilot.domain.model.ExpiryStatus.of(expiry, today)) {
+                com.lifepilot.domain.model.ExpiryStatus.Expired -> "Expired ${expiry!!.format(fmt)}"
+                is com.lifepilot.domain.model.ExpiryStatus.ExpiringSoon ->
+                    "Expiring ${expiry!!.format(fmt)} · ${status.daysLeft} days left"
+                else -> issue?.let { "Valid since ${it.format(fmt)}" }
             }
         }
         "property", "rentagreement" -> {

@@ -12,25 +12,37 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.CheckCircleOutline
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import com.lifepilot.designsystem.theme.Spacing
+import java.time.LocalDate
 
 @Composable
 fun GoalProposalCard(
@@ -196,17 +208,44 @@ fun TaskCompletionCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskCreationCard(
     taskTitle: String,
     description: String?,
-    dueDate: String?,
+    dueDate: LocalDate?,
     summary: String,
-    onApprove: () -> Unit,
+    onApprove: (editedTitle: String, editedDueDate: LocalDate?) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val haptic = LocalHapticFeedback.current
+    var editedTitle by remember { mutableStateOf(taskTitle) }
+    var editedDueDate by remember { mutableStateOf(dueDate) }
+    var showDatePicker by remember { mutableStateOf(false) }
+
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = dueDate?.toEpochDay()?.times(86_400_000L),
+    )
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    editedDueDate = datePickerState.selectedDateMillis
+                        ?.let { LocalDate.ofEpochDay(it / 86_400_000L) }
+                    showDatePicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
+            },
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
         shape = MaterialTheme.shapes.extraLarge,
@@ -238,10 +277,19 @@ fun TaskCreationCard(
                 }
             }
             Spacer(modifier = Modifier.height(Spacing.sm))
-            Text(
-                text = taskTitle,
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onTertiaryContainer,
+            OutlinedTextField(
+                value = editedTitle,
+                onValueChange = { editedTitle = it },
+                singleLine = true,
+                textStyle = MaterialTheme.typography.titleSmall,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                    focusedBorderColor = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.5f),
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.25f),
+                    cursorColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                ),
+                modifier = Modifier.fillMaxWidth(),
             )
             if (!description.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(Spacing.xs))
@@ -251,15 +299,28 @@ fun TaskCreationCard(
                     color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.75f),
                 )
             }
-            if (dueDate != null) {
-                Spacer(modifier = Modifier.height(Spacing.xs))
+            Spacer(modifier = Modifier.height(Spacing.xs))
+            TextButton(
+                onClick = { showDatePicker = true },
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                    horizontal = Spacing.xs,
+                    vertical = 2.dp,
+                ),
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.CalendarMonth,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f),
+                )
+                Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "Due $dueDate",
+                    text = editedDueDate?.toString() ?: "Set due date",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.6f),
+                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f),
                 )
             }
-            Spacer(modifier = Modifier.height(Spacing.md))
+            Spacer(modifier = Modifier.height(Spacing.sm))
             Row(
                 horizontalArrangement = Arrangement.spacedBy(Spacing.xs, Alignment.End),
                 modifier = Modifier.fillMaxWidth(),
@@ -269,7 +330,7 @@ fun TaskCreationCard(
                 }
                 FilledTonalButton(onClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onApprove()
+                    onApprove(editedTitle.ifBlank { taskTitle }, editedDueDate)
                 }) {
                     Text("Add task")
                 }
@@ -284,11 +345,12 @@ fun ObjectCreationCard(
     domain: String,
     title: String,
     summary: String,
-    onApprove: () -> Unit,
+    onApprove: (editedTitle: String) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val haptic = LocalHapticFeedback.current
+    var editedTitle by remember { mutableStateOf(title) }
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         shape = MaterialTheme.shapes.extraLarge,
@@ -320,10 +382,19 @@ fun ObjectCreationCard(
                 }
             }
             Spacer(modifier = Modifier.height(Spacing.sm))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurface,
+            OutlinedTextField(
+                value = editedTitle,
+                onValueChange = { editedTitle = it },
+                singleLine = true,
+                textStyle = MaterialTheme.typography.titleSmall,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    focusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f),
+                    cursorColor = MaterialTheme.colorScheme.primary,
+                ),
+                modifier = Modifier.fillMaxWidth(),
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
@@ -349,7 +420,7 @@ fun ObjectCreationCard(
                 }
                 FilledTonalButton(onClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onApprove()
+                    onApprove(editedTitle.ifBlank { title })
                 }) {
                     Text("Add record")
                 }

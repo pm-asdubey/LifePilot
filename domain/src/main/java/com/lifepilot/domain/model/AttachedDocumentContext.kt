@@ -3,10 +3,12 @@ package com.lifepilot.domain.model
 /**
  * Context for a document attached to the current AI conversation.
  *
- * This is transient state: it lives only for the current conversation turn
- * and is cleared once the user approves or dismisses the associated proposal.
- * The AI is sent only the structured [extractedFields], never the raw OCR
- * text or document bytes.
+ * Lives for the duration of the conversation so the user can ask follow-up
+ * questions about the document. Cleared when the conversation ends or a new
+ * chat starts.
+ *
+ * The AI receives [extractedFields] (structured) and [ocrText] (raw) so it
+ * can answer freeform questions about the document content.
  */
 data class AttachedDocumentContext(
     val fileName: String,
@@ -16,4 +18,6 @@ data class AttachedDocumentContext(
     val title: String? = null,
     val extractedFields: List<ProposedField> = emptyList(),
     val isPendingApproval: Boolean = true,
+    /** Raw OCR text — included in the AI prompt so questions about document content work. */
+    val ocrText: String? = null,
 )

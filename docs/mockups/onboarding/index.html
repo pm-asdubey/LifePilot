@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LifePilot · Onboarding</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --teal: #0EA5A4;
+    --teal-deep: #0d8f8e;
+    --indigo: #6366F1;
+    --indigo-deep: #4f46e5;
+    --grad: linear-gradient(135deg, #12b3b1 0%, #6366F1 100%);
+    --grad-soft: linear-gradient(135deg, rgba(14,165,164,0.12), rgba(99,102,241,0.12));
+    --grad-softer: linear-gradient(135deg, rgba(14,165,164,0.07), rgba(99,102,241,0.07));
+
+    --ink: #16182b;
+    --ink-2: #3a3d52;
+    --muted: #6b6f85;
+    --faint: #9a9eb2;
+
+    --surface: #ffffff;
+    --surface-2: #f6f7fb;
+    --surface-3: #eef0f6;
+    --line: #e7e9f1;
+    --line-2: #dcdfeb;
+
+    --shadow-sm: 0 1px 3px rgba(24,28,52,0.05);
+    --shadow: 0 8px 24px rgba(45,52,96,0.08);
+    --shadow-lg: 0 22px 50px rgba(45,52,96,0.16);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background:
+      radial-gradient(900px 520px at 12% -8%, rgba(14,165,164,0.16), transparent 60%),
+      radial-gradient(900px 620px at 100% 108%, rgba(99,102,241,0.18), transparent 58%),
+      #eef1f8;
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 34px 18px 56px;
+  }
+
+  .page-head { text-align: center; margin-bottom: 22px; }
+  .page-head .brandrow { display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .page-head h1 { font-size: 19px; font-weight: 800; letter-spacing: -0.4px; color: var(--ink-2); }
+  .page-head p { color: var(--muted); font-size: 13px; margin-top: 7px; }
+  .gradient-text { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+  /* Phone frame */
+  .phone {
+    width: 390px;
+    height: 830px;
+    background: #fbfcfe;
+    border-radius: 48px;
+    border: 1px solid rgba(24,28,52,0.08);
+    box-shadow: var(--shadow-lg), 0 0 0 11px #0e1020, 0 0 0 12px #1c2036;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .notch {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    width: 118px; height: 28px; background: #0e1020; border-radius: 16px; z-index: 60;
+  }
+  .statusbar {
+    height: 50px; flex: 0 0 auto; display: flex; align-items: flex-end; justify-content: space-between;
+    padding: 0 26px 6px; font-size: 13px; font-weight: 700; color: var(--ink); z-index: 20;
+  }
+  .statusbar .icons { display: flex; gap: 6px; align-items: center; opacity: 0.85; }
+
+  /* Top progress */
+  .topbar { flex: 0 0 auto; padding: 2px 22px 12px; }
+  .topbar .meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; height: 18px; }
+  .topbar .steplabel { font-size: 11.5px; font-weight: 700; letter-spacing: 0.3px; color: var(--muted); text-transform: uppercase; }
+  .topbar .skiplink { font-size: 12.5px; font-weight: 600; color: var(--faint); cursor: pointer; }
+  .topbar .skiplink:hover { color: var(--teal); }
+  .segs { display: flex; gap: 5px; }
+  .segs .seg { flex: 1; height: 4px; border-radius: 4px; background: var(--line-2); overflow: hidden; }
+  .segs .seg > i { display: block; height: 100%; width: 0; background: var(--grad); border-radius: 4px; transition: width .5s cubic-bezier(.4,0,.2,1); }
+  .segs .seg.done > i { width: 100%; }
+  .segs .seg.cur > i { width: 100%; }
+
+  /* Screen stage */
+  .stage { flex: 1 1 auto; position: relative; overflow: hidden; }
+  .screen {
+    position: absolute; inset: 0;
+    padding: 6px 24px 22px;
+    display: flex; flex-direction: column;
+    opacity: 0; transform: translateX(26px);
+    transition: opacity .4s ease, transform .4s ease;
+    pointer-events: none;
+    overflow-y: auto;
+  }
+  .screen.active { opacity: 1; transform: translateX(0); pointer-events: auto; }
+  .screen::-webkit-scrollbar { width: 0; }
+
+  .eyebrow { font-size: 11.5px; font-weight: 700; letter-spacing: 1.3px; text-transform: uppercase; color: var(--teal-deep); margin-bottom: 10px; }
+  .title { font-size: 26px; font-weight: 800; line-height: 1.16; letter-spacing: -0.7px; color: var(--ink); }
+  .subtitle { color: var(--muted); font-size: 14.5px; line-height: 1.55; margin-top: 12px; }
+  .spacer { flex: 1 1 auto; min-height: 8px; }
+
+  .btn {
+    border: none; border-radius: 15px; font-family: inherit; font-weight: 700; font-size: 15.5px;
+    padding: 15px 18px; cursor: pointer; width: 100%; color: #fff; background: var(--grad);
+    box-shadow: 0 10px 22px rgba(79,90,190,0.28); transition: transform .12s ease, filter .2s ease, box-shadow .2s ease;
+  }
+  .btn:hover { filter: brightness(1.04); }
+  .btn:active { transform: scale(0.985); }
+  .btn.ghost { background: var(--surface); color: var(--ink-2); box-shadow: var(--shadow-sm); border: 1px solid var(--line-2); }
+  .btn.ghost:hover { border-color: var(--teal); color: var(--teal-deep); filter: none; }
+  .btn.link { background: transparent; box-shadow: none; color: var(--muted); font-weight: 600; font-size: 14px; padding: 12px; }
+  .btn.link:hover { color: var(--teal-deep); filter: none; }
+  .btnrow { display: flex; gap: 11px; margin-top: 12px; }
+  .btnrow .btn { flex: 1; }
+  .btnrow .btn.back { flex: 0 0 54px; padding: 15px 0; }
+
+  /* Compass logo */
+  .logo-wrap { display: flex; justify-content: center; }
+  .logo-badge {
+    width: 112px; height: 112px; border-radius: 32px; background: var(--grad);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 20px 44px rgba(79,90,190,0.32), inset 0 1px 0 rgba(255,255,255,0.25);
+  }
+  .logo-badge.sm { width: 40px; height: 40px; border-radius: 12px; box-shadow: 0 6px 14px rgba(79,90,190,0.3); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .compass-needle { transform-origin: 50% 50%; animation: spin 16s linear infinite; }
+
+  /* Welcome */
+  .trustrow { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 20px; }
+  .chip-mini {
+    font-size: 12.5px; font-weight: 600; color: var(--ink-2);
+    background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 7px 13px;
+    display: inline-flex; align-items: center; gap: 6px; box-shadow: var(--shadow-sm);
+  }
+  .dotmark { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); }
+
+  /* Fields */
+  .field-label { font-size: 12.5px; font-weight: 700; color: var(--ink-2); margin: 20px 0 8px; }
+  .field {
+    width: 100%; background: var(--surface); border: 1.5px solid var(--line-2); border-radius: 13px;
+    padding: 14px 15px; color: var(--ink); font-family: inherit; font-size: 15.5px; font-weight: 600;
+    outline: none; transition: border-color .18s ease, box-shadow .18s ease;
+  }
+  .field:focus { border-color: var(--teal); box-shadow: 0 0 0 4px rgba(14,165,164,0.12); }
+  .field::placeholder { color: var(--faint); font-weight: 500; }
+  textarea.field { resize: none; line-height: 1.5; font-weight: 500; font-size: 14px; }
+
+  /* profession chips */
+  .chiprow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .prof-chip {
+    font-size: 13px; font-weight: 600; color: var(--ink-2); cursor: pointer;
+    background: var(--surface); border: 1.5px solid var(--line-2); border-radius: 20px; padding: 8px 14px;
+    transition: all .15s ease; user-select: none;
+  }
+  .prof-chip:hover { border-color: var(--teal); }
+  .prof-chip.on { background: var(--grad); color: #fff; border-color: transparent; box-shadow: 0 6px 14px rgba(79,90,190,0.28); }
+
+  /* Domain grid */
+  .domain-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 16px; }
+  .domain {
+    background: var(--surface); border: 1.5px solid var(--line); border-radius: 15px;
+    padding: 12px 13px; cursor: pointer; transition: all .16s ease; user-select: none;
+    display: flex; align-items: center; gap: 10px; position: relative; box-shadow: var(--shadow-sm);
+  }
+  .domain:hover { border-color: var(--line-2); }
+  .domain .dico {
+    width: 32px; height: 32px; border-radius: 9px; background: var(--surface-3);
+    display: flex; align-items: center; justify-content: center; font-size: 16px; flex: 0 0 auto;
+  }
+  .domain .dname { font-size: 13px; font-weight: 700; line-height: 1.2; }
+  .domain .check {
+    position: absolute; top: 9px; right: 9px; width: 18px; height: 18px; border-radius: 50%;
+    background: var(--grad); display: none; align-items: center; justify-content: center;
+    color: #fff; font-size: 11px; font-weight: 800;
+  }
+  .domain.sel { border-color: rgba(14,165,164,0.55); background: var(--grad-soft); }
+  .domain.sel .dico { background: var(--grad); filter: grayscale(0); }
+  .domain.sel .check { display: flex; }
+  .lib-hint {
+    display: flex; align-items: center; gap: 9px; margin-top: 14px; font-size: 12.5px; color: var(--muted);
+    background: var(--grad-softer); border: 1px solid var(--line); border-radius: 12px; padding: 11px 13px;
+  }
+  .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--teal); flex: 0 0 auto; animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: .35; transform: scale(.8);} 50% { opacity: 1; transform: scale(1.15);} }
+  .selcount { text-align: center; font-size: 12.5px; color: var(--faint); margin-top: 10px; font-weight: 600; }
+
+  /* Carousel */
+  .carousel {
+    display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 18px -24px 0; padding: 4px 24px 6px;
+    scrollbar-width: none;
+  }
+  .carousel::-webkit-scrollbar { display: none; }
+  .promo {
+    flex: 0 0 100%; scroll-snap-align: center; border-radius: 22px; padding: 26px 22px;
+    background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow);
+    display: flex; flex-direction: column; min-height: 380px;
+  }
+  .promo .picon {
+    width: 74px; height: 74px; border-radius: 20px; background: var(--grad-soft);
+    display: flex; align-items: center; justify-content: center; margin-bottom: 22px; border: 1px solid var(--line);
+  }
+  .promo h3 { font-size: 21px; font-weight: 800; letter-spacing: -0.4px; line-height: 1.2; }
+  .promo p { color: var(--muted); font-size: 14.5px; line-height: 1.6; margin-top: 12px; }
+  .promo .demo {
+    margin-top: auto; background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; padding: 13px 14px;
+    font-size: 13px; color: var(--ink-2); line-height: 1.5;
+  }
+  .promo .demo .q { font-weight: 700; color: var(--teal-deep); }
+  .dots { display: flex; gap: 7px; justify-content: center; margin-top: 16px; }
+  .dots .d { width: 7px; height: 7px; border-radius: 50%; background: var(--line-2); transition: all .25s ease; cursor: pointer; }
+  .dots .d.on { background: var(--grad); width: 20px; border-radius: 5px; }
+
+  /* Prompt box */
+  .promptbox {
+    position: relative; margin-top: 16px; background: #0f1424; border-radius: 15px; padding: 16px 16px 14px;
+    box-shadow: var(--shadow); border: 1px solid #1d2440;
+  }
+  .promptbox pre {
+    font-family: 'Inter', monospace; font-size: 12px; line-height: 1.6; color: #cdd4ee; white-space: pre-wrap;
+    max-height: 168px; overflow-y: auto; margin: 0; padding-right: 4px;
+  }
+  .promptbox pre::-webkit-scrollbar { width: 4px; }
+  .promptbox pre::-webkit-scrollbar-thumb { background: #2a3358; border-radius: 4px; }
+  .promptbox .phead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .promptbox .plabel { font-size: 11px; font-weight: 700; letter-spacing: 0.6px; color: #7f8bc0; text-transform: uppercase; }
+  .copybtn {
+    border: 1px solid #2a3358; background: #182042; color: #b7c1ee; border-radius: 9px; padding: 6px 12px;
+    font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; gap: 6px;
+    transition: all .15s ease;
+  }
+  .copybtn:hover { background: #1f2a55; }
+  .copybtn.done { background: var(--teal); color: #fff; border-color: transparent; }
+
+  /* Imported records */
+  .parsing { display: flex; align-items: center; gap: 11px; margin-top: 16px; font-size: 13.5px; font-weight: 600; color: var(--muted); background: var(--surface-2); border: 1px solid var(--line); border-radius: 13px; padding: 14px; }
+  .mini-spin { width: 17px; height: 17px; border-radius: 50%; border: 2.4px solid var(--line-2); border-top-color: var(--teal); animation: spin .8s linear infinite; flex: 0 0 auto; }
+  .rec-group { margin-top: 16px; }
+  .rec-domain-h { font-size: 11.5px; font-weight: 800; letter-spacing: 0.7px; text-transform: uppercase; color: var(--teal-deep); margin: 14px 4px 8px; display: flex; align-items: center; gap: 7px; }
+  .rec {
+    display: flex; align-items: center; gap: 11px; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 13px; padding: 11px 13px; margin-top: 7px; box-shadow: var(--shadow-sm); cursor: pointer;
+  }
+  .rec .cbox {
+    width: 21px; height: 21px; border-radius: 6px; border: 2px solid var(--line-2); flex: 0 0 auto;
+    display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 800; transition: all .15s;
+  }
+  .rec.on .cbox { background: var(--grad); border-color: transparent; }
+  .rec .rtext { flex: 1; min-width: 0; }
+  .rec .rname { font-size: 13.5px; font-weight: 700; line-height: 1.25; }
+  .rec .rmeta { font-size: 11.5px; color: var(--faint); margin-top: 2px; }
+  .chip-unv { font-size: 10px; font-weight: 700; letter-spacing: 0.3px; color: #b06a12; background: #fdf1de; border: 1px solid #f5dcae; border-radius: 20px; padding: 3px 8px; flex: 0 0 auto; text-transform: uppercase; }
+  .verify-note { display: flex; gap: 9px; align-items: flex-start; margin-top: 16px; font-size: 12.5px; color: var(--muted); background: var(--grad-softer); border: 1px solid var(--line); border-radius: 12px; padding: 12px 13px; line-height: 1.5; }
+
+  /* Scan */
+  .folder-row { display: flex; gap: 8px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+  .folder-pill { font-size: 12px; font-weight: 600; color: var(--ink-2); background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 7px 12px; display: inline-flex; align-items: center; gap: 6px; box-shadow: var(--shadow-sm); }
+  .scan-note { display: flex; gap: 9px; align-items: flex-start; margin-top: 16px; font-size: 12.5px; color: var(--muted); background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px 13px; line-height: 1.5; }
+  .scan-note b { color: var(--ink-2); }
+  .progress-wrap { margin-top: 20px; display: none; }
+  .pbar { height: 9px; border-radius: 6px; background: var(--surface-3); overflow: hidden; }
+  .pbar > i { display: block; height: 100%; width: 0; background: var(--grad); border-radius: 6px; transition: width .2s linear; }
+  .pbar-label { font-size: 12.5px; font-weight: 600; color: var(--muted); margin-top: 9px; text-align: center; }
+  .doc-grid { display: none; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+  .doccard {
+    background: var(--surface); border: 1.5px solid var(--line); border-radius: 14px; padding: 13px; position: relative;
+    cursor: pointer; box-shadow: var(--shadow-sm); transition: all .15s;
+  }
+  .doccard.on { border-color: rgba(14,165,164,0.55); background: var(--grad-soft); }
+  .doccard .thumb {
+    width: 100%; height: 70px; border-radius: 9px; background: var(--surface-2); border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center; margin-bottom: 9px;
+  }
+  .doccard .dfname { font-size: 12px; font-weight: 700; word-break: break-all; line-height: 1.25; }
+  .doccard .dfmeta { font-size: 10.5px; color: var(--faint); margin-top: 2px; }
+  .doccard .dcheck {
+    position: absolute; top: 9px; right: 9px; width: 19px; height: 19px; border-radius: 50%;
+    border: 2px solid #fff; background: var(--line-2); display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 11px; font-weight: 800; box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  }
+  .doccard.on .dcheck { background: var(--grad); border-color: #fff; }
+
+  /* WOW */
+  .wow-halo {
+    position: absolute; top: -40px; left: 50%; transform: translateX(-50%);
+    width: 360px; height: 260px; background: radial-gradient(circle, rgba(14,165,164,0.22), transparent 65%);
+    pointer-events: none; z-index: 0;
+  }
+  .wow-inner { position: relative; z-index: 1; }
+  .chat-ask {
+    display: flex; align-items: center; gap: 9px; margin-top: 18px; background: var(--surface);
+    border: 1.5px solid var(--line-2); border-radius: 16px; padding: 8px 8px 8px 15px; box-shadow: var(--shadow);
+  }
+  .chat-ask input { flex: 1; border: none; outline: none; font-family: inherit; font-size: 14.5px; font-weight: 600; color: var(--ink); background: transparent; }
+  .ask-btn {
+    border: none; border-radius: 12px; background: var(--grad); color: #fff; font-family: inherit; font-weight: 700;
+    font-size: 14px; padding: 11px 18px; cursor: pointer; flex: 0 0 auto;
+    box-shadow: 0 0 0 0 rgba(14,165,164,0.6); animation: glow 1.8s ease-in-out infinite;
+  }
+  @keyframes glow { 0%,100% { box-shadow: 0 0 0 0 rgba(14,165,164,0.45);} 50% { box-shadow: 0 0 0 9px rgba(14,165,164,0);} }
+  .answer-card {
+    margin-top: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 0;
+    box-shadow: var(--shadow); overflow: hidden; display: none;
+  }
+  .answer-card.show { display: block; animation: rise .45s ease; }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px);} to { opacity: 1; transform: translateY(0);} }
+  .ac-head { display: flex; align-items: center; gap: 9px; padding: 13px 16px; border-bottom: 1px solid var(--line); background: var(--grad-softer); }
+  .ac-head .aname { font-size: 12.5px; font-weight: 800; color: var(--ink-2); }
+  .ac-body { padding: 15px 16px; }
+  .ac-body .aline { font-size: 14.5px; line-height: 1.55; color: var(--ink); }
+  .ac-body .aok { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; font-size: 12.5px; font-weight: 700; color: var(--teal-deep); background: var(--grad-soft); border-radius: 20px; padding: 6px 12px; }
+  .ac-source { display: flex; align-items: center; gap: 7px; margin-top: 12px; font-size: 11.5px; color: var(--faint); }
+  .ac-source .src-pill { background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 2px 7px; font-weight: 700; color: var(--muted); }
+  .followups { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .fu-chip { font-size: 12.5px; font-weight: 600; color: var(--ink-2); background: var(--surface); border: 1px solid var(--line-2); border-radius: 20px; padding: 8px 13px; cursor: pointer; transition: all .15s; }
+  .fu-chip:hover { border-color: var(--teal); color: var(--teal-deep); }
+
+  /* Completion */
+  .done-badge {
+    width: 92px; height: 92px; border-radius: 50%; background: var(--grad);
+    display: flex; align-items: center; justify-content: center; margin: 6px auto 0;
+    box-shadow: 0 18px 40px rgba(79,90,190,0.4);
+  }
+  .summary { margin-top: 20px; display: flex; flex-direction: column; gap: 9px; }
+  .summary .row { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 13px; padding: 12px 14px; box-shadow: var(--shadow-sm); }
+  .summary .row .si { width: 30px; height: 30px; border-radius: 9px; background: var(--grad-soft); display:flex; align-items:center; justify-content:center; font-size: 15px; }
+  .summary .row .sl { font-size: 13px; font-weight: 600; color: var(--muted); }
+  .summary .row .sv { margin-left: auto; font-size: 13.5px; font-weight: 800; color: var(--ink); }
+
+  /* confetti */
+  .confetti-pc { position: absolute; top: -10px; width: 8px; height: 12px; border-radius: 2px; opacity: 0; z-index: 50; }
+  @keyframes fall { 0% { opacity: 1; transform: translateY(0) rotate(0);} 100% { opacity: 0; transform: translateY(560px) rotate(540deg);} }
+
+  .caption {
+    margin-top: 20px; text-align: center; max-width: 390px; color: var(--muted);
+    font-size: 12.5px; line-height: 1.5; min-height: 30px;
+  }
+  .caption b { color: var(--ink-2); }
+  .caption .step-index { color: var(--teal-deep); font-weight: 700; }
+  .footer-note { margin-top: 20px; color: #a3a8bd; font-size: 11.5px; text-align: center; }
+</style>
+</head>
+<body>
+
+  <div class="page-head">
+    <div class="brandrow">
+      <div class="logo-badge sm">
+        <svg width="24" height="24" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="16" stroke="#fff" stroke-width="1.8" opacity="0.55"/>
+          <polygon points="20,9 24,20 20,17 16,20" fill="#fff"/>
+          <polygon points="20,31 16,20 20,23 24,20" fill="#fff" opacity="0.7"/>
+        </svg>
+      </div>
+      <h1>LifePilot <span class="gradient-text">Onboarding</span></h1>
+    </div>
+    <p>Interactive mockup · one continuous flow — use <b style="color:var(--ink-2)">Next / Back</b> to walk through</p>
+  </div>
+
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="statusbar">
+      <span>9:41</span>
+      <span class="icons">
+        <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="4.5" y="4.5" width="3" height="7.5" rx="1"/><rect x="9" y="2" width="3" height="10" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></svg>
+        <svg width="24" height="12" viewBox="0 0 24 12" fill="none"><rect x="0.5" y="0.5" width="20" height="11" rx="3" stroke="currentColor"/><rect x="2" y="2" width="15" height="8" rx="1.5" fill="currentColor"/><rect x="22" y="4" width="2" height="4" rx="1" fill="currentColor"/></svg>
+      </span>
+    </div>
+
+    <div class="topbar">
+      <div class="meta">
+        <span class="steplabel" id="stepLabel">Welcome</span>
+        <span class="skiplink" id="skipLink" style="visibility:hidden" onclick="skipStep()">Skip</span>
+      </div>
+      <div class="segs" id="segs"></div>
+    </div>
+
+    <div class="stage" id="stage">
+
+      <!-- STEP 0 · WELCOME -->
+      <section class="screen active" data-idx="0">
+        <div style="height:26px"></div>
+        <div class="logo-wrap">
+          <div class="logo-badge">
+            <svg width="70" height="70" viewBox="0 0 40 40" fill="none">
+              <circle cx="20" cy="20" r="18" stroke="#fff" stroke-width="1.4" opacity="0.35"/>
+              <circle cx="20" cy="20" r="13.5" stroke="#fff" stroke-width="1.3" opacity="0.7"/>
+              <g class="compass-needle">
+                <polygon points="20,7 24.5,20 20,16.5 15.5,20" fill="#fff"/>
+                <polygon points="20,33 15.5,20 20,23.5 24.5,20" fill="#fff" opacity="0.6"/>
+              </g>
+              <circle cx="20" cy="20" r="2.2" fill="#fff"/>
+            </svg>
+          </div>
+        </div>
+        <div style="text-align:center; margin-top:26px;">
+          <div class="title">LifePilot</div>
+          <p class="subtitle" style="max-width:300px; margin:12px auto 0;">
+            The operating system for your <b style="color:var(--ink-2)">life admin</b> — it quietly keeps track, so you don't have to.
+          </p>
+        </div>
+        <div class="trustrow">
+          <span class="chip-mini"><span class="dotmark"></span>Offline-first</span>
+          <span class="chip-mini"><span class="dotmark"></span>Private &amp; on-device</span>
+        </div>
+        <div class="spacer"></div>
+        <button class="btn" onclick="go(1)">Get started</button>
+        <button class="btn link" onclick="alert('Restore flow — out of scope for this mockup')">Restore from backup</button>
+      </section>
+
+      <!-- STEP 1 · NAME & PROFESSION -->
+      <section class="screen" data-idx="1">
+        <div style="height:12px"></div>
+        <div class="title">Let's get to<br>know you</div>
+        <p class="subtitle">This stays on your device. No account, email, or password — ever.</p>
+
+        <div class="field-label">Your name</div>
+        <input class="field" id="nameInput" placeholder="e.g. Priyesh" oninput="state.name=this.value.trim()" />
+
+        <div class="field-label">What do you do?</div>
+        <input class="field" id="profInput" placeholder="Your profession" oninput="onProfType(this.value)" />
+        <div class="chiprow" id="profChips"></div>
+
+        <div class="spacer"></div>
+        <div class="btnrow">
+          <button class="btn back ghost" onclick="go(0)">←</button>
+          <button class="btn" onclick="go(2)">Continue</button>
+        </div>
+      </section>
+
+      <!-- STEP 2 · DOMAINS -->
+      <section class="screen" data-idx="2">
+        <div style="height:12px"></div>
+        <div class="title">What matters<br>to you?</div>
+        <p class="subtitle">We pre-selected a few for <b id="profEcho" style="color:var(--teal-deep)">you</b>. These seed your Library — nothing is locked in.</p>
+
+        <div class="domain-grid" id="domainGrid"></div>
+        <div class="lib-hint"><span class="pulse-dot"></span><span id="libHint">Preparing your Library…</span></div>
+        <div class="selcount" id="selCount"></div>
+
+        <div style="height:6px"></div>
+        <div class="btnrow">
+          <button class="btn back ghost" onclick="go(1)">←</button>
+          <button class="btn" onclick="go(3)">Continue</button>
+        </div>
+      </section>
+
+      <!-- STEP 3 · PLATFORM DEMO -->
+      <section class="screen" data-idx="3">
+        <div style="height:12px"></div>
+        <div class="eyebrow">A quick tour</div>
+        <div class="title">Here's what<br>LifePilot does</div>
+
+        <div class="carousel" id="carousel">
+          <div class="promo">
+            <div class="picon">💬</div>
+            <h3>Ask anything</h3>
+            <p>Your life, in plain language. LifePilot answers from your own records — grounded, never guessed.</p>
+            <div class="demo"><span class="q">"When is my car insurance due?"</span><br>→ 14 Sep 2026 · in 2 months</div>
+          </div>
+          <div class="promo">
+            <div class="picon">🗂️</div>
+            <h3>One life area,<br>every document</h3>
+            <p>Objects, not folders. Your passport, job, or property each hold their own papers, dates and history.</p>
+            <div class="demo">Passport · 3 documents · expires 2029<br>Vehicle · RC, insurance, PUC</div>
+          </div>
+          <div class="promo">
+            <div class="picon">🧭</div>
+            <h3>AI plans<br>for you</h3>
+            <p>Renewing a visa or changing jobs? LifePilot lays out the steps, documents and deadlines.</p>
+            <div class="demo"><span class="q">Plan: Renew passport</span><br>→ 4 steps · 2 documents needed</div>
+          </div>
+          <div class="promo">
+            <div class="picon">🔔</div>
+            <h3>Never miss<br>a renewal</h3>
+            <p>Expiries, due dates and tasks surface before they bite — quietly, at the right time.</p>
+            <div class="demo">⚠️ Insurance expires in 12 days<br>✓ Reminder set for you</div>
+          </div>
+          <div class="promo">
+            <div class="picon">🔒</div>
+            <h3>Yours forever,<br>on-device</h3>
+            <p>Everything lives on your phone. No cloud, no account. Your files stay exactly where they are.</p>
+            <div class="demo">🛜 Works fully offline<br>🔐 Encrypted on this device</div>
+          </div>
+        </div>
+        <div class="dots" id="promoDots"></div>
+
+        <div class="spacer"></div>
+        <div class="btnrow">
+          <button class="btn back ghost" onclick="go(2)">←</button>
+          <button class="btn" onclick="go(4)">Continue</button>
+        </div>
+      </section>
+
+      <!-- STEP 4 · IMPORT FROM AI -->
+      <section class="screen" data-idx="4">
+        <div style="height:12px"></div>
+        <div class="eyebrow">Optional · Fastest start</div>
+        <div class="title">Import from your<br>existing AI assistant</div>
+        <p class="subtitle">Already use ChatGPT, Gemini or Claude? Ask it what it knows about you, then paste the reply. Copy this prompt:</p>
+
+        <div class="promptbox">
+          <div class="phead">
+            <span class="plabel">Prompt for your AI</span>
+            <button class="copybtn" id="copyBtn" onclick="copyPrompt()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="9" y="9" width="11" height="11" rx="2" stroke="currentColor" stroke-width="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10" stroke="currentColor" stroke-width="2"/></svg>
+              <span id="copyTxt">Copy</span>
+            </button>
+          </div>
+          <pre id="promptText">Based on everything you confidently know about me from our past conversations, list the facts — not guesses — that would help me organise my life admin. Group them under these headings, as bullet points, and skip anything you're unsure about:
+
+Career · Finance · Health · Identity · Travel · Property · Education · Relationships
+
+For each fact include specifics (names, numbers, dates) where you know them. If you don't know something for a heading, leave it out.</pre>
+        </div>
+
+        <div class="field-label">Paste the AI's response here (optional)</div>
+        <textarea class="field" id="pasteArea" rows="4" placeholder="Paste what ChatGPT / Gemini / Claude replied…"></textarea>
+
+        <div id="parsingBox" class="parsing" style="display:none;"><span class="mini-spin"></span><span>Reading your response…</span></div>
+        <div id="recordsOut"></div>
+
+        <div class="spacer"></div>
+        <div class="btnrow">
+          <button class="btn back ghost" onclick="go(3)">←</button>
+          <button class="btn" id="importBtn" onclick="importPaste()">Import</button>
+        </div>
+      </section>
+
+      <!-- STEP 5 · DOCUMENT SCAN -->
+      <section class="screen" data-idx="5">
+        <div style="height:12px"></div>
+        <div class="eyebrow">Optional · One-time</div>
+        <div class="title">Import your important<br>documents</div>
+        <p class="subtitle">LifePilot scans your document folders — with permission — for things like offer letters, insurance and IDs.</p>
+
+        <div class="folder-row">
+          <span class="folder-pill">📁 Downloads</span>
+          <span class="folder-pill">📁 Documents</span>
+          <span class="folder-pill">📁 WhatsApp Docs</span>
+        </div>
+        <div class="scan-note"><span>🔒</span><span><b>Documents only.</b> Your photos and personal media are never scanned. Files you don't import are never stored.</span></div>
+
+        <div id="scanProgress" class="progress-wrap">
+          <div class="pbar"><i id="scanBar"></i></div>
+          <div class="pbar-label" id="scanLabel">Scanning Downloads…</div>
+        </div>
+
+        <div class="doc-grid" id="docGrid"></div>
+        <div id="ocrBox" class="parsing" style="display:none;"><span class="mini-spin"></span><span id="ocrLabel">Processing… running OCR</span></div>
+
+        <div class="spacer"></div>
+        <button class="btn" id="scanBtn" onclick="startScan()">Scan my device</button>
+        <div class="btnrow" style="margin-top:10px;">
+          <button class="btn back ghost" onclick="go(4)">←</button>
+          <button class="btn ghost" id="importDocsBtn" onclick="go(6)">Skip for now</button>
+        </div>
+      </section>
+
+      <!-- STEP 6 · WOW -->
+      <section class="screen" data-idx="6">
+        <div class="wow-halo"></div>
+        <div class="wow-inner">
+          <div style="height:16px"></div>
+          <div class="logo-wrap">
+            <div class="logo-badge sm" style="width:50px;height:50px;border-radius:15px;">
+              <svg width="30" height="30" viewBox="0 0 40 40" fill="none">
+                <circle cx="20" cy="20" r="15" stroke="#fff" stroke-width="1.6" opacity="0.5"/>
+                <g class="compass-needle"><polygon points="20,8 24,20 20,17 16,20" fill="#fff"/><polygon points="20,32 16,20 20,23 24,20" fill="#fff" opacity="0.6"/></g>
+                <circle cx="20" cy="20" r="2" fill="#fff"/>
+              </svg>
+            </div>
+          </div>
+          <div style="text-align:center; margin-top:14px;">
+            <div class="title" style="font-size:23px;">Here's what LifePilot<br>can already do for you</div>
+            <p class="subtitle" id="wowSub" style="margin-top:10px;">Grounded in what you just imported. Try asking:</p>
+          </div>
+
+          <div class="chat-ask">
+            <input id="wowInput" value="When does my passport expire?" />
+            <button class="ask-btn" onclick="askWow()">Ask</button>
+          </div>
+
+          <div class="answer-card" id="answerCard">
+            <div class="ac-head">
+              <div class="logo-badge sm" style="width:26px;height:26px;border-radius:8px;box-shadow:none;">
+                <svg width="15" height="15" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="15" stroke="#fff" stroke-width="2.2" opacity="0.7"/><polygon points="20,8 24,20 20,17 16,20" fill="#fff"/></svg>
+              </div>
+              <span class="aname">LifePilot</span>
+            </div>
+            <div class="ac-body">
+              <div class="aline" id="answerLine"></div>
+              <div class="aok" id="answerOk"></div>
+              <div class="ac-source" id="answerSrc"></div>
+            </div>
+          </div>
+
+          <div class="followups" id="followups"></div>
+        </div>
+        <div class="spacer"></div>
+        <div class="btnrow">
+          <button class="btn back ghost" onclick="go(5)">←</button>
+          <button class="btn" onclick="go(7)">This is great →</button>
+        </div>
+      </section>
+
+      <!-- STEP 7 · COMPLETION -->
+      <section class="screen" data-idx="7">
+        <div style="height:26px"></div>
+        <div class="done-badge">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.2 4.2L19 7" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div style="text-align:center; margin-top:18px;">
+          <div class="title" id="doneTitle">You're all set</div>
+          <p class="subtitle" id="doneSummary" style="max-width:300px;margin:12px auto 0;"></p>
+        </div>
+
+        <div class="summary">
+          <div class="row"><span class="si">👤</span><span class="sl">Profile</span><span class="sv" id="sumName">—</span></div>
+          <div class="row"><span class="si">🗂️</span><span class="sl">Domains active</span><span class="sv" id="sumDomains">—</span></div>
+          <div class="row"><span class="si">📄</span><span class="sl">Records imported</span><span class="sv" id="sumRecords">—</span></div>
+        </div>
+
+        <div class="spacer"></div>
+        <button class="btn" onclick="finish()">Enter LifePilot</button>
+        <button class="btn link" onclick="restart()">Replay onboarding</button>
+      </section>
+
+    </div>
+  </div>
+
+  <div class="caption" id="caption"></div>
+  <div class="footer-note">LifePilot · onboarding workflow · design mockup for review — not production UI</div>
+
+<script>
+  var TOTAL = 8;            // screens 0..7
+  var NUMBERED = 7;         // steps 1..7 shown in "Step X of 7"
+  var current = 0;
+
+  var state = {
+    name: '',
+    profession: '',
+    domains: {},           // idx -> bool
+    aiRecords: {},         // id -> bool (checked)
+    docFiles: {},          // id -> bool
+    scanned: false,
+    importedPaste: false
+  };
+
+  var domains = [
+    {n:'Career', i:'💼'}, {n:'Education', i:'🎓'}, {n:'Finance', i:'💳'},
+    {n:'Health', i:'❤️'}, {n:'Home', i:'🏠'}, {n:'Identity', i:'🪪'},
+    {n:'Legal', i:'⚖️'}, {n:'Major Life Events', i:'✨'}, {n:'People', i:'👥'},
+    {n:'Property', i:'🏢'}, {n:'Transport', i:'🚗'}, {n:'Travel', i:'✈️'}
+  ];
+  var dIdx = {}; domains.forEach(function(d,i){ dIdx[d.n]=i; });
+
+  var professions = ['Software Engineer','Product Manager','Doctor','Student','Entrepreneur','Other'];
+  var profPresets = {
+    'Software Engineer': ['Career','Finance','Identity','Health','Travel'],
+    'Product Manager':   ['Career','Finance','Identity','Travel','Health'],
+    'Doctor':            ['Career','Finance','Identity','Health','Legal'],
+    'Student':           ['Education','Finance','Identity','Health','Travel'],
+    'Entrepreneur':      ['Career','Finance','Legal','Property','Identity'],
+    'Other':             ['Finance','Identity','Health','Career']
+  };
+
+  var captions = [
+    '<span class="step-index">Welcome</span> — brand moment + the offline-first, on-device promise stated up front. No account, ever.',
+    '<span class="step-index">Name &amp; profession</span> — profession drives smart domain defaults in the next step. Free text or a chip.',
+    '<span class="step-index">Life domains</span> — the 12 canonical domains, pre-seeded from your profession. This shapes your Library.',
+    '<span class="step-index">Tour</span> — five value props: ask anything · objects not folders · AI plans · never miss a renewal · yours forever. Swipe or tap the dots.',
+    '<span class="step-index">Import from AI</span> — the "paste a prompt" path. Copyable prompt → paste reply → draft records you verify before anything is saved.',
+    '<span class="step-index">Scan documents</span> — one-time scan of document folders (never photos). Found files become drafts you confirm.',
+    '<span class="step-index">First value moment</span> — the payoff: a real answer grounded in what you just imported.',
+    '<span class="step-index">Done</span> — a personalised summary and a clean handoff into LifePilot.'
+  ];
+
+  // ---------- Step 1: professions ----------
+  function buildProfChips(){
+    var w = document.getElementById('profChips');
+    w.innerHTML = '';
+    professions.forEach(function(p){
+      var el = document.createElement('div');
+      el.className = 'prof-chip';
+      el.textContent = p;
+      el.onclick = function(){ pickProf(p); };
+      el.dataset.p = p;
+      w.appendChild(el);
+    });
+  }
+  function pickProf(p){
+    state.profession = p;
+    document.getElementById('profInput').value = (p === 'Other') ? '' : p;
+    syncProfChips();
+    applyProfPreset(p);
+  }
+  function onProfType(v){
+    state.profession = v.trim();
+    syncProfChips();
+    var match = professions.filter(function(p){ return p.toLowerCase() === v.trim().toLowerCase(); })[0];
+    if (match) applyProfPreset(match);
+  }
+  function syncProfChips(){
+    document.querySelectorAll('#profChips .prof-chip').forEach(function(el){
+      el.classList.toggle('on', el.dataset.p.toLowerCase() === (state.profession||'').toLowerCase());
+    });
+  }
+  function applyProfPreset(p){
+    var preset = profPresets[p] || profPresets['Other'];
+    state.domains = {};
+    preset.forEach(function(name){ if (dIdx[name] != null) state.domains[dIdx[name]] = true; });
+    renderDomains();
+  }
+
+  // ---------- Step 2: domains ----------
+  function buildDomains(){
+    var g = document.getElementById('domainGrid');
+    g.innerHTML = '';
+    domains.forEach(function(d, idx){
+      var el = document.createElement('div');
+      el.className = 'domain';
+      el.dataset.idx = idx;
+      el.innerHTML = '<div class="check">✓</div><div class="dico">'+d.i+'</div><div class="dname">'+d.n+'</div>';
+      el.onclick = function(){
+        state.domains[idx] = !state.domains[idx];
+        renderDomains();
+      };
+      g.appendChild(el);
+    });
+    renderDomains();
+  }
+  function domainCount(){ var c=0; for(var k in state.domains){ if(state.domains[k]) c++; } return c; }
+  function renderDomains(){
+    document.querySelectorAll('#domainGrid .domain').forEach(function(el){
+      el.classList.toggle('sel', !!state.domains[el.dataset.idx]);
+    });
+    var c = domainCount();
+    var sc = document.getElementById('selCount');
+    if (sc) sc.textContent = c + ' area' + (c===1?'':'s') + ' will seed your Library';
+    var lh = document.getElementById('libHint');
+    if (lh) lh.textContent = 'Preparing your Library — ' + c + ' domain' + (c===1?'':'s') + ' ready to populate…';
+    var echo = document.getElementById('profEcho');
+    if (echo) echo.textContent = state.profession ? ('a ' + state.profession.toLowerCase()) : 'you';
+  }
+
+  // ---------- Step 3: carousel dots ----------
+  function buildDots(){
+    var w = document.getElementById('promoDots');
+    w.innerHTML = '';
+    for (var i=0;i<5;i++){
+      var d = document.createElement('div');
+      d.className = 'd' + (i===0?' on':'');
+      (function(idx){ d.onclick = function(){ scrollPromo(idx); }; })(i);
+      w.appendChild(d);
+    }
+  }
+  function scrollPromo(i){
+    var c = document.getElementById('carousel');
+    c.scrollTo({ left: i * c.clientWidth, behavior: 'smooth' });
+  }
+  function initCarousel(){
+    var c = document.getElementById('carousel');
+    c.addEventListener('scroll', function(){
+      var i = Math.round(c.scrollLeft / c.clientWidth);
+      document.querySelectorAll('#promoDots .d').forEach(function(d,idx){ d.classList.toggle('on', idx===i); });
+    });
+  }
+
+  // ---------- Step 4: prompt copy + import ----------
+  function copyPrompt(){
+    var txt = document.getElementById('promptText').innerText;
+    var done = function(){
+      var b = document.getElementById('copyBtn');
+      b.classList.add('done');
+      document.getElementById('copyTxt').textContent = 'Copied!';
+      setTimeout(function(){ b.classList.remove('done'); document.getElementById('copyTxt').textContent='Copy'; }, 1800);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(done, function(){ fallbackCopy(txt); done(); });
+    } else { fallbackCopy(txt); done(); }
+  }
+  function fallbackCopy(txt){
+    var ta = document.createElement('textarea');
+    ta.value = txt; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch(e){}
+    document.body.removeChild(ta);
+  }
+
+  var draftRecords = [
+    { d:'Identity', name:'Passport', meta:'expires 12 Aug 2029' },
+    { d:'Identity', name:'PAN card', meta:'ABCDE1234F' },
+    { d:'Finance',  name:'HDFC Savings account', meta:'salary account' },
+    { d:'Finance',  name:'ICICI Credit Card', meta:'renews Mar 2027' },
+    { d:'Health',   name:'Star Health insurance', meta:'expires 30 Sep 2026' },
+    { d:'Travel',   name:'US B1/B2 visa', meta:'valid to 2027' },
+    { d:'Career',   name:'Current role', meta:'joined 2023' },
+    { d:'Property', name:'Rental agreement', meta:'renews 2026' }
+  ];
+
+  function importPaste(){
+    var pasted = document.getElementById('pasteArea').value.trim();
+    if (!pasted) { go(5); return; }
+    var box = document.getElementById('parsingBox');
+    var out = document.getElementById('recordsOut');
+    var btn = document.getElementById('importBtn');
+    box.style.display = 'flex';
+    out.innerHTML = '';
+    btn.textContent = 'Reading…';
+    btn.disabled = true;
+    setTimeout(function(){
+      box.style.display = 'none';
+      renderRecords();
+      state.importedPaste = true;
+      btn.textContent = 'Continue →';
+      btn.disabled = false;
+      btn.setAttribute('onclick','go(5)');
+      document.querySelector('.screen[data-idx="4"]').scrollTop = 999;
+    }, 1400);
+  }
+
+  function renderRecords(){
+    var out = document.getElementById('recordsOut');
+    var groups = {};
+    var order = [];
+    draftRecords.forEach(function(r, i){
+      if (!groups[r.d]) { groups[r.d] = []; order.push(r.d); }
+      r.id = 'ai'+i;
+      state.aiRecords[r.id] = true; // pre-checked
+      groups[r.d].push(r);
+    });
+    var html = '<div class="rec-group">';
+    order.forEach(function(dn){
+      var ico = domains[dIdx[dn]] ? domains[dIdx[dn]].i : '•';
+      html += '<div class="rec-domain-h">'+ico+' '+dn+'</div>';
+      groups[dn].forEach(function(r){
+        html += '<div class="rec on" data-id="'+r.id+'" onclick="toggleRec(this)">'+
+                  '<div class="cbox">✓</div>'+
+                  '<div class="rtext"><div class="rname">'+r.name+'</div><div class="rmeta">'+r.meta+'</div></div>'+
+                  '<span class="chip-unv">unverified</span>'+
+                '</div>';
+      });
+    });
+    html += '</div>';
+    html += '<div class="verify-note"><span>✅</span><span>You\'ll confirm each of these before anything is saved. Nothing becomes real until you say so.</span></div>';
+    out.innerHTML = html;
+  }
+  function toggleRec(el){
+    var id = el.dataset.id;
+    state.aiRecords[id] = !state.aiRecords[id];
+    el.classList.toggle('on', state.aiRecords[id]);
+  }
+  function aiRecordCount(){ var c=0; for(var k in state.aiRecords){ if(state.aiRecords[k]) c++; } return c; }
+
+  // ---------- Step 5: scan ----------
+  var foundDocs = [
+    { name:'offer_letter.pdf', meta:'Downloads · 214 KB', ico:'📄' },
+    { name:'passport_scan.pdf', meta:'Documents · 1.2 MB', ico:'🪪' },
+    { name:'visa.jpg', meta:'WhatsApp · 880 KB', ico:'🛂' },
+    { name:'insurance.pdf', meta:'Downloads · 340 KB', ico:'🛡️' },
+    { name:'rental_agreement.pdf', meta:'Documents · 512 KB', ico:'🏠' },
+    { name:'salary_slip.pdf', meta:'Downloads · 96 KB', ico:'💰' }
+  ];
+  function startScan(){
+    var wrap = document.getElementById('scanProgress');
+    var bar = document.getElementById('scanBar');
+    var label = document.getElementById('scanLabel');
+    var btn = document.getElementById('scanBtn');
+    btn.style.display = 'none';
+    wrap.style.display = 'block';
+    document.getElementById('docGrid').style.display = 'none';
+    var stages = ['Scanning Downloads…','Scanning Documents…','Scanning WhatsApp Documents…','Found 6 documents'];
+    var pct = 0, si = 0;
+    var iv = setInterval(function(){
+      pct += 4 + Math.random()*5;
+      if (pct >= 100) { pct = 100; }
+      bar.style.width = pct + '%';
+      var ns = Math.min(stages.length-1, Math.floor(pct/26));
+      if (ns !== si) { si = ns; label.textContent = stages[si]; }
+      if (pct >= 100) { clearInterval(iv); setTimeout(revealDocs, 400); }
+    }, 90);
+  }
+  function revealDocs(){
+    document.getElementById('scanProgress').style.display = 'none';
+    state.scanned = true;
+    var g = document.getElementById('docGrid');
+    g.style.display = 'grid';
+    g.innerHTML = '';
+    foundDocs.forEach(function(f, i){
+      f.id = 'doc'+i;
+      state.docFiles[f.id] = true;
+      var el = document.createElement('div');
+      el.className = 'doccard on';
+      el.dataset.id = f.id;
+      el.innerHTML = '<div class="dcheck">✓</div>'+
+                     '<div class="thumb" style="font-size:26px;">'+f.ico+'</div>'+
+                     '<div class="dfname">'+f.name+'</div>'+
+                     '<div class="dfmeta">'+f.meta+'</div>';
+      el.onclick = function(){ state.docFiles[f.id] = !state.docFiles[f.id]; el.classList.toggle('on', state.docFiles[f.id]); updateImportDocsBtn(); };
+      g.appendChild(el);
+    });
+    var b = document.getElementById('importDocsBtn');
+    b.classList.remove('ghost');
+    b.setAttribute('onclick','importDocs()');
+    updateImportDocsBtn();
+    document.querySelector('.screen[data-idx="5"]').scrollTop = 999;
+  }
+  function docCount(){ var c=0; for(var k in state.docFiles){ if(state.docFiles[k]) c++; } return c; }
+  function updateImportDocsBtn(){
+    var b = document.getElementById('importDocsBtn');
+    if (state.scanned) b.textContent = 'Import ' + docCount() + ' selected';
+  }
+  function importDocs(){
+    var box = document.getElementById('ocrBox');
+    var b = document.getElementById('importDocsBtn');
+    box.style.display = 'flex';
+    b.disabled = true;
+    var msgs = ['Processing… running OCR','Extracting dates & details','Matching to your objects'];
+    var mi = 0;
+    var iv = setInterval(function(){ mi++; if (mi<msgs.length) document.getElementById('ocrLabel').textContent = msgs[mi]; }, 650);
+    setTimeout(function(){
+      clearInterval(iv);
+      var n = docCount();
+      box.innerHTML = '<span style="color:var(--teal-deep);font-weight:800;font-size:16px">✓</span><span style="color:var(--teal-deep);font-weight:700">'+n+' documents imported as drafts — confirm them anytime</span>';
+      b.disabled = false;
+      setTimeout(function(){ go(6); }, 950);
+    }, 2100);
+  }
+
+  // ---------- Step 6: WOW ----------
+  var wowAnswers = {
+    'When does my passport expire?': {
+      line: 'Your <b>passport</b> expires on <b>12 Aug 2029</b> — that\'s just over 3 years away.',
+      ok: '✓ No action needed',
+      src: 'Identity'
+    },
+    'What documents do I need for my next trip?': {
+      line: 'For international travel you\'ll want your <b>passport</b> (valid to 2029) and your <b>US B1/B2 visa</b> (valid to 2027). Both are current.',
+      ok: '✓ You\'re covered',
+      src: 'Travel · Identity'
+    },
+    'When is my insurance due?': {
+      line: 'Your <b>Star Health insurance</b> is due for renewal on <b>30 Sep 2026</b> — about 3 months away.',
+      ok: '🔔 I can remind you 2 weeks before',
+      src: 'Health'
+    },
+    'What needs my attention this month?': {
+      line: 'Nothing urgent this month. The nearest deadline is your <b>credit card renewal</b> in Mar 2027.',
+      ok: '✓ All calm for now',
+      src: 'Finance'
+    }
+  };
+  function prepWow(){
+    var q = 'When does my passport expire?';
+    if (!state.importedPaste && !state.scanned) q = 'What needs my attention this month?';
+    document.getElementById('wowInput').value = q;
+    document.getElementById('answerCard').classList.remove('show');
+
+    var total = totalRecords();
+    document.getElementById('wowSub').innerHTML = total > 0
+      ? 'Grounded in the <b style="color:var(--teal-deep)">' + total + ' record' + (total===1?'':'s') + '</b> you just imported. Try asking:'
+      : 'Ready when you are. Try asking:';
+
+    var fu = ['What documents do I need for my next trip?','When is my insurance due?','What needs my attention this month?'];
+    var w = document.getElementById('followups');
+    w.innerHTML = '';
+    fu.forEach(function(q){
+      var el = document.createElement('div');
+      el.className = 'fu-chip';
+      el.textContent = q;
+      el.onclick = function(){ document.getElementById('wowInput').value = q; askWow(); };
+      w.appendChild(el);
+    });
+  }
+  function askWow(){
+    var q = document.getElementById('wowInput').value.trim();
+    var a = wowAnswers[q] || wowAnswers['When does my passport expire?'];
+    var card = document.getElementById('answerCard');
+    card.classList.remove('show');
+    document.getElementById('answerLine').innerHTML = a.line;
+    document.getElementById('answerOk').innerHTML = a.ok;
+    document.getElementById('answerSrc').innerHTML = 'From your records:&nbsp; <span class="src-pill">' + a.src + '</span>';
+    setTimeout(function(){ card.classList.add('show'); }, 60);
+  }
+
+  function totalRecords(){ return aiRecordCount() + docCount(); }
+
+  // ---------- Step 7 ----------
+  function syncSummary(){
+    var nm = state.name || 'there';
+    document.getElementById('doneTitle').innerHTML = 'You\'re all set, <span class="gradient-text">' + nm + '</span>';
+    var recs = totalRecords();
+    var doms = domainCount();
+    document.getElementById('doneSummary').innerHTML = '<b style="color:var(--ink-2)">' + recs + ' record' + (recs===1?'':'s') + ' imported · ' + doms + ' domain' + (doms===1?'':'s') + ' active.</b> Your Library is ready.';
+    document.getElementById('sumName').textContent = state.name || 'My Profile';
+    document.getElementById('sumDomains').textContent = doms;
+    document.getElementById('sumRecords').textContent = recs;
+  }
+
+  // ---------- progress + nav ----------
+  function buildSegs(){
+    var w = document.getElementById('segs');
+    w.innerHTML = '';
+    for (var i=0;i<NUMBERED;i++){
+      var s = document.createElement('div');
+      s.className = 'seg';
+      s.innerHTML = '<i></i>';
+      w.appendChild(s);
+    }
+  }
+  function renderProgress(){
+    var label = document.getElementById('stepLabel');
+    var segs = document.querySelectorAll('#segs .seg');
+    label.textContent = current === 0 ? 'Welcome' : ('Step ' + current + ' of ' + NUMBERED);
+    segs.forEach(function(s, i){
+      s.classList.remove('done','cur');
+      if (current === 0) return;
+      if (i < current - 1) s.classList.add('done');
+      else if (i === current - 1) s.classList.add('cur');
+    });
+    var skippable = (current === 3 || current === 4 || current === 5);
+    document.getElementById('skipLink').style.visibility = skippable ? 'visible' : 'hidden';
+  }
+
+  function go(idx){
+    if (idx < 0 || idx >= TOTAL) return;
+    document.querySelectorAll('.screen').forEach(function(s){
+      s.classList.toggle('active', +s.getAttribute('data-idx') === idx);
+    });
+    current = idx;
+    renderProgress();
+    document.getElementById('caption').innerHTML = captions[idx];
+    if (idx === 6) prepWow();
+    if (idx === 7) { syncSummary(); burstConfetti(); }
+    var active = document.querySelector('.screen.active');
+    if (active) active.scrollTop = 0;
+  }
+  function skipStep(){ go(Math.min(TOTAL-1, current+1)); }
+
+  function finish(){
+    if (typeof event !== 'undefined' && event && event.target) { event.target.textContent = 'Opening Home ✓'; }
+    setTimeout(function(){ restart(); }, 700);
+  }
+  function restart(){
+    state.name=''; state.profession=''; state.domains={}; state.aiRecords={}; state.docFiles={}; state.scanned=false; state.importedPaste=false;
+    document.getElementById('nameInput').value='';
+    document.getElementById('profInput').value='';
+    document.getElementById('pasteArea').value='';
+    document.getElementById('recordsOut').innerHTML='';
+    var ib=document.getElementById('importBtn'); ib.textContent='Import'; ib.disabled=false; ib.setAttribute('onclick','importPaste()');
+    var db=document.getElementById('importDocsBtn'); db.textContent='Skip for now'; db.disabled=false; db.classList.add('ghost'); db.setAttribute('onclick','go(6)');
+    document.getElementById('scanBtn').style.display='block';
+    document.getElementById('scanProgress').style.display='none';
+    document.getElementById('scanBar').style.width='0';
+    var g=document.getElementById('docGrid'); g.style.display='none'; g.innerHTML='';
+    var ocr=document.getElementById('ocrBox'); ocr.style.display='none'; ocr.innerHTML='<span class="mini-spin"></span><span id="ocrLabel">Processing… running OCR</span>';
+    syncProfChips();
+    applyProfPreset('Other');
+    go(0);
+  }
+
+  // ---------- confetti ----------
+  function burstConfetti(){
+    var phone = document.querySelector('.phone');
+    var colors = ['#0EA5A4','#6366F1','#12b3b1','#8b8ff5','#5eead4'];
+    for (var i=0;i<26;i++){
+      (function(){
+        var p = document.createElement('div');
+        p.className = 'confetti-pc';
+        p.style.left = (12 + Math.random()*76) + '%';
+        p.style.background = colors[Math.floor(Math.random()*colors.length)];
+        p.style.animation = 'fall ' + (1.6 + Math.random()*1.2) + 's ease-in ' + (Math.random()*0.4) + 's forwards';
+        phone.appendChild(p);
+        setTimeout(function(){ if (p.parentNode) p.parentNode.removeChild(p); }, 3400);
+      })();
+    }
+  }
+
+  // ---------- init ----------
+  buildSegs();
+  buildProfChips();
+  buildDomains();
+  buildDots();
+  initCarousel();
+  applyProfPreset('Other');
+  renderProgress();
+  document.getElementById('caption').innerHTML = captions[0];
+</script>
+</body>
+</html>

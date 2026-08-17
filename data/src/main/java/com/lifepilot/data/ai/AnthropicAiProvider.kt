@@ -76,7 +76,8 @@ class AnthropicAiProvider @Inject constructor(
 
             val body = JSONObject().apply {
                 put("model", model)
-                put("max_tokens", 1024)
+                // Large multi-step ACTION_PLAN blocks exceed 1024 output tokens and truncate mid-JSON.
+                put("max_tokens", 4096)
                 put("system", systemPrompt)
                 put("messages", messages)
             }
@@ -107,8 +108,10 @@ class AnthropicAiProvider @Inject constructor(
                 .getJSONArray("content")
                 .getJSONObject(0)
                 .getString("text")
+            // "max_tokens" means the model hit the output limit and the text is truncated.
+            val truncated = json.optString("stop_reason") == "max_tokens"
 
-            AiCompletionResult.Success(content = content, model = model)
+            AiCompletionResult.Success(content = content, model = model, truncated = truncated)
         } catch (e: Exception) {
             Timber.e(e, "Anthropic API call failed")
             AiCompletionResult.Error(message = e.message ?: "Unknown error")

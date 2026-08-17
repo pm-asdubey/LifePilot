@@ -48,6 +48,7 @@ dependencies {
     implementation(project(":core:common"))
 
     implementation(libs.androidx.core.ktx)
+    implementation(libs.lifecycle.process)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
 
@@ -72,6 +73,9 @@ dependencies {
 
     testImplementation(libs.bundles.testing.unit)
     testImplementation(libs.room.testing)
+    // org.json ships with the Android SDK but is a throwing stub in JVM unit tests.
+    // Engines like DomainLifeStateEngineImpl parse AI JSON responses, so tests need the real impl.
+    testImplementation("org.json:json:20240303")
     androidTestImplementation(libs.bundles.testing.android)
     androidTestImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.room.testing)

@@ -27,7 +27,7 @@ import com.lifepilot.features.search.navigation.searchScreen
 import com.lifepilot.features.settings.navigation.settingsScreen
 
 @Composable
-fun LifePilotNavHost(deepLinkObjectId: String? = null) {
+fun LifePilotNavHost(deepLinkObjectId: String? = null, deepLinkConversationId: String? = null) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
@@ -85,7 +85,7 @@ fun LifePilotNavHost(deepLinkObjectId: String? = null) {
             popEnterTransition = { slideInHorizontally(initialOffsetX = { -it / 4 }) + fadeIn() },
             popExitTransition = { slideOutHorizontally(targetOffsetX = { it / 4 }) + fadeOut() },
         ) {
-            homeScreen(navController = navController)
+            homeScreen(navController = navController, deepLinkConversationId = deepLinkConversationId)
             libraryScreen(navController = navController)
             plannerScreen(navController = navController)
             settingsScreen(navController = navController)

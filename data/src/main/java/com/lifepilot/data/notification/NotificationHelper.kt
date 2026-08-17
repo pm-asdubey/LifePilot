@@ -23,6 +23,11 @@ class NotificationHelper @Inject constructor(
         const val CHANNEL_REMINDERS = "lifepilot_reminders"
         const val CHANNEL_GENERAL = "lifepilot_general"
         const val CHANNEL_MORNING_BRIEF = "lifepilot_morning_brief"
+        const val CHANNEL_AI = "lifepilot_ai"
+
+        // Foreground "thinking" notification (ongoing) + the "answer ready" result notification.
+        const val AI_THINKING_NOTIF_ID = 4242
+        const val AI_READY_NOTIF_ID = 4243
     }
 
     fun createNotificationChannels() {
@@ -53,10 +58,71 @@ class NotificationHelper @Inject constructor(
             description = "Daily planning summary at 9 AM"
         }
 
+        val aiChannel = NotificationChannel(
+            CHANNEL_AI,
+            "AI Assistant",
+            NotificationManager.IMPORTANCE_DEFAULT,
+        ).apply {
+            description = "Progress and results while the AI works in the background"
+        }
+
         manager.createNotificationChannel(remindersChannel)
         manager.createNotificationChannel(generalChannel)
         manager.createNotificationChannel(morningBriefChannel)
+        manager.createNotificationChannel(aiChannel)
         Timber.d("Notification channels created")
+    }
+
+    /** Ongoing, silent notification shown by the foreground service while the AI is working. */
+    fun buildAiThinkingNotification(): android.app.Notification {
+        createNotificationChannels()
+        return NotificationCompat.Builder(context, CHANNEL_AI)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle("LifePilot is thinking…")
+            .setContentText("Working on your answer — you can switch apps.")
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setOngoing(true)
+            .setSilent(true)
+            .setContentIntent(launchPendingIntent(conversationId = null, requestCode = AI_THINKING_NOTIF_ID))
+            .build()
+    }
+
+    /** Result notification: tapping it opens the app to the conversation that just got an answer. */
+    fun showAiAnswerReadyNotification(conversationId: String, conversationTitle: String) {
+        try {
+            val notification = NotificationCompat.Builder(context, CHANNEL_AI)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle("Your answer is ready")
+                .setContentText(conversationTitle.ifBlank { "Tap to see LifePilot's reply" })
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setAutoCancel(true)
+                .setContentIntent(launchPendingIntent(conversationId, requestCode = AI_READY_NOTIF_ID))
+                .build()
+            NotificationManagerCompat.from(context).notify(AI_READY_NOTIF_ID, notification)
+        } catch (e: SecurityException) {
+            Timber.w(e, "No notification permission for AI answer")
+        } catch (e: Exception) {
+            Timber.e(e, "Error showing AI answer notification")
+        }
+    }
+
+    fun cancelAiAnswerReady() {
+        NotificationManagerCompat.from(context).cancel(AI_READY_NOTIF_ID)
+    }
+
+    private fun launchPendingIntent(conversationId: String?, requestCode: Int): PendingIntent? {
+        val intent = context.packageManager
+            .getLaunchIntentForPackage(context.packageName)
+            ?.apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                conversationId?.let { putExtra("conversationId", it) }
+            } ?: return null
+        return PendingIntent.getActivity(
+            context,
+            requestCode,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
     }
 
     fun showReminderNotification(

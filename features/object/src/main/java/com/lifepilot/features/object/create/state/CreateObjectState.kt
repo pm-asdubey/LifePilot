@@ -3,6 +3,9 @@ package com.lifepilot.features.objectdetail.create.state
 data class CreateObjectState(
     val isLoading: Boolean = false,
     val availableTypes: List<ObjectTypeItem> = emptyList(),
+    /** When set, the type picker is scoped to a single life domain (e.g. opened from a Library
+     *  domain section's "+"). Null means show every registered type. */
+    val domainFilter: String? = null,
     val selectedType: String? = null,
     val title: String = "",
     val description: String = "",

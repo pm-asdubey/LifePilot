@@ -23,6 +23,10 @@ interface ConversationDao {
     @Query("UPDATE conversations SET updated_at = :timestamp WHERE conversation_id = :conversationId")
     suspend fun touchConversation(conversationId: String, timestamp: Long)
 
+    // Safe title update: targeted UPDATE avoids the INSERT OR REPLACE cascade-delete bug.
+    @Query("UPDATE conversations SET title = :title, updated_at = :updatedAt WHERE conversation_id = :conversationId")
+    suspend fun updateTitle(conversationId: String, title: String, updatedAt: Long)
+
     @Query("DELETE FROM conversations WHERE conversation_id = :id")
     suspend fun deleteConversation(id: String)
 

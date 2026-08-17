@@ -37,4 +37,6 @@ dependencies {
     implementation(libs.navigation.compose)
     implementation(libs.coil.compose)
     implementation(libs.compose.ui.tooling)
+
+    testImplementation(libs.bundles.testing.unit)
 }

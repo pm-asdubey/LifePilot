@@ -42,10 +42,7 @@ class ConversationRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateTitle(conversationId: String, title: String) {
-        val existing = conversationDao.getConversationById(conversationId) ?: return
-        conversationDao.upsertConversation(
-            existing.copy(title = title, updatedAt = Instant.now().toEpochMilli())
-        )
+        conversationDao.updateTitle(conversationId, title, Instant.now().toEpochMilli())
     }
 
     override suspend fun deleteConversation(conversationId: String) {

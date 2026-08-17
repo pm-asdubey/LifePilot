@@ -691,3 +691,156 @@ Object types not in this list (Passport, PAN, Insurance, etc.) return `null` and
 **Verification:** File opens as valid HTML; no issue references remain.
 
 ---
+
+## Session — Camera crash, document attachment persistence, conversation first-message visibility
+
+### 1. Fix camera crash on Xiaomi (runtime CAMERA permission)
+
+**Problem:** Tapping Camera in the AI chat attachment sheet crashed with `SecurityException: Permission Denial ... with revoked permission android.permission.CAMERA`. The manifest declared `CAMERA`, but the app never requested the runtime permission, and Xiaomi's stock camera requires the caller to hold it.
+
+#### `features/home/src/main/java/com/lifepilot/features/home/ui/HomeScreen.kt`
+- Added imports for `android.Manifest`, `androidx.core.content.ContextCompat`.
+- Added a `cameraPermissionLauncher` using `ActivityResultContracts.RequestPermission()`.
+- In the `onCamera` handler, after creating the `FileProvider` URI, check `ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)`:
+  - If granted, launch `TakePicture`.
+  - If not granted, request permission; on grant, launch the pending URI.
+
+**Verification:** Build passes; app launches; camera permission request path is wired.
+
+---
+
+### 2. Make document attachments visible and persistent in AI conversations
+
+**Problem:** When a user attached a document (camera, scan, or file picker) in the AI chat, the document metadata was sent to the AI on the next turn via transient `attachedDocumentContext`, but the document itself was not shown as a chat message. Reopening the conversation later lost the attachment context entirely.
+
+#### `features/home/src/main/java/com/lifepilot/features/home/viewmodel/HomeViewModel.kt`
+- Added `serializeAttachmentContext()` and `deserializeAttachmentContext()` helpers for `AttachedDocumentContext` using `JSONObject`/`JSONArray`.
+- Added `saveAttachmentMessage(convId, context)` which persists a `StoredMessage` with `role = "ATTACHMENT"` and JSON content.
+- In `processAttachment()`, after a successful `ObjectCreation` or `MetadataUpdate` classification, call `saveAttachmentMessage()` so the attachment is part of the conversation history.
+- In `sendMessage()`, filter out `role == "ATTACHMENT"` messages when building AI conversation history (the metadata still reaches the AI via `RetrievalContext`).
+- In `resumeConversation()`, after loading messages, find the latest `ATTACHMENT` message and restore `attachedDocumentContext` so follow-up questions in a reopened conversation still include the document metadata.
+
+#### `features/home/src/main/java/com/lifepilot/features/home/ui/HomeScreen.kt`
+- Added imports for `ProposedField`, `UpdateMode`, `org.json.JSONObject`.
+- Added `parseAttachmentContext()` helper to reconstruct `AttachedDocumentContext` from the JSON stored in the message.
+- Updated `MessageBubble()` to detect `role == "ATTACHMENT"` and render `DocumentAttachmentBubble` instead of plain text.
+- Removed the floating `DocumentAttachmentBubble` item from the LazyColumn (it is now part of the message list, so duplicate rendering is avoided).
+- Removed the now-unused `attachedDocumentContext` parameter from `AiWorkspaceContent`.
+
+**Verification:** Build passes; attachment messages are persisted and rendered.
+
+---
+
+### 3. Old conversation first message now visible on open
+
+**Problem:** When a user reopened an existing conversation, the chat list auto-scrolled to the bottom, so the first (oldest) message was off-screen. The user expected to land at the top and see the full history from the beginning.
+
+#### `features/home/src/main/java/com/lifepilot/features/home/ui/HomeScreen.kt`
+- Passed `conversationId` into `AiWorkspaceContent`.
+- Replaced the simple "scroll to last item on any size change" logic with state-aware scrolling:
+  - `previousMessagesSize` is reset when `conversationId` changes.
+  - On first load (`previousMessagesSize == 0`), call `listState.scrollToItem(0)` so the first message is visible.
+  - On subsequent message additions (`messages.size > previousMessagesSize`), call `listState.animateScrollToItem(messages.lastIndex)` to keep the user at the latest turn.
+
+**Verification:** Build passes; conversation list starts at the first message and scrolls to new messages only after the user has begun interacting.
+
+---
+
+**Build status:** `./gradlew :app:assembleDebug --offline --no-daemon` ✅  
+**Install status:** `adb install -r app-debug.apk` ✅ on `c8988ac7`  
+**Functional verification:** Pending user test of camera, document attachment, and old-conversation opening.
+
+---
+
+## Claude Session 6 — Bug Fixes & Polish (2026-07-03)
+
+**Build:** `BUILD SUCCESSFUL in 56s`. APK ready for install (device not connected at time of session).
+
+---
+
+### 1. Uncomplete task — visible swipe background
+**Problem:** `SwipeToReopenTask` background was transparent — no visual feedback when swiping.
+**Fix:** Added `secondaryContainer` background + "Reopen" text label + white-on-secondary icon.
+**File:** `features/planner/src/main/java/com/lifepilot/features/planner/ui/PlannerScreen.kt`
+
+---
+
+### 2. Search → Conversation navigation (reactive savedStateHandle)
+**Problem:** `HomeViewModel.consumeResumeConversationId()` read `savedStateHandle.remove()` once at init; returning to Home from Search via `launchSingleTop` didn't trigger init again.
+**Fix:** Changed to observe `savedStateHandle.getStateFlow<String?>("resumeConversationId", null)` as a Flow with `filterNotNull()` so any future set triggers `resumeConversation()`.
+**File:** `features/home/src/main/java/com/lifepilot/features/home/viewmodel/HomeViewModel.kt`
+
+---
+
+### 3. Search → Task navigation (reactive savedStateHandle)
+**Problem:** `PlannerViewModel.selectedTaskId` was a one-time `val` read at init; re-navigating from search with the same Planner VM alive didn't update `highlightedTaskId`.
+**Fix:** Changed to `deepLinkTaskId: MutableStateFlow<String?>` + a `getStateFlow("taskId")` collector in init. The `observeData()` combine now includes `deepLinkTaskId` as a 4th stream.
+**File:** `features/planner/src/main/java/com/lifepilot/features/planner/viewmodel/PlannerViewModel.kt`
+
+---
+
+### 4. Thinking bubble — cycling words instead of static "Thinking"
+**Problem:** `ThinkingBubble` showed static "Thinking" text; user wanted it to cycle through meaningful phrases.
+**Fix:** Added `cyclingPhrases` list + `LaunchedEffect(statusMessage)` with 2.2s ticker. Uses `AnimatedContent` with `fadeIn/fadeOut` between phrases. When ViewModel provides an explicit `statusMessage`, that takes priority and cycling stops.
+**Phrases:** "Thinking…", "Looking up your records…", "Connecting the dots…", "Checking details…", "Putting it together…", "Almost there…"
+**File:** `features/home/src/main/java/com/lifepilot/features/home/ui/HomeScreen.kt`
+
+---
+
+### 5. AI timeouts increased
+**Problem:** First timeout 60s was too short; AI responses were timing out.
+**Fix:**
+- Timeouts: 60/90/120s → **120/200/360s**
+- Retry delays: 5/15s → **12/30s**
+- OkHttp base `readTimeout`: 60s → **400s** (per-request overrides now never get capped)
+**Files:** `features/home/src/main/java/com/lifepilot/features/home/viewmodel/HomeViewModel.kt`, `data/src/main/java/com/lifepilot/data/di/NetworkModule.kt`
+
+---
+
+### 6. PDF OCR for document scanner
+**Problem:** `MlKitOcrService` returned `OcrResult.NotSupported` for `application/pdf` — scanned PDFs from ML Kit Document Scanner produced no text.
+**Fix:** Added `extractFromPdf()` using Android `PdfRenderer` to render each page to a 2x-scale `Bitmap`, then runs both Latin and Devanagari recognizers on each page.
+**Files:** `data/src/main/java/com/lifepilot/data/ocr/MlKitOcrService.kt`
+
+---
+
+### 7. Task due-date notifications
+**Problem:** Tasks with due dates fired no notifications.
+**Fix:** Extended `ReminderEvaluationWorker.doWork()` to call `fireTaskDueNotifications(profileId)` which queries pending tasks due today and shows a notification for each via `NotificationHelper`.
+**File:** `data/src/main/java/com/lifepilot/data/worker/ReminderEvaluationWorker.kt`
+
+---
+
+### 8. Domain icons for new domains
+**Problem:** "Major Life Events" and "People" domains showed generic `FolderOpen` icon.
+**Fix:** Added `"major life events" → Celebration`, `"people" → Group`, `"employment" → Work` to `domainIcon()`.
+**File:** `designsystem/src/main/java/com/lifepilot/designsystem/icon/DomainIcons.kt`
+
+---
+
+### 9. CreateObjectViewModel — reactive schema loading
+**Problem:** `loadObjectTypes()` was called once at init; if called before `AppInitializer.loadSchemas()` completed, the type list was empty.
+**Fix:** Changed to observe `schemaEngine.registeredSchemas` (a `StateFlow`) and map new schema emissions to `availableTypes` with `distinctUntilChanged()`.
+**File:** `features/object/src/main/java/com/lifepilot/features/object/create/viewmodel/CreateObjectViewModel.kt`
+
+---
+
+### 10. AI prompt — task due dates use buffered start
+**Problem:** `CREATE_TASK` items used absolute deadlines as `dueDate`, not the recommended buffered start date.
+**Fix:** Added "TASK DUE DATE RULES — MANDATORY" section to `PromptBuilderImpl`: always set `dueDate` to the recommended earlier start date (with buffer). Deadline goes in the task title/description. Buffer guidance by type: visa=14d, document collection=7d, appointments=5d, filings=10d.
+**File:** `data/src/main/java/com/lifepilot/data/engine/PromptBuilderImpl.kt`
+
+---
+
+### 11. HTML updates
+- `portfolio deploy/articles/LifePilot-state-and-roadmap.html`: Updated build date to 2026-07-03, capabilities 34+ → 40+, domains 9 → 13. Added Legal, Transport, People, Employment domain pills.
+- `portfolio deploy/articles/lifepilot.html`: CTA "Check Progress Update on Development" already present at line 1271 — no change needed.
+
+---
+
+**Remaining for user to test manually:**
+- Swipe task to reopen (new visible background should make it clear)
+- Search → tap a chat → verify navigates to conversation
+- Search → tap a task → verify Planner highlights that task
+- Scan document in AI chat → verify text is extracted and shown
+- Task due today → reconnect device and trigger worker to verify notification fires

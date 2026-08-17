@@ -133,12 +133,13 @@ Respond with ONLY valid JSON — no other text:
         profileId: String,
         domain: String,
     ): DomainLifeState? {
-        // Extract the JSON block — handle cases where the model wraps it in markdown.
-        val jsonText = responseText
-            .substringAfter("```json\n", responseText)
-            .substringAfter("```\n", responseText)
-            .substringBefore("\n```", responseText)
-            .trim()
+        // Extract the JSON block. Models frequently wrap the object in markdown fences
+        // (```json … ```) or add prose around it, so isolate the outermost {…} span rather
+        // than relying on fence delimiters, which silently dropped fenced responses before.
+        val trimmed = responseText.trim()
+        val start = trimmed.indexOf('{')
+        val end = trimmed.lastIndexOf('}')
+        val jsonText = if (start >= 0 && end > start) trimmed.substring(start, end + 1) else trimmed
 
         return runCatching {
             val json = JSONObject(jsonText)

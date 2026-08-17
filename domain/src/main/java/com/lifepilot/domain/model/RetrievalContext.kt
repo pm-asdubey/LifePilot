@@ -28,4 +28,6 @@ data class RetrievalContext(
     /** Document attached to the current conversation (e.g. scanned from chat).
      *  The AI receives only [AttachedDocumentContext.extractedFields], never raw OCR. */
     val attachedDocumentContext: AttachedDocumentContext? = null,
+    /** Active projects — life initiatives that club Objects, Tasks, Goals, and Documents. */
+    val activeProjects: List<Project> = emptyList(),
 )
